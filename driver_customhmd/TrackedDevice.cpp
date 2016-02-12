@@ -140,17 +140,28 @@ void CTrackedDevice::Run()
 				continue;
 			array[pos++] = data;
 
-			if (!pSerial->Read(&array[pos], sizeof(HTData) - sizeof(int)))
+			if (!pSerial->Read(&array[pos], sizeof(htData) - sizeof(htData.start)))
 				continue;
+
+			auto yawPrev = _yawRaw;
+			auto pitchPrev = _pitchRaw;
+			auto rollPrev = _rollRaw;
 
 			//deðerler radyan *10000 geliyo seriden
 			_yawRaw = (double)htData.yaw / -10000.0;
 			_pitchRaw = (double)htData.pitch / 10000.0;
 			_rollRaw = (double)htData.roll / -10000.0;
-
-			_yaw = _yawRaw - _yawCenter;
-			_pitch = _pitchRaw - _pitchCenter;
-			_roll = _rollRaw - _rollCenter;
+			
+			//if diff is greater than 2 degrees, do minimal smoothing
+			//the smaller the movement(noise), the more smoothing
+			auto smooth = 0.0174533*2.0;			
+			auto yawDiff = abs(yawPrev - _yawRaw); if (yawDiff >= smooth) yawDiff = smooth * 0.99f; _yawRaw = (_yawRaw * yawDiff + yawPrev * (smooth - yawDiff)) / smooth;
+			auto pitchDiff = abs(pitchPrev - _pitchRaw); if (pitchDiff >= smooth) pitchDiff = smooth * 0.99f; _pitchRaw = (_pitchRaw * pitchDiff + pitchPrev * (smooth - pitchDiff)) / smooth;
+			auto rollDiff = abs(rollPrev - _rollRaw); if (rollDiff >= smooth) rollDiff = smooth * 0.99f; _rollRaw = (_rollRaw * rollDiff + rollPrev * (smooth - rollDiff)) / smooth;
+			
+			_yaw = (_yawRaw - _yawCenter);
+			_pitch = (_pitchRaw - _pitchCenter);
+			_roll = (_rollRaw - _rollCenter);
 
 			m_Pose.qRotation.w = 1;
 			m_Pose.qRotation.x = 0;
@@ -185,7 +196,7 @@ void CTrackedDevice::Run()
 			m_Pose.poseIsValid = true;
 			m_Pose.result = ETrackingResult::TrackingResult_Running_OK;
 			m_Pose.willDriftInYaw = true;
-			m_Pose.shouldApplyHeadModel = false;
+			m_Pose.shouldApplyHeadModel = true;
 
 			m_pDriverHost->TrackedDevicePoseUpdated(0, m_Pose );
 		}
