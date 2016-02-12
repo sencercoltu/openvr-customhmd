@@ -1,11 +1,7 @@
-// Internal Includes
 #include "Common.h"
+#include "ServerDriver.h" 
+#include "ClientDriver.h" 
 
-#include "ServerDriver.h" // for ServerDriver_OSVR
-#include "ClientDriver.h" // for ClientDriver_OSVR
-
-// Standard includes
-#include <cstring> // for std::strcmp
 
 static CServerDriver g_ServerDriver;
 static CClientDriver g_ClientDriver;
