@@ -2,73 +2,32 @@
 #include <process.h>
 #include "Serial.h"
 
-
-
 CTrackedDevice::CTrackedDevice(std::string id, CServerDriver *pServer)
 {
-	TRACE(__FUNCTIONW__);
-	HMD_POSX = 0;
-	HMD_POSY = 0;
-	HMD_WIDTH = 1920;
-	HMD_HEIGHT = 1080;	
-	_id = id;
+//	TRACE(__FUNCTIONW__);
+
+	m_Pose = {};
+	m_Id = id;
 	m_hThread = nullptr;
 	m_pDriverHost = pServer->driverHost_;
 	m_pLog = pServer->logger_;
 	m_IsRunning = false;
-	EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, (LPARAM) this);
-}
+	m_PIDValue = 0.03f;
+	m_MonData = { 0 };
+	m_MonData.HMD_POSX = 0;
+	m_MonData.HMD_POSY = 0;
+	m_MonData.HMD_WIDTH = 1920;
+	m_MonData.HMD_HEIGHT = 1080;
+	m_MonData.HMD_ASPECT = (float)m_MonData.HMD_WIDTH / (float)m_MonData.HMD_HEIGHT;
+	m_MonData.HMD_FREQ = 60;
+	m_MonData.HMD_FOUND = false;
 
-BOOL CALLBACK CTrackedDevice::MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
-{
-	MONITORINFOEX monInfo = {};
-	monInfo.cbSize = sizeof(monInfo);
-	wchar_t DeviceID[4096] = {};
-	if (GetMonitorInfo(hMonitor, &monInfo))
-	{
-		DISPLAY_DEVICE ddMon;
-		ZeroMemory(&ddMon, sizeof(ddMon));
-		ddMon.cb = sizeof(ddMon);
-		DWORD devMon = 0;
-
-		while (EnumDisplayDevices(monInfo.szDevice, devMon, &ddMon, 0))
-		{
-			if (ddMon.StateFlags & DISPLAY_DEVICE_ACTIVE &&
-				!(ddMon.StateFlags & DISPLAY_DEVICE_MIRRORING_DRIVER))
-			{
-				wsprintf(DeviceID, L"%s", ddMon.DeviceID);
-				wchar_t *pStart = wcschr(DeviceID, L'\\');
-				if (pStart)
-				{
-					pStart++;
-					wchar_t *pEnd = wcschr(pStart, L'\\');
-					if (pEnd)
-					{
-						*pEnd = 0;
-						if (!wcscmp(pStart, L"SNYD602"))
-						{
-							auto pDev = (CTrackedDevice *)dwData;
-							pDev->HMD_POSX = monInfo.rcMonitor.left;
-							pDev->HMD_POSY = monInfo.rcMonitor.top;
-							pDev->HMD_WIDTH = monInfo.rcMonitor.right - monInfo.rcMonitor.left;
-							pDev->HMD_HEIGHT = monInfo.rcMonitor.bottom - monInfo.rcMonitor.top;
-							return FALSE;
-						}
-					}
-				}				
-			}
-			devMon++;
-
-			ZeroMemory(&ddMon, sizeof(ddMon));
-			ddMon.cb = sizeof(ddMon);
-		}
-	}
-	return TRUE;
+	EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, (LPARAM) &m_MonData);
 }
 
 EVRInitError CTrackedDevice::Activate(uint32_t unObjectId)
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	m_hThread = reinterpret_cast<HANDLE>(_beginthreadex(nullptr, 0, ProcessThread, this, CREATE_SUSPENDED, nullptr));
 	if (m_hThread)
 	{
@@ -81,7 +40,7 @@ EVRInitError CTrackedDevice::Activate(uint32_t unObjectId)
 
 unsigned int WINAPI CTrackedDevice::ProcessThread(void *p)
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	if (!p) return -1;
 	auto device = static_cast<CTrackedDevice *>(p);
 	if (device)
@@ -90,99 +49,123 @@ unsigned int WINAPI CTrackedDevice::ProcessThread(void *p)
 	return 0;
 }
 
-float pid_Val = 0.05f;
-double _yaw = 0;
-double _pitch = 0;
-double _roll = 0;
-
-DriverPose_t my_pose = {};
-
-struct HTData
-{
-	int start;
-	int led;
-	int yaw;
-	int pitch;
-	int roll;
-};
-
-#define MATH_PI (3.14159265359)
+//#define MATH_PI (3.14159265359)
 
 void CTrackedDevice::Run()
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	HTData htData = {};
 	char *array = (char *)&htData;
 	int pos = 0;
 
+	double _yaw = 0;
+	double _pitch = 0;
+	double _roll = 0;
 
-	Serial *pSerial = new Serial(tstring(L"COM3"), 115200);
+	double _yawRaw = 0;
+	double _pitchRaw = 0;
+	double _rollRaw = 0;
+
+	double _yawCenter = 0;
+	double _pitchCenter = 0;
+	double _rollCenter = 0;
+	
+	CSerial *pSerial = new CSerial(std::wstring(L"COM3"), 115200);
 	std::string incBuffer;
+
 	char data;
-	float step = 0.001f;
+	float step = 0.005f;
+	auto keydown = false;
+
 	while (m_IsRunning)
-	{
-		if (GetKeyState(VK_UP))
+	{		
+		if ((GetAsyncKeyState(VK_HOME) & 0x8000) && ((GetAsyncKeyState(VK_CONTROL) & 0x8000)))
 		{
-			pid_Val += 0.01f;
-			m_pDriverHost->PhysicalIpdSet(0, pid_Val);
-			m_pLog->Log("up");
+			if (!keydown)
+			{
+				//center
+				_yawCenter = _yawRaw;
+				_pitchCenter = _pitchRaw;
+				_rollCenter = _rollRaw;
+				keydown = true;
+			}
 		}
-		else if (GetKeyState(VK_DOWN))
+		else if ((GetAsyncKeyState(VK_RIGHT) & 0x8000) && ((GetAsyncKeyState(VK_CONTROL) & 0x8000)))
 		{
-			pid_Val -= 0.01f;
-			m_pDriverHost->PhysicalIpdSet(0, pid_Val);
-			m_pLog->Log("down");
+			if (!keydown)
+			{
+				m_PIDValue += step;
+				m_pDriverHost->PhysicalIpdSet(0, m_PIDValue);
+				m_pLog->Log("up\n");
+				keydown = true;
+			}
 		}
+		else if ((GetAsyncKeyState(VK_LEFT) & 0x8000) && ((GetAsyncKeyState(VK_CONTROL) & 0x8000)))
+		{
+			if (!keydown)
+			{
+				m_PIDValue -= step;
+				m_pDriverHost->PhysicalIpdSet(0, m_PIDValue);
+				m_pLog->Log("down\n");
+				keydown = true;
+			}
+		}
+		else
+			keydown = false;
+
 		try
 		{
 			pos = 0;
-			if (!pSerial->read(&data, 1, false))
+			if (!pSerial->Read(&data, 1))
 				continue;
 			if (data != (char)0xff)
 				continue;
 			array[pos++] = data;
 
-			if (!pSerial->read(&data, 1, false))
+			if (!pSerial->Read(&data, 1))
 				continue;
 			if (data != (char)0xff)
 				continue;
 			array[pos++] = data;
 
-			if (!pSerial->read(&data, 1, false))
+			if (!pSerial->Read(&data, 1))
 				continue;
 			if (data != (char)0xff)
 				continue;
 			array[pos++] = data;
 
-			if (!pSerial->read(&data, 1, false))
+			if (!pSerial->Read(&data, 1))
 				continue;
 			if (data != (char)0xff)
 				continue;
 			array[pos++] = data;
 
-			if (!pSerial->read(&array[pos], sizeof(HTData) - sizeof(int), false))
+			if (!pSerial->Read(&array[pos], sizeof(HTData) - sizeof(int)))
 				continue;
 
-			//deðerler radyan geliyo
-			_yaw = (double)htData.yaw / -10000.0;
-			_pitch = (double)htData.pitch / 10000.0;
-			_roll = (double)htData.roll / -10000.0;
+			//deðerler radyan *10000 geliyo seriden
+			_yawRaw = (double)htData.yaw / -10000.0;
+			_pitchRaw = (double)htData.pitch / 10000.0;
+			_rollRaw = (double)htData.roll / -10000.0;
 
-			my_pose.qRotation.w = 1;
-			my_pose.qRotation.x = 0;
-			my_pose.qRotation.y = 0;
-			my_pose.qRotation.z = 0;
+			_yaw = _yawRaw - _yawCenter;
+			_pitch = _pitchRaw - _pitchCenter;
+			_roll = _rollRaw - _rollCenter;
 
-			my_pose.qWorldFromDriverRotation.w = 1;
-			my_pose.qWorldFromDriverRotation.x = 0;
-			my_pose.qWorldFromDriverRotation.y = 0;
-			my_pose.qWorldFromDriverRotation.z = 0;
+			m_Pose.qRotation.w = 1;
+			m_Pose.qRotation.x = 0;
+			m_Pose.qRotation.y = 0;
+			m_Pose.qRotation.z = 0;
 
-			my_pose.qDriverFromHeadRotation.w = 1;
-			my_pose.qDriverFromHeadRotation.x = 0;
-			my_pose.qDriverFromHeadRotation.y = 0;
-			my_pose.qDriverFromHeadRotation.z = 0;
+			m_Pose.qWorldFromDriverRotation.w = 1;
+			m_Pose.qWorldFromDriverRotation.x = 0;
+			m_Pose.qWorldFromDriverRotation.y = 0;
+			m_Pose.qWorldFromDriverRotation.z = 0;
+
+			m_Pose.qDriverFromHeadRotation.w = 1;
+			m_Pose.qDriverFromHeadRotation.x = 0;
+			m_Pose.qDriverFromHeadRotation.y = 0;
+			m_Pose.qDriverFromHeadRotation.z = 0;
 
 
 			double num9 = -_roll * 0.5f;
@@ -194,21 +177,21 @@ void CTrackedDevice::Run()
 			double num7 = _yaw * 0.5f;
 			double num2 = sin(num7);
 			double num = cos(num7);
-			my_pose.qRotation.x = ((num * num4) * num5) + ((num2 * num3) * num6);
-			my_pose.qRotation.y = ((num2 * num3) * num5) - ((num * num4) * num6);
-			my_pose.qRotation.z = ((num * num3) * num6) - ((num2 * num4) * num5);
-			my_pose.qRotation.w = ((num * num3) * num5) + ((num2 * num4) * num6);
+			m_Pose.qRotation.x = ((num * num4) * num5) + ((num2 * num3) * num6);
+			m_Pose.qRotation.y = ((num2 * num3) * num5) - ((num * num4) * num6);
+			m_Pose.qRotation.z = ((num * num3) * num6) - ((num2 * num4) * num5);
+			m_Pose.qRotation.w = ((num * num3) * num5) + ((num2 * num4) * num6);
 
-			my_pose.poseIsValid = true;
-			my_pose.result = ETrackingResult::TrackingResult_Running_OK;
-			my_pose.willDriftInYaw = true;
-			my_pose.shouldApplyHeadModel = false;
+			m_Pose.poseIsValid = true;
+			m_Pose.result = ETrackingResult::TrackingResult_Running_OK;
+			m_Pose.willDriftInYaw = true;
+			m_Pose.shouldApplyHeadModel = false;
 
-			m_pDriverHost->TrackedDevicePoseUpdated(0, my_pose);
+			m_pDriverHost->TrackedDevicePoseUpdated(0, m_Pose );
 		}
 		catch (...)
 		{
-		}
+		}		
 		Sleep(1);
 	}
 
@@ -224,84 +207,84 @@ void CTrackedDevice::Deactivate()
 		CloseHandle(m_hThread);
 		m_hThread = nullptr;
 	}
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 }
 
 const char * CTrackedDevice::GetId()
 {
-	TRACE(__FUNCTIONW__);
-	return _id.c_str();
+//	TRACE(__FUNCTIONW__);
+	return m_Id.c_str();
 }
 
 void CTrackedDevice::DebugRequest(const char * pchRequest, char * pchResponseBuffer, uint32_t unResponseBufferSize)
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 }
 
 void CTrackedDevice::GetWindowBounds(int32_t * pnX, int32_t * pnY, uint32_t * pnWidth, uint32_t * pnHeight)
 {
-	TRACE(__FUNCTIONW__);
-	*pnX = HMD_POSX;
-	*pnY = HMD_POSY;
-	*pnWidth = HMD_WIDTH;
-	*pnHeight = HMD_HEIGHT;
+//	TRACE(__FUNCTIONW__);
+	*pnX = m_MonData.HMD_POSX;
+	*pnY = m_MonData.HMD_POSY;
+	*pnWidth = m_MonData.HMD_WIDTH;
+	*pnHeight = m_MonData.HMD_HEIGHT;
 }
 
 bool CTrackedDevice::IsDisplayOnDesktop()
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	return true;
 }
 
 bool CTrackedDevice::IsDisplayRealDisplay()
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	return true;
 }
 
 void CTrackedDevice::GetRecommendedRenderTargetSize(uint32_t * pnWidth, uint32_t * pnHeight)
 {
-	TRACE(__FUNCTIONW__);
-	*pnWidth = HMD_WIDTH / 2;
-	*pnHeight = HMD_HEIGHT;
+//	TRACE(__FUNCTIONW__);
+	*pnWidth = m_MonData.HMD_WIDTH;
+	*pnHeight = m_MonData.HMD_HEIGHT;
 }
 
 void CTrackedDevice::GetEyeOutputViewport(EVREye eEye, uint32_t * pnX, uint32_t * pnY, uint32_t * pnWidth, uint32_t * pnHeight)
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	switch (eEye)
 	{
 	case EVREye::Eye_Left:
-		*pnX = HMD_POSX;
-		*pnY = HMD_POSY;
-		*pnWidth = HMD_WIDTH / 2;
-		*pnHeight = HMD_HEIGHT;
+		*pnX = 0;
+		*pnY = 0;
+		*pnWidth = m_MonData.HMD_WIDTH / 2;
+		*pnHeight = m_MonData.HMD_HEIGHT;
 		break;
 	case EVREye::Eye_Right:
-		*pnX = HMD_POSX + (HMD_WIDTH / 2);
-		*pnY = HMD_POSY;
-		*pnWidth = HMD_WIDTH / 2;
-		*pnHeight = HMD_HEIGHT;
+		*pnX = 0 + (m_MonData.HMD_WIDTH / 2);
+		*pnY = 0;
+		*pnWidth = m_MonData.HMD_WIDTH / 2;
+		*pnHeight = m_MonData.HMD_HEIGHT;
 		break;
 	}
 }
 
 void CTrackedDevice::GetProjectionRaw(EVREye eEye, float * pfLeft, float * pfRight, float * pfTop, float * pfBottom)
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	switch (eEye)
 	{
 	case EVREye::Eye_Left:
 		*pfLeft = -1.0f;
 		*pfRight = 1.0f;
-		*pfTop = -0.5f;
-		*pfBottom = 0.5f;
+		*pfTop = -1.0f / m_MonData.HMD_ASPECT;
+		*pfBottom = 1.0f / m_MonData.HMD_ASPECT;
 		break;
 	case EVREye::Eye_Right:
 		*pfLeft = -1.0f;
 		*pfRight = 1.0f;
-		*pfTop = -0.5f;
-		*pfBottom = 0.5f;
+		*pfTop = -1.0f / m_MonData.HMD_ASPECT;
+		*pfBottom = 1.0f / m_MonData.HMD_ASPECT;
 		break;
 	}
 }
@@ -320,8 +303,8 @@ DistortionCoordinates_t CTrackedDevice::ComputeDistortion(EVREye eEye, float fU,
 
 TrackedDeviceDriverInfo_t CTrackedDevice::GetTrackedDeviceDriverInfo()
 {
-	TRACE(__FUNCTIONW__);
-	vr::TrackedDeviceDriverInfo_t info;
+//	TRACE(__FUNCTIONW__);
+	vr::TrackedDeviceDriverInfo_t info = {};
 	strcpy_s(info.rchTrackingSystemId, "SONY HMZ-T2"); // TODO name of the underlying tracking system
 	strcpy_s(info.rchSerialNumber, GetSerialNumber());
 	strcpy_s(info.rchModelNumber, GetModelNumber());
@@ -331,26 +314,26 @@ TrackedDeviceDriverInfo_t CTrackedDevice::GetTrackedDeviceDriverInfo()
 	info.bWillDriftInYaw = false;              // true if gyro-only tracking system
 	info.bReportsTimeSinceVSync = false;
 	info.fSecondsFromVsyncToPhotons = 0.0; // seconds between vsync and photons hitting wearer's eyes
-	info.fDisplayFrequency = 60.0;         // fps of display
+	info.fDisplayFrequency = m_MonData.HMD_FREQ;         // fps of display
 	return info;
 }
 
 const char * CTrackedDevice::GetModelNumber()
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	return "CUSTOM HMD";
 }
 
 const char * CTrackedDevice::GetSerialNumber()
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	return "1244244";
 }
 
 DriverPose_t CTrackedDevice::GetPose()
 {
-	TRACE(__FUNCTIONW__);
-	return my_pose;
+//	TRACE(__FUNCTIONW__);
+	return m_Pose ;
 }
 
 bool CTrackedDevice::GetBoolTrackedDeviceProperty(ETrackedDeviceProperty prop, ETrackedPropertyError *error)
@@ -383,7 +366,7 @@ bool CTrackedDevice::GetBoolTrackedDeviceProperty(ETrackedDeviceProperty prop, E
 
 float CTrackedDevice::GetFloatTrackedDeviceProperty(ETrackedDeviceProperty prop, ETrackedPropertyError * error)
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	const float default_value = 0.0f;
 
 	switch (prop) {
@@ -398,7 +381,7 @@ float CTrackedDevice::GetFloatTrackedDeviceProperty(ETrackedDeviceProperty prop,
 	case vr::Prop_UserIpdMeters_Float:
 		if (error)
 			*error = vr::TrackedProp_Success;
-		return pid_Val;
+		return m_PIDValue;
 	case vr::Prop_FieldOfViewLeftDegrees_Float: // TODO
 		if (error)
 			*error = vr::TrackedProp_ValueNotProvidedByDevice;
@@ -432,7 +415,7 @@ float CTrackedDevice::GetFloatTrackedDeviceProperty(ETrackedDeviceProperty prop,
 
 int32_t CTrackedDevice::GetInt32TrackedDeviceProperty(ETrackedDeviceProperty prop, ETrackedPropertyError *error)
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	const int32_t default_value = 0;
 
 
@@ -474,7 +457,7 @@ int32_t CTrackedDevice::GetInt32TrackedDeviceProperty(ETrackedDeviceProperty pro
 
 uint64_t CTrackedDevice::GetUint64TrackedDeviceProperty(ETrackedDeviceProperty prop, ETrackedPropertyError *error)
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	const uint64_t default_value = 0;
 
 	switch (prop) {
@@ -503,7 +486,7 @@ uint64_t CTrackedDevice::GetUint64TrackedDeviceProperty(ETrackedDeviceProperty p
 
 HmdMatrix34_t CTrackedDevice::GetMatrix34TrackedDeviceProperty(ETrackedDeviceProperty prop, ETrackedPropertyError *error)
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	// Default value is identity matrix
 	vr::HmdMatrix34_t default_value;
 	float s[] = { 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1 };
@@ -523,7 +506,7 @@ HmdMatrix34_t CTrackedDevice::GetMatrix34TrackedDeviceProperty(ETrackedDevicePro
 
 uint32_t CTrackedDevice::GetStringTrackedDeviceProperty(ETrackedDeviceProperty prop, char * pchValue, uint32_t unBufferSize, ETrackedPropertyError *error)
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	const uint32_t default_value = 0;
 
 	switch (prop) {
@@ -576,7 +559,7 @@ uint32_t CTrackedDevice::GetStringTrackedDeviceProperty(ETrackedDeviceProperty p
 
 VRControllerState_t CTrackedDevice::GetControllerState()
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	vr::VRControllerState_t controller_state = {};
 
 	return controller_state;
@@ -584,142 +567,162 @@ VRControllerState_t CTrackedDevice::GetControllerState()
 
 bool CTrackedDevice::TriggerHapticPulse(uint32_t unAxisId, uint16_t usPulseDurationMicroseconds)
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	return false;
 }
 
 bool CTrackedDevice::HasCamera()
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	return false;
 }
 
 bool CTrackedDevice::GetCameraFirmwareDescription(char * pBuffer, uint32_t nBufferLen)
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	return false;
 }
 
 bool CTrackedDevice::GetCameraFrameDimensions(vr::ECameraVideoStreamFormat nVideoStreamFormat, uint32_t * pWidth, uint32_t * pHeight)
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	return false;
 }
 
 bool CTrackedDevice::GetCameraFrameBufferingRequirements(int * pDefaultFrameQueueSize, uint32_t * pFrameBufferDataSize)
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	return false;
 }
 
 bool CTrackedDevice::SetCameraFrameBuffering(int nFrameBufferCount, void ** ppFrameBuffers, uint32_t nFrameBufferDataSize)
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	return false;
 }
 
 bool CTrackedDevice::SetCameraVideoStreamFormat(vr::ECameraVideoStreamFormat nVideoStreamFormat)
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	return false;
 }
 
 vr::ECameraVideoStreamFormat CTrackedDevice::GetCameraVideoStreamFormat()
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	return vr::CVS_FORMAT_UNKNOWN;
 }
 
 bool CTrackedDevice::StartVideoStream()
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	return false;
 }
 
 void CTrackedDevice::StopVideoStream()
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 }
 
 bool CTrackedDevice::IsVideoStreamActive()
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	return false;
 }
 
 float CTrackedDevice::GetVideoStreamElapsedTime()
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	return 0.0f;
 }
 
 const vr::CameraVideoStreamFrame_t * CTrackedDevice::GetVideoStreamFrame()
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	return nullptr;
 }
 
 void CTrackedDevice::ReleaseVideoStreamFrame(const vr::CameraVideoStreamFrame_t * pFrameImage)
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 }
 
 bool CTrackedDevice::SetAutoExposure(bool bEnable)
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	return false;
 }
 
 bool CTrackedDevice::PauseVideoStream()
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	return false;
 }
 
 bool CTrackedDevice::ResumeVideoStream()
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	return false;
 }
 
 bool CTrackedDevice::IsVideoStreamPaused()
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	return false;
 }
 
 bool CTrackedDevice::GetCameraDistortion(float flInputU, float flInputV, float * pflOutputU, float * pflOutputV)
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	return false;
 }
 
 bool CTrackedDevice::GetCameraProjection(float flWidthPixels, float flHeightPixels, float flZNear, float flZFar, vr::HmdMatrix44_t * pProjection)
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	return false;
 }
 
 bool CTrackedDevice::GetRecommendedCameraUndistortion(uint32_t * pUndistortionWidthPixels, uint32_t * pUndistortionHeightPixels)
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	return false;
 }
 
 bool CTrackedDevice::SetCameraUndistortion(uint32_t nUndistortionWidthPixels, uint32_t nUndistortionHeightPixels)
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	return false;
 }
 
 bool CTrackedDevice::GetCameraFirmwareVersion(uint64_t * pFirmwareVersion)
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	return false;
 }
 
 bool CTrackedDevice::SetFrameRate(int nISPFrameRate, int nSensorFrameRate)
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	return false;
+}
+
+void CTrackedDevice::CreateSwapTextureSet(uint32_t unPid, uint32_t unFormat, uint32_t unWidth, uint32_t unHeight, void *(*pSharedTextureHandles)[2]) 
+{
+}
+
+void CTrackedDevice::DestroySwapTextureSet(void *pSharedTextureHandle) 
+{
+}
+
+void CTrackedDevice::DestroyAllSwapTextureSets(uint32_t unPid) 
+{
+}
+
+void CTrackedDevice::SubmitLayer(void *pSharedTextureHandles[2], const vr::VRTextureBounds_t * pBounds, const vr::HmdMatrix34_t * pPose) 
+{
+}
+
+void CTrackedDevice::Present() 
+{
 }

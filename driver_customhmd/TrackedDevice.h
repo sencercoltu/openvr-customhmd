@@ -57,8 +57,23 @@ public:
 	virtual bool GetCameraFirmwareVersion(uint64_t * pFirmwareVersion) override;
 	virtual bool SetFrameRate(int nISPFrameRate, int nSensorFrameRate) override;
 	
+	virtual void CreateSwapTextureSet(uint32_t unPid, uint32_t unFormat, uint32_t unWidth, uint32_t unHeight, void *(*pSharedTextureHandles)[2]);
+	virtual void DestroySwapTextureSet(void *pSharedTextureHandle);
+	virtual void DestroyAllSwapTextureSets(uint32_t unPid);
+	virtual void SubmitLayer(void *pSharedTextureHandles[2], const vr::VRTextureBounds_t * pBounds, const vr::HmdMatrix34_t * pPose);
+	virtual void Present();
+
 public:
-	std::string _id;
+	struct HTData
+	{
+		int start;
+		int led;
+		int yaw;
+		int pitch;
+		int roll;
+	};
+
+	std::string m_Id;
 	CTrackedDevice(std::string id, CServerDriver *pServer);
 
 private:
@@ -68,11 +83,9 @@ private:
 	bool m_IsRunning;
 	unsigned int static WINAPI ProcessThread(void *p);
 	void Run();
-	int HMD_POSX;
-	int HMD_POSY;
-	int HMD_WIDTH;
-	int HMD_HEIGHT;	
-	static BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData);
+	MonitorData m_MonData;	
+	float m_PIDValue;
+	DriverPose_t m_Pose;
 };
 
 #endif // TrackedDevice_H

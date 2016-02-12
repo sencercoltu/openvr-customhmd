@@ -12,23 +12,21 @@ using namespace std;
 
 #include "Serial.h"
 
-Serial::Serial(tstring &commPortName, int bitRate)
+CSerial::CSerial(std::wstring &commPortName, int bitRate)
 {
-	commHandle = CreateFile(commPortName.c_str(), GENERIC_READ|GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+	m_hCommHandle = CreateFile(commPortName.c_str(), GENERIC_READ|GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
 
-	if(commHandle == INVALID_HANDLE_VALUE) 
+	if(m_hCommHandle == INVALID_HANDLE_VALUE)
 	{
-		throw("ERROR: Could not open com port");
+		return;
 	}
 	else 
 	{
-		// set timeouts
 		COMMTIMEOUTS cto = { MAXDWORD, 0, 0, 0, 0};
 		DCB dcb;
-		if(!SetCommTimeouts(commHandle,&cto))
+		if(!SetCommTimeouts(m_hCommHandle,&cto))
 		{
-			Serial::~Serial();
-			throw("ERROR: Could not set com port time-outs");
+			CSerial::~CSerial();
 		}
 
 		// set DCB
@@ -43,66 +41,31 @@ Serial::Serial(tstring &commPortName, int bitRate)
 		dcb.StopBits = ONESTOPBIT;
 		dcb.ByteSize = 8;
 
-		if(!SetCommState(commHandle,&dcb))
+		if(!SetCommState(m_hCommHandle,&dcb))
 		{
-			Serial::~Serial();
-			throw("ERROR: Could not set com port parameters");
+			CSerial::~CSerial();			
 		}
 	}
 }
 
-Serial::~Serial()
+CSerial::~CSerial()
 {
-	CloseHandle(commHandle);
+	CloseHandle(m_hCommHandle);
+	m_hCommHandle = INVALID_HANDLE_VALUE;
 }
 
-int Serial::write(const char *buffer)
+int CSerial::Write(const char *buffer, int buffLen)
 {
 	DWORD numWritten;
-	WriteFile(commHandle, buffer, (DWORD) strlen(buffer), &numWritten, NULL); 
-
+	WriteFile(m_hCommHandle, buffer, buffLen, &numWritten, NULL);
 	return numWritten;
 }
 
-int Serial::write(const char *buffer, int buffLen)
-{
-	DWORD numWritten;
-	WriteFile(commHandle, buffer, buffLen, &numWritten, NULL); 
-
-	return numWritten;
-}
-
-int Serial::read(char *buffer, int buffLen, bool nullTerminate)
+int CSerial::Read(char *buffer, int buffLen)
 {
 	DWORD numRead;
-	if(nullTerminate)
-	{
-		--buffLen;
-	}
-
-	BOOL ret = ReadFile(commHandle, buffer, buffLen, &numRead, NULL);
-
-	if(!ret)
-	{
-		return 0;
-	}
-
-	if(nullTerminate)
-	{
-		buffer[numRead] = '\0';
-	}
-
+	BOOL ret = ReadFile(m_hCommHandle, buffer, buffLen, &numRead, NULL);
+	if(!ret)	
+		return 0;	
 	return numRead;
-}
-
-#define FLUSH_BUFFSIZE 10
-
-void Serial::flush()
-{
-	char buffer[FLUSH_BUFFSIZE];
-	int numBytes = read(buffer, FLUSH_BUFFSIZE, false);
-	while(numBytes != 0)
-	{
-		numBytes = read(buffer, FLUSH_BUFFSIZE, false);
-	}
 }

@@ -3,28 +3,28 @@
 
 EVRInitError CServerDriver::Init(IDriverLog * pDriverLog, IServerDriverHost * pDriverHost, const char * pchUserDriverConfigDir, const char * pchDriverInstallDir)
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	logger_ = pDriverLog;
 	driverHost_ = pDriverHost;
-	trackedDevices_.push_back(new CTrackedDevice("SENCHMD", this));	
+	trackedDevices_.push_back(new CTrackedDevice("SONY HMZ-T2", this));	
 	return vr::VRInitError_None;
 }
 
 void CServerDriver::Cleanup()
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	trackedDevices_.clear();
 }
 
 uint32_t CServerDriver::GetTrackedDeviceCount()
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	return (uint32_t) trackedDevices_.size();
 }
 
 ITrackedDeviceServerDriver * CServerDriver::GetTrackedDeviceDriver(uint32_t unWhich)
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	if (unWhich >= trackedDevices_.size())
 		return nullptr;
 	return trackedDevices_.at(unWhich);
@@ -32,10 +32,10 @@ ITrackedDeviceServerDriver * CServerDriver::GetTrackedDeviceDriver(uint32_t unWh
 
 ITrackedDeviceServerDriver * CServerDriver::FindTrackedDeviceDriver(const char * pchId)
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	for (auto iter = trackedDevices_.begin(); iter != trackedDevices_.end(); iter++)
 	{
-		if (0 == std::strcmp(pchId, (*iter)->_id.c_str()))
+		if (0 == std::strcmp(pchId, (*iter)->m_Id.c_str()))
 		{
 			return *iter;
 		}
@@ -50,16 +50,16 @@ void CServerDriver::RunFrame()
 
 bool CServerDriver::ShouldBlockStandbyMode()
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 	return false;
 }
 
 void CServerDriver::EnterStandby()
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 }
 
 void CServerDriver::LeaveStandby()
 {
-	TRACE(__FUNCTIONW__);
+//	TRACE(__FUNCTIONW__);
 }

@@ -9,9 +9,22 @@
 #include <memory>
 #include <string>
 
-#define TRACE(a) OutputDebugString(a"\n")
+//#define TRACE(a) OutputDebugString(a"\n")
 
 #define HMD_DLL_EXPORT extern "C" __declspec(dllexport)
 #define HMD_DLL_IMPORT extern "C" __declspec(dllimport)
+
+struct MonitorData
+{
+	bool HMD_FOUND;
+	int HMD_POSX;
+	int HMD_POSY;
+	int HMD_WIDTH;
+	int HMD_HEIGHT;
+	float HMD_FREQ;
+	float HMD_ASPECT;
+};
+
+BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData);
 
 #endif // Common_H
