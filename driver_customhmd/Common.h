@@ -14,8 +14,12 @@
 #define HMD_DLL_EXPORT extern "C" __declspec(dllexport)
 #define HMD_DLL_IMPORT extern "C" __declspec(dllimport)
 
+//#define HMD_MODE_AMD 
+
+
 struct MonitorData
 {
+	WCHAR DisplayName[CCHDEVICENAME];
 	bool HMD_FOUND;
 	int HMD_POSX;
 	int HMD_POSY;

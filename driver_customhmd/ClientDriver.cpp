@@ -7,6 +7,31 @@ EVRInitError CClientDriver::Init(IDriverLog * pDriverLog, IClientDriverHost * pD
 	driverHost_ = pDriverHost;
 	userDriverConfigDir_ = pchUserDriverConfigDir;
 	driverInstallDir_ = pchDriverInstallDir;
+
+//#ifdef HMD_MODE_AMD	
+//	MonitorData m_MonData = {};
+//	EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, (LPARAM)&m_MonData);
+//
+//	//	TRACE(__FUNCTIONW__);
+//	DEVMODE displayMode = {};
+//	displayMode.dmSize = sizeof(DEVMODE);
+//	EnumDisplaySettings(m_MonData.DisplayName, ENUM_CURRENT_SETTINGS, &displayMode);
+//
+//	displayMode.dmPelsWidth = 1280;
+//	displayMode.dmPelsHeight = 1470;
+//	displayMode.dmBitsPerPel = 32;
+//	displayMode.dmDisplayFrequency = 60;
+//
+//	int ChangeDisplayResult = ChangeDisplaySettingsEx(m_MonData.DisplayName, &displayMode, nullptr, CDS_FULLSCREEN, nullptr);
+//	if (ChangeDisplayResult != DISP_CHANGE_SUCCESSFUL)
+//	{
+//		MessageBox(NULL, L"Error: Failed to change display mode.", L"Error", 0);
+//	}
+//
+//	//tekrar al yeni halini
+//	//EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, (LPARAM)&m_MonData);
+//#endif //HMD_MODE_AMD
+
 	if (!m_bInit)
 	{
 		if (driverHost_)
@@ -15,7 +40,6 @@ EVRInitError CClientDriver::Init(IDriverLog * pDriverLog, IClientDriverHost * pD
 		}
 		m_bInit = true;
 	}
-
 	return vr::VRInitError_None;
 }
 

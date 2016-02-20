@@ -6,7 +6,9 @@ EVRInitError CServerDriver::Init(IDriverLog * pDriverLog, IServerDriverHost * pD
 //	TRACE(__FUNCTIONW__);
 	logger_ = pDriverLog;
 	driverHost_ = pDriverHost;
+
 	trackedDevices_.push_back(new CTrackedDevice("SONY HMZ-T2", this));	
+	
 	return vr::VRInitError_None;
 }
 

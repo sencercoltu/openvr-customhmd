@@ -57,11 +57,17 @@ BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMoni
 						if (!wcscmp(pStart, L"SNYD602")) //look for this monitor id (SonyHMZ-T2)
 						{
 							auto pMonData = (MonitorData *)dwData;
+							wcscpy_s(pMonData->DisplayName, monInfo.szDevice);
 							pMonData->HMD_POSX = monInfo.rcMonitor.left;
 							pMonData->HMD_POSY = monInfo.rcMonitor.top;
 							pMonData->HMD_WIDTH = monInfo.rcMonitor.right - monInfo.rcMonitor.left;
 							pMonData->HMD_HEIGHT = monInfo.rcMonitor.bottom - monInfo.rcMonitor.top;
+#ifdef HMD_MODE_AMD
+							pMonData->HMD_ASPECT = (float)pMonData->HMD_WIDTH / (float)(pMonData->HMD_HEIGHT - 30) / 2;
+							//pMonData->HMD_ASPECT = (float)pMonData->HMD_WIDTH / (float)pMonData->HMD_HEIGHT;
+#else 
 							pMonData->HMD_ASPECT = (float)pMonData->HMD_WIDTH / (float)pMonData->HMD_HEIGHT;
+#endif 
 							DEVMODE devMode = {};
 							devMode.dmSize = sizeof(DEVMODE);
 							if (EnumDisplaySettings(monInfo.szDevice, ENUM_CURRENT_SETTINGS, &devMode))
