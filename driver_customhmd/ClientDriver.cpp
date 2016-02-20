@@ -7,6 +7,14 @@ EVRInitError CClientDriver::Init(IDriverLog * pDriverLog, IClientDriverHost * pD
 	driverHost_ = pDriverHost;
 	userDriverConfigDir_ = pchUserDriverConfigDir;
 	driverInstallDir_ = pchDriverInstallDir;
+	if (!m_bInit)
+	{
+		if (driverHost_)
+		{
+			IVRSettings *pSettings = driverHost_->GetSettings(vr::IVRSettings_Version);
+		}
+		m_bInit = true;
+	}
 
 	return vr::VRInitError_None;
 }

@@ -27,4 +27,7 @@ struct MonitorData
 
 BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData);
 
+vr::HmdQuaternion_t HmdQuaternion_Init(double w, double x, double y, double z);
+void HmdMatrix_SetIdentity(vr::HmdMatrix34_t *pMatrix);
+
 #endif // Common_H

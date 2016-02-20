@@ -4,7 +4,9 @@
 #include "Common.h"
 
 using namespace vr;
-class CClientDriver : public IClientTrackedDeviceProvider
+
+class CClientDriver : 
+	public IClientTrackedDeviceProvider
 {
 public:
 	virtual EVRInitError Init(IDriverLog * pDriverLog, IClientDriverHost * pDriverHost, const char * pchUserDriverConfigDir, const char * pchDriverInstallDir) override;
@@ -14,9 +16,10 @@ public:
 	virtual HiddenAreaMesh_t GetHiddenAreaMesh(EVREye eEye) override;
 	virtual uint32_t GetMCImage(uint32_t * pImgWidth, uint32_t * pImgHeight, uint32_t * pChannels, void * pDataBuffer, uint32_t unBufferLen) override;
 private:
-	vr::IDriverLog* logger_ = nullptr;
-	vr::IClientDriverHost* driverHost_ = nullptr;
+	IDriverLog* logger_ = nullptr;
+	IClientDriverHost* driverHost_ = nullptr;
 	std::string userDriverConfigDir_;
-	std::string driverInstallDir_;
+	std::string driverInstallDir_;	
+	bool m_bInit;
 };
 #endif // ClientDriver_H

@@ -22,16 +22,20 @@ uint32_t CServerDriver::GetTrackedDeviceCount()
 	return (uint32_t) trackedDevices_.size();
 }
 
-ITrackedDeviceServerDriver * CServerDriver::GetTrackedDeviceDriver(uint32_t unWhich)
+ITrackedDeviceServerDriver * CServerDriver::GetTrackedDeviceDriver(uint32_t unWhich, const char *pchInterfaceVersion)
 {
-//	TRACE(__FUNCTIONW__);
+	if (0 != _stricmp(pchInterfaceVersion, ITrackedDeviceServerDriver_Version))
+		return nullptr;
+	//	TRACE(__FUNCTIONW__);
 	if (unWhich >= trackedDevices_.size())
 		return nullptr;
 	return trackedDevices_.at(unWhich);
 }
 
-ITrackedDeviceServerDriver * CServerDriver::FindTrackedDeviceDriver(const char * pchId)
+ITrackedDeviceServerDriver * CServerDriver::FindTrackedDeviceDriver(const char * pchId, const char *pchInterfaceVersion)
 {
+	if (0 != _stricmp(pchInterfaceVersion, ITrackedDeviceServerDriver_Version))
+		return nullptr;
 //	TRACE(__FUNCTIONW__);
 	for (auto iter = trackedDevices_.begin(); iter != trackedDevices_.end(); iter++)
 	{
@@ -46,6 +50,8 @@ ITrackedDeviceServerDriver * CServerDriver::FindTrackedDeviceDriver(const char *
 void CServerDriver::RunFrame()
 {
 	//TRACE(__FUNCTIONW__);
+//	for (auto iter = trackedDevices_.begin(); iter != trackedDevices_.end(); iter++)
+//		(*iter)->RunFrame();
 }
 
 bool CServerDriver::ShouldBlockStandbyMode()

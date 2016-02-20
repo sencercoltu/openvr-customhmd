@@ -153,6 +153,7 @@
     <ClCompile Include="TrackedDevice.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\OpenVR\headers\openvr_driver.h" />
     <ClInclude Include="ClientDriver.h" />
     <ClInclude Include="Common.h" />
     <ClInclude Include="Serial.h" />
