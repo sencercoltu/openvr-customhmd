@@ -7,7 +7,16 @@ CTrackedDevice::CTrackedDevice(std::string id, CServerDriver *pServer)
 {
 	//	TRACE(__FUNCTIONW__);
 	m_unObjectId = vr::k_unTrackedDeviceIndexInvalid;
+
 	m_Pose = {};
+	m_Pose.vecDriverFromHeadTranslation[0] = 0.0;
+	m_Pose.vecDriverFromHeadTranslation[1] = 0.0;
+	m_Pose.vecDriverFromHeadTranslation[2] = 0.0;
+
+	m_Pose.qRotation = HmdQuaternion_Init(1, 0, 0, 0);
+	m_Pose.qWorldFromDriverRotation = HmdQuaternion_Init(1, 0, 0, 0);
+	m_Pose.qDriverFromHeadRotation = HmdQuaternion_Init(1, 0, 0, 0);
+
 	m_Id = id;
 	m_hThread = nullptr;
 	m_pDriverHost = pServer->driverHost_;
@@ -20,7 +29,7 @@ CTrackedDevice::CTrackedDevice(std::string id, CServerDriver *pServer)
 #ifdef HMD_MODE_AMD
 	m_MonData.HMD_WIDTH = 1280;
 	m_MonData.HMD_HEIGHT = 1470;
-	m_MonData.HMD_ASPECT = (float)m_MonData.HMD_WIDTH / (float)(m_MonData.HMD_HEIGHT - 30) / 2;	
+	m_MonData.HMD_ASPECT = ((float)(m_MonData.HMD_HEIGHT - 30) / 2.0f) / (float)m_MonData.HMD_WIDTH;
 #else //HMD_MODE_AMD
 	m_MonData.HMD_WIDTH = 1920;
 	m_MonData.HMD_HEIGHT = 1080;
@@ -71,9 +80,9 @@ void CTrackedDevice::Run()
 	char data;
 	float step = 0.0001f;
 	auto keydown = false;
-
+	auto lastdown = GetTickCount();
 	auto firstPacket = false;
-
+	DWORD delay = 1000;
 	//Sleep(5000);
 	//if (m_MonData.HMD_FOUND && m_MonData.DisplayName[0])
 	//{
@@ -89,15 +98,21 @@ void CTrackedDevice::Run()
 
 	while (m_IsRunning)
 	{
+		if (delay < 20)
+			delay = 20;
+		if (keydown && GetTickCount() - lastdown > delay)
+			keydown = false;
 		if ((GetAsyncKeyState(VK_HOME) & 0x8000) && ((GetAsyncKeyState(VK_CONTROL) & 0x8000)))
 		{
 			if (!keydown)
-			{
+			{				
 				//center
-				_yawCenter = _yawRaw;
+				_yawCenter = _yawRaw + 3.14159265359;
 				_pitchCenter = _pitchRaw;
 				_rollCenter = _rollRaw;
 				keydown = true;
+				lastdown = GetTickCount();
+				delay /= 2;
 			}
 		}
 		else if ((GetAsyncKeyState(VK_END) & 0x8000) && ((GetAsyncKeyState(VK_CONTROL) & 0x8000)))
@@ -110,6 +125,8 @@ void CTrackedDevice::Run()
 				_rollCenter = 0;
 				keydown = true;
 				firstPacket = false;
+				lastdown = GetTickCount();
+				delay /= 2;
 			}
 		}
 		else if ((GetAsyncKeyState(VK_RIGHT) & 0x8000) && ((GetAsyncKeyState(VK_CONTROL) & 0x8000)))
@@ -119,6 +136,8 @@ void CTrackedDevice::Run()
 				m_PIDValue += step;
 				m_pDriverHost->PhysicalIpdSet(0, m_PIDValue);				
 				keydown = true;
+				lastdown = GetTickCount();
+				delay /= 2;
 			}
 		}
 		else if ((GetAsyncKeyState(VK_LEFT) & 0x8000) && ((GetAsyncKeyState(VK_CONTROL) & 0x8000)))
@@ -128,10 +147,35 @@ void CTrackedDevice::Run()
 				m_PIDValue -= step;
 				m_pDriverHost->PhysicalIpdSet(0, m_PIDValue);				
 				keydown = true;
+				lastdown = GetTickCount();
+				delay /= 2;
+			}
+		}
+		else if ((GetAsyncKeyState(VK_UP) & 0x8000) && ((GetAsyncKeyState(VK_CONTROL) & 0x8000)))
+		{
+			if (!keydown)
+			{
+				m_Pose.vecPosition[2] += 0.1;
+				keydown = true;
+				lastdown = GetTickCount();
+				delay /= 2;
+			}
+		}
+		else if ((GetAsyncKeyState(VK_DOWN) & 0x8000) && ((GetAsyncKeyState(VK_CONTROL) & 0x8000)))
+		{
+			if (!keydown)
+			{
+				m_Pose.vecPosition[2] -= 0.1;
+				keydown = true;
+				lastdown = GetTickCount();
+				delay /= 2;
 			}
 		}
 		else
+		{
+			delay = 1000;
 			keydown = false;
+		}
 
 		try
 		{
@@ -189,22 +233,7 @@ void CTrackedDevice::Run()
 			_yaw = (_yawRaw - _yawCenter);
 			_pitch = (_pitchRaw - _pitchCenter);
 			_roll = (_rollRaw - _rollCenter);
-
-			m_Pose.qRotation.w = 1;
-			m_Pose.qRotation.x = 0;
-			m_Pose.qRotation.y = 0;
-			m_Pose.qRotation.z = 0;
-
-			m_Pose.qWorldFromDriverRotation.w = 1;
-			m_Pose.qWorldFromDriverRotation.x = 0;
-			m_Pose.qWorldFromDriverRotation.y = 0;
-			m_Pose.qWorldFromDriverRotation.z = 0;
-
-			m_Pose.qDriverFromHeadRotation.w = 1;
-			m_Pose.qDriverFromHeadRotation.x = 0;
-			m_Pose.qDriverFromHeadRotation.y = 0;
-			m_Pose.qDriverFromHeadRotation.z = 0;
-
+			
 
 			double num9 = -_roll * 0.5f;
 			double num6 = sin(num9);
@@ -311,13 +340,16 @@ bool CTrackedDevice::IsDisplayRealDisplay()
 void CTrackedDevice::GetRecommendedRenderTargetSize(uint32_t * pnWidth, uint32_t * pnHeight)
 {
 	//	TRACE(__FUNCTIONW__);
-	*pnWidth = m_MonData.HMD_WIDTH;
+	
 #ifdef HMD_MODE_AMD
-	*pnHeight = m_MonData.HMD_HEIGHT - 30;
+	*pnWidth = m_MonData.HMD_WIDTH;
+	*pnHeight = (m_MonData.HMD_HEIGHT - 30) / 2;
 #else // HMD_MODE_AMD
+	*pnWidth = m_MonData.HMD_WIDTH;
 	*pnHeight = m_MonData.HMD_HEIGHT;
 #endif // HMD_MODE_AMD
-
+	*pnWidth = uint32_t(*pnWidth * HMD_SUPERSAMPLE);
+	*pnHeight = uint32_t(*pnHeight * HMD_SUPERSAMPLE);
 }
 
 void CTrackedDevice::GetEyeOutputViewport(EVREye eEye, uint32_t * pnX, uint32_t * pnY, uint32_t * pnWidth, uint32_t * pnHeight)
@@ -369,14 +401,14 @@ void CTrackedDevice::GetProjectionRaw(EVREye eEye, float * pfLeft, float * pfRig
 	case EVREye::Eye_Left:
 		*pfLeft = -1.0f;
 		*pfRight = 1.0f;
-		*pfTop = -1.0f;
-		*pfBottom = 1.0f;
+		*pfTop = -1.0f * m_MonData.HMD_ASPECT;
+		*pfBottom = 1.0f * m_MonData.HMD_ASPECT;
 		break;
 	case EVREye::Eye_Right:
 		*pfLeft = -1.0f;
 		*pfRight = 1.0f;
-		*pfTop = -1.0f;
-		*pfBottom = 1.0f;
+		*pfTop = -1.0f * m_MonData.HMD_ASPECT;
+		*pfBottom = 1.0f * m_MonData.HMD_ASPECT;
 		break;
 	}
 #else //HMD_MODE_AMD

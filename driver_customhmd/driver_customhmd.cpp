@@ -63,7 +63,7 @@ BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMoni
 							pMonData->HMD_WIDTH = monInfo.rcMonitor.right - monInfo.rcMonitor.left;
 							pMonData->HMD_HEIGHT = monInfo.rcMonitor.bottom - monInfo.rcMonitor.top;
 #ifdef HMD_MODE_AMD
-							pMonData->HMD_ASPECT = (float)pMonData->HMD_WIDTH / (float)(pMonData->HMD_HEIGHT - 30) / 2;
+							pMonData->HMD_ASPECT = ((float)(pMonData->HMD_HEIGHT - 30) / 2.0f) / (float)pMonData->HMD_WIDTH;
 #else 
 							pMonData->HMD_ASPECT = (float)pMonData->HMD_WIDTH / (float)pMonData->HMD_HEIGHT;
 #endif 

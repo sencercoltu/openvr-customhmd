@@ -15,7 +15,7 @@
 #define HMD_DLL_IMPORT extern "C" __declspec(dllimport)
 
 #define HMD_MODE_AMD 
-
+#define HMD_SUPERSAMPLE 2.0
 
 struct MonitorData
 {
