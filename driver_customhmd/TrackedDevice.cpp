@@ -13,7 +13,7 @@ CTrackedDevice::CTrackedDevice(std::string id, CServerDriver *pServer)
 	m_pDriverHost = pServer->driverHost_;
 	m_pLog = pServer->logger_;
 	m_IsRunning = false;
-	m_PIDValue = 0.03f;
+	m_PIDValue = 0.005f;
 	m_MonData = { 0 };
 	m_MonData.HMD_POSX = 0;
 	m_MonData.HMD_POSY = -1480;
@@ -45,6 +45,9 @@ unsigned int WINAPI CTrackedDevice::ProcessThread(void *p)
 
 void CTrackedDevice::Run()
 {
+	EnableAMDHD3D();
+	m_pDriverHost->TrackedDevicePropertiesChanged(m_unObjectId);
+
 	//	TRACE(__FUNCTIONW__);
 	HTData htData = {};
 	char *array = (char *)&htData;
@@ -66,8 +69,10 @@ void CTrackedDevice::Run()
 	std::string incBuffer;
 
 	char data;
-	float step = 0.005f;
+	float step = 0.0001f;
 	auto keydown = false;
+
+	auto firstPacket = false;
 
 	//Sleep(5000);
 	//if (m_MonData.HMD_FOUND && m_MonData.DisplayName[0])
@@ -104,6 +109,7 @@ void CTrackedDevice::Run()
 				_pitchCenter = 0;
 				_rollCenter = 0;
 				keydown = true;
+				firstPacket = false;
 			}
 		}
 		else if ((GetAsyncKeyState(VK_RIGHT) & 0x8000) && ((GetAsyncKeyState(VK_CONTROL) & 0x8000)))
@@ -169,6 +175,13 @@ void CTrackedDevice::Run()
 			//if diff is greater than 2 degrees, do minimal smoothing
 			//the smaller the movement(noise), the more smoothing
 			auto smooth = 0.0174533*2.0;
+			if (firstPacket)
+			{
+				firstPacket = false;
+				yawPrev = _yawRaw;
+				pitchPrev = _pitchRaw;
+				rollPrev = _rollRaw;
+			}
 			auto yawDiff = abs(yawPrev - _yawRaw); if (yawDiff >= smooth) yawDiff = smooth * 0.99f; _yawRaw = (_yawRaw * yawDiff + yawPrev * (smooth - yawDiff)) / smooth;
 			auto pitchDiff = abs(pitchPrev - _pitchRaw); if (pitchDiff >= smooth) pitchDiff = smooth * 0.99f; _pitchRaw = (_pitchRaw * pitchDiff + pitchPrev * (smooth - pitchDiff)) / smooth;
 			auto rollDiff = abs(rollPrev - _rollRaw); if (rollDiff >= smooth) rollDiff = smooth * 0.99f; _rollRaw = (_rollRaw * rollDiff + rollPrev * (smooth - rollDiff)) / smooth;
@@ -300,7 +313,7 @@ void CTrackedDevice::GetRecommendedRenderTargetSize(uint32_t * pnWidth, uint32_t
 	//	TRACE(__FUNCTIONW__);
 	*pnWidth = m_MonData.HMD_WIDTH;
 #ifdef HMD_MODE_AMD
-	*pnHeight = (m_MonData.HMD_HEIGHT - 30) / 2;
+	*pnHeight = m_MonData.HMD_HEIGHT - 30;
 #else // HMD_MODE_AMD
 	*pnHeight = m_MonData.HMD_HEIGHT;
 #endif // HMD_MODE_AMD

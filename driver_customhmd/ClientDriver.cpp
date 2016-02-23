@@ -2,11 +2,13 @@
 
 EVRInitError CClientDriver::Init(IDriverLog * pDriverLog, IClientDriverHost * pDriverHost, const char * pchUserDriverConfigDir, const char * pchDriverInstallDir)
 {
+	//MessageBox(NULL, L"CClientDriver::Init.", L"Info", 0);
 	//TRACE(__FUNCTIONW__);
 	logger_ = pDriverLog;
 	driverHost_ = pDriverHost;
 	userDriverConfigDir_ = pchUserDriverConfigDir;
 	driverInstallDir_ = pchDriverInstallDir;
+	
 
 //#ifdef HMD_MODE_AMD	
 //	MonitorData m_MonData = {};
@@ -17,17 +19,19 @@ EVRInitError CClientDriver::Init(IDriverLog * pDriverLog, IClientDriverHost * pD
 //	displayMode.dmSize = sizeof(DEVMODE);
 //	EnumDisplaySettings(m_MonData.DisplayName, ENUM_CURRENT_SETTINGS, &displayMode);
 //
-//	displayMode.dmPelsWidth = 1280;
-//	displayMode.dmPelsHeight = 1470;
-//	displayMode.dmBitsPerPel = 32;
-//	displayMode.dmDisplayFrequency = 60;
-//
-//	int ChangeDisplayResult = ChangeDisplaySettingsEx(m_MonData.DisplayName, &displayMode, nullptr, CDS_FULLSCREEN, nullptr);
-//	if (ChangeDisplayResult != DISP_CHANGE_SUCCESSFUL)
+//	if (displayMode.dmPelsWidth != 1280 || displayMode.dmPelsHeight != 1470)
 //	{
-//		MessageBox(NULL, L"Error: Failed to change display mode.", L"Error", 0);
+//		displayMode.dmPelsWidth = 1280;
+//		displayMode.dmPelsHeight = 1470;
+//		displayMode.dmBitsPerPel = 32;
+//		displayMode.dmDisplayFrequency = 60;
+//		int ChangeDisplayResult = ChangeDisplaySettingsEx(m_MonData.DisplayName, &displayMode, nullptr, CDS_FULLSCREEN, nullptr);
+//		if (ChangeDisplayResult != DISP_CHANGE_SUCCESSFUL)
+//		{
+//			MessageBox(NULL, L"Error: Failed to change display mode.", L"Error", 0);
+//			return vr::VRInitError_VendorSpecific_HmdFound_CantOpenDevice;
+//		}
 //	}
-//
 //	//tekrar al yeni halini
 //	//EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, (LPARAM)&m_MonData);
 //#endif //HMD_MODE_AMD
@@ -40,6 +44,7 @@ EVRInitError CClientDriver::Init(IDriverLog * pDriverLog, IClientDriverHost * pD
 		}
 		m_bInit = true;
 	}
+	EnableAMDHD3D();
 	return vr::VRInitError_None;
 }
 
@@ -62,7 +67,7 @@ bool CClientDriver::BIsHmdPresent(const char * pchUserConfigDir)
 
 EVRInitError CClientDriver::SetDisplayId(const char * pchDisplayId)
 {
-	//TRACE(__FUNCTIONW__);
+	//TRACE(__FUNCTIONW__);	
 	return vr::VRInitError_None;
 }
 

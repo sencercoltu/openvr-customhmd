@@ -3,6 +3,7 @@
 
 EVRInitError CServerDriver::Init(IDriverLog * pDriverLog, IServerDriverHost * pDriverHost, const char * pchUserDriverConfigDir, const char * pchDriverInstallDir)
 {
+	//MessageBox(NULL, L"CServerDriver::Init.", L"Info", 0);
 //	TRACE(__FUNCTIONW__);
 	logger_ = pDriverLog;
 	driverHost_ = pDriverHost;

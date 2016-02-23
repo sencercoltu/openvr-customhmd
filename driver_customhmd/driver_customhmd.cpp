@@ -64,7 +64,6 @@ BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMoni
 							pMonData->HMD_HEIGHT = monInfo.rcMonitor.bottom - monInfo.rcMonitor.top;
 #ifdef HMD_MODE_AMD
 							pMonData->HMD_ASPECT = (float)pMonData->HMD_WIDTH / (float)(pMonData->HMD_HEIGHT - 30) / 2;
-							//pMonData->HMD_ASPECT = (float)pMonData->HMD_WIDTH / (float)pMonData->HMD_HEIGHT;
 #else 
 							pMonData->HMD_ASPECT = (float)pMonData->HMD_WIDTH / (float)pMonData->HMD_HEIGHT;
 #endif 
@@ -111,4 +110,32 @@ void HmdMatrix_SetIdentity(vr::HmdMatrix34_t *pMatrix)
 	pMatrix->m[2][1] = 0.f;
 	pMatrix->m[2][2] = 1.f;
 	pMatrix->m[2][3] = 0.f;
+}
+
+void EnableAMDHD3D()
+{
+#ifdef HMD_MODE_AMD
+	MonitorData m_MonData = {};
+	EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, (LPARAM)&m_MonData);
+
+	//	TRACE(__FUNCTIONW__);
+	DEVMODE displayMode = {};
+	displayMode.dmSize = sizeof(DEVMODE);
+	EnumDisplaySettings(m_MonData.DisplayName, ENUM_CURRENT_SETTINGS, &displayMode);
+
+	if (displayMode.dmPelsWidth != 1280 || displayMode.dmPelsHeight != 1470)
+	{
+		displayMode.dmPelsWidth = 1280;
+		displayMode.dmPelsHeight = 1470;
+		displayMode.dmBitsPerPel = 32;
+		displayMode.dmDisplayFrequency = 60;
+		int ChangeDisplayResult = ChangeDisplaySettingsEx(m_MonData.DisplayName, &displayMode, nullptr, CDS_FULLSCREEN, nullptr);
+		if (ChangeDisplayResult != DISP_CHANGE_SUCCESSFUL)
+		{
+			MessageBox(NULL, L"Error: Failed to change display mode.", L"Error", 0);
+		}
+	}
+	//tekrar al yeni halini
+	//EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, (LPARAM)&m_MonData);
+#endif //HMD_MODE_AMD
 }
