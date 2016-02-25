@@ -10,7 +10,7 @@ EVRInitError CClientDriver::Init(IDriverLog * pDriverLog, IClientDriverHost * pD
 	driverInstallDir_ = pchDriverInstallDir;
 	
 
-//#ifdef HMD_MODE_AMD	
+//#ifdef HMD_MODE_FAKEPACK	
 //	MonitorData m_MonData = {};
 //	EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, (LPARAM)&m_MonData);
 //
@@ -34,7 +34,7 @@ EVRInitError CClientDriver::Init(IDriverLog * pDriverLog, IClientDriverHost * pD
 //	}
 //	//tekrar al yeni halini
 //	//EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, (LPARAM)&m_MonData);
-//#endif //HMD_MODE_AMD
+//#endif //HMD_MODE_FAKEPACK
 
 	if (!m_bInit)
 	{
@@ -44,7 +44,7 @@ EVRInitError CClientDriver::Init(IDriverLog * pDriverLog, IClientDriverHost * pD
 		}
 		m_bInit = true;
 	}
-	EnableAMDHD3D();
+	EnableFakePack();
 	return vr::VRInitError_None;
 }
 

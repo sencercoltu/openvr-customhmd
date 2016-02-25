@@ -14,7 +14,7 @@
 #define HMD_DLL_EXPORT extern "C" __declspec(dllexport)
 #define HMD_DLL_IMPORT extern "C" __declspec(dllimport)
 
-#define HMD_MODE_AMD 
+#define HMD_MODE_FAKEPACK 
 #define HMD_SUPERSAMPLE 2.0
 
 struct MonitorData
@@ -34,7 +34,7 @@ BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMoni
 vr::HmdQuaternion_t HmdQuaternion_Init(double w, double x, double y, double z);
 void HmdMatrix_SetIdentity(vr::HmdMatrix34_t *pMatrix);
 
-void EnableAMDHD3D();
+void EnableFakePack();
 
 
 #endif // Common_H

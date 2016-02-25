@@ -5,6 +5,7 @@
 
 CTrackedDevice::CTrackedDevice(std::string id, CServerDriver *pServer)
 {
+	
 	//	TRACE(__FUNCTIONW__);
 	m_unObjectId = vr::k_unTrackedDeviceIndexInvalid;
 
@@ -26,15 +27,16 @@ CTrackedDevice::CTrackedDevice(std::string id, CServerDriver *pServer)
 	m_MonData = { 0 };
 	m_MonData.HMD_POSX = 0;
 	m_MonData.HMD_POSY = -1480;
-#ifdef HMD_MODE_AMD
+#ifdef HMD_MODE_FAKEPACK
 	m_MonData.HMD_WIDTH = 1280;
 	m_MonData.HMD_HEIGHT = 1470;
 	m_MonData.HMD_ASPECT = ((float)(m_MonData.HMD_HEIGHT - 30) / 2.0f) / (float)m_MonData.HMD_WIDTH;
-#else //HMD_MODE_AMD
+#else //HMD_MODE_FAKEPACK
+	
 	m_MonData.HMD_WIDTH = 1920;
 	m_MonData.HMD_HEIGHT = 1080;
 	m_MonData.HMD_ASPECT = (float)m_MonData.HMD_WIDTH / (float)m_MonData.HMD_HEIGHT;
-#endif //HMD_MODE_AMD
+#endif //HMD_MODE_FAKEPACK
 	m_MonData.HMD_FREQ = 60;
 	m_MonData.HMD_FOUND = false;
 
@@ -54,7 +56,7 @@ unsigned int WINAPI CTrackedDevice::ProcessThread(void *p)
 
 void CTrackedDevice::Run()
 {
-	EnableAMDHD3D();
+	EnableFakePack();
 	m_pDriverHost->TrackedDevicePropertiesChanged(m_unObjectId);
 
 	//	TRACE(__FUNCTIONW__);
@@ -341,20 +343,20 @@ void CTrackedDevice::GetRecommendedRenderTargetSize(uint32_t * pnWidth, uint32_t
 {
 	//	TRACE(__FUNCTIONW__);
 	
-#ifdef HMD_MODE_AMD
+#ifdef HMD_MODE_FAKEPACK
 	*pnWidth = m_MonData.HMD_WIDTH;
 	*pnHeight = (m_MonData.HMD_HEIGHT - 30) / 2;
-#else // HMD_MODE_AMD
+#else // HMD_MODE_FAKEPACK
 	*pnWidth = m_MonData.HMD_WIDTH;
 	*pnHeight = m_MonData.HMD_HEIGHT;
-#endif // HMD_MODE_AMD
+#endif // HMD_MODE_FAKEPACK
 	*pnWidth = uint32_t(*pnWidth * HMD_SUPERSAMPLE);
 	*pnHeight = uint32_t(*pnHeight * HMD_SUPERSAMPLE);
 }
 
 void CTrackedDevice::GetEyeOutputViewport(EVREye eEye, uint32_t * pnX, uint32_t * pnY, uint32_t * pnWidth, uint32_t * pnHeight)
 {
-#ifdef HMD_MODE_AMD
+#ifdef HMD_MODE_FAKEPACK
 	//	TRACE(__FUNCTIONW__);
 	uint32_t h = (m_MonData.HMD_HEIGHT - 30) / 2;
 	switch (eEye)
@@ -372,7 +374,7 @@ void CTrackedDevice::GetEyeOutputViewport(EVREye eEye, uint32_t * pnX, uint32_t 
 		*pnHeight = h;
 		break;
 	}
-#else // HMD_MODE_AMD
+#else // HMD_MODE_FAKEPACK
 	//	TRACE(__FUNCTIONW__);
 	switch (eEye)
 	{
@@ -389,13 +391,13 @@ void CTrackedDevice::GetEyeOutputViewport(EVREye eEye, uint32_t * pnX, uint32_t 
 		*pnHeight = m_MonData.HMD_HEIGHT;
 		break;
 	}
-#endif // HMD_MODE_AMD
+#endif // HMD_MODE_FAKEPACK
 }
 
 void CTrackedDevice::GetProjectionRaw(EVREye eEye, float * pfLeft, float * pfRight, float * pfTop, float * pfBottom)
 {
 	////	TRACE(__FUNCTIONW__);
-#ifdef HMD_MODE_AMD
+#ifdef HMD_MODE_FAKEPACK
 	switch (eEye)
 	{
 	case EVREye::Eye_Left:
@@ -411,7 +413,7 @@ void CTrackedDevice::GetProjectionRaw(EVREye eEye, float * pfLeft, float * pfRig
 		*pfBottom = 1.0f * m_MonData.HMD_ASPECT;
 		break;
 	}
-#else //HMD_MODE_AMD
+#else //HMD_MODE_FAKEPACK
 	switch (eEye)
 	{
 	case EVREye::Eye_Left:
@@ -427,7 +429,7 @@ void CTrackedDevice::GetProjectionRaw(EVREye eEye, float * pfLeft, float * pfRig
 		*pfBottom = 1.0f / m_MonData.HMD_ASPECT;
 		break;
 	}
-#endif //HMD_MODE_AMD
+#endif //HMD_MODE_FAKEPACK
 }
 
 DistortionCoordinates_t CTrackedDevice::ComputeDistortion(EVREye eEye, float fU, float fV)
