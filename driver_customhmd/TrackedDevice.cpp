@@ -26,7 +26,7 @@ CTrackedDevice::CTrackedDevice(std::string id, CServerDriver *pServer)
 	m_PIDValue = 0.005f;
 	m_MonData = { 0 };
 	m_MonData.HMD_POSX = 0;
-	m_MonData.HMD_POSY = -1480;
+	m_MonData.HMD_POSY = -1470;
 #ifdef HMD_MODE_FAKEPACK
 	m_MonData.HMD_WIDTH = 1280;
 	m_MonData.HMD_HEIGHT = 1470;

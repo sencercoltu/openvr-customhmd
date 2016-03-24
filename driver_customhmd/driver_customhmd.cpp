@@ -114,6 +114,7 @@ void HmdMatrix_SetIdentity(vr::HmdMatrix34_t *pMatrix)
 
 void EnableFakePack()
 {
+	return;
 #ifdef HMD_MODE_FAKEPACK
 	MonitorData m_MonData = {};
 	EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, (LPARAM)&m_MonData);
