@@ -150,14 +150,17 @@
     <ClCompile Include="driver_customhmd.cpp" />
     <ClCompile Include="Serial.cpp" />
     <ClCompile Include="ServerDriver.cpp" />
-    <ClCompile Include="TrackedDevice.cpp" />
+    <ClCompile Include="TrackedController.cpp" />
+    <ClCompile Include="TrackedHMD.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\OpenVR\headers\openvr_driver.h" />
     <ClInclude Include="ClientDriver.h" />
     <ClInclude Include="Common.h" />
-    <ClInclude Include="Serial.h" />
+    <ClInclude Include="TrackedController.h" />
     <ClInclude Include="TrackedDevice.h" />
+    <ClInclude Include="Serial.h" />
+    <ClInclude Include="TrackedHMD.h" />
     <ClInclude Include="ServerDriver.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -9,13 +9,14 @@
 #include <memory>
 #include <string>
 
+
 //#define TRACE(a) OutputDebugString(a"\n")
 
 #define HMD_DLL_EXPORT extern "C" __declspec(dllexport)
 #define HMD_DLL_IMPORT extern "C" __declspec(dllimport)
 
 #define HMD_MODE_FAKEPACK 
-#define HMD_SUPERSAMPLE 2.0
+#define HMD_SUPERSAMPLE 1.0
 
 struct MonitorData
 {
@@ -33,8 +34,5 @@ BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMoni
 
 vr::HmdQuaternion_t HmdQuaternion_Init(double w, double x, double y, double z);
 void HmdMatrix_SetIdentity(vr::HmdMatrix34_t *pMatrix);
-
 void EnableFakePack();
-
-
 #endif // Common_H

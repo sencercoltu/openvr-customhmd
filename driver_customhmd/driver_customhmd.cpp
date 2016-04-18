@@ -39,7 +39,7 @@ BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMoni
 		ZeroMemory(&ddMon, sizeof(ddMon));
 		ddMon.cb = sizeof(ddMon);
 		DWORD devMon = 0;
-
+		
 		while (EnumDisplayDevices(monInfo.szDevice, devMon, &ddMon, 0))
 		{
 			if (ddMon.StateFlags & DISPLAY_DEVICE_ACTIVE &&
@@ -114,7 +114,7 @@ void HmdMatrix_SetIdentity(vr::HmdMatrix34_t *pMatrix)
 
 void EnableFakePack()
 {
-	return;
+	//return;
 #ifdef HMD_MODE_FAKEPACK
 	MonitorData m_MonData = {};
 	EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, (LPARAM)&m_MonData);
@@ -134,7 +134,10 @@ void EnableFakePack()
 		if (ChangeDisplayResult != DISP_CHANGE_SUCCESSFUL)
 		{
 			MessageBox(NULL, L"Error: Failed to change display mode.", L"Error", 0);
+			return;
 		}
+		//MessageBox(NULL, L"Resolution set", L"Info", 0);
+		//Sleep(2000);
 	}
 	//tekrar al yeni halini
 	//EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, (LPARAM)&m_MonData);

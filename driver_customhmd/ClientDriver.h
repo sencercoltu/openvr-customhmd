@@ -14,8 +14,8 @@ public:
 	virtual bool BIsHmdPresent(const char * pchUserConfigDir) override;
 	virtual EVRInitError SetDisplayId(const char * pchDisplayId) override;
 	virtual HiddenAreaMesh_t GetHiddenAreaMesh(EVREye eEye) override;
-	virtual uint32_t GetMCImage(uint32_t * pImgWidth, uint32_t * pImgHeight, uint32_t * pChannels, void * pDataBuffer, uint32_t unBufferLen) override;
-private:
+	virtual uint32_t GetMCImage(uint32_t * pImgWidth, uint32_t * pImgHeight, uint32_t * pChannels, void * pDataBuffer, uint32_t unBufferLen) override;	
+private:	
 	IDriverLog* logger_ = nullptr;
 	IClientDriverHost* driverHost_ = nullptr;
 	std::string userDriverConfigDir_;

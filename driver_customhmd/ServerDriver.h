@@ -2,10 +2,10 @@
 #define ServerDriver_H
 
 #include "Common.h"	
-#include "TrackedDevice.h"
-
 
 using namespace vr;
+class CTrackedDevice;
+
 class CServerDriver : 
 	public IServerTrackedDeviceProvider
 {	

@@ -8,34 +8,6 @@ EVRInitError CClientDriver::Init(IDriverLog * pDriverLog, IClientDriverHost * pD
 	driverHost_ = pDriverHost;
 	userDriverConfigDir_ = pchUserDriverConfigDir;
 	driverInstallDir_ = pchDriverInstallDir;
-	
-
-//#ifdef HMD_MODE_FAKEPACK	
-//	MonitorData m_MonData = {};
-//	EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, (LPARAM)&m_MonData);
-//
-//	//	TRACE(__FUNCTIONW__);
-//	DEVMODE displayMode = {};
-//	displayMode.dmSize = sizeof(DEVMODE);
-//	EnumDisplaySettings(m_MonData.DisplayName, ENUM_CURRENT_SETTINGS, &displayMode);
-//
-//	if (displayMode.dmPelsWidth != 1280 || displayMode.dmPelsHeight != 1470)
-//	{
-//		displayMode.dmPelsWidth = 1280;
-//		displayMode.dmPelsHeight = 1470;
-//		displayMode.dmBitsPerPel = 32;
-//		displayMode.dmDisplayFrequency = 60;
-//		int ChangeDisplayResult = ChangeDisplaySettingsEx(m_MonData.DisplayName, &displayMode, nullptr, CDS_FULLSCREEN, nullptr);
-//		if (ChangeDisplayResult != DISP_CHANGE_SUCCESSFUL)
-//		{
-//			MessageBox(NULL, L"Error: Failed to change display mode.", L"Error", 0);
-//			return vr::VRInitError_VendorSpecific_HmdFound_CantOpenDevice;
-//		}
-//	}
-//	//tekrar al yeni halini
-//	//EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, (LPARAM)&m_MonData);
-//#endif //HMD_MODE_FAKEPACK
-
 	if (!m_bInit)
 	{
 		if (driverHost_)
@@ -43,8 +15,8 @@ EVRInitError CClientDriver::Init(IDriverLog * pDriverLog, IClientDriverHost * pD
 			IVRSettings *pSettings = driverHost_->GetSettings(vr::IVRSettings_Version);
 		}
 		m_bInit = true;
-	}
-	EnableFakePack();
+	}	
+	//MessageBox(NULL, L"Clientdriver init", L"Info", 0);
 	return vr::VRInitError_None;
 }
 
@@ -58,7 +30,7 @@ void CClientDriver::Cleanup()
 }
 
 bool CClientDriver::BIsHmdPresent(const char * pchUserConfigDir)
-{
+{	
 	//TRACE(__FUNCTIONW__);
 	MonitorData monData = { 0 };
 	EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, (LPARAM)&monData);
@@ -68,6 +40,8 @@ bool CClientDriver::BIsHmdPresent(const char * pchUserConfigDir)
 EVRInitError CClientDriver::SetDisplayId(const char * pchDisplayId)
 {
 	//TRACE(__FUNCTIONW__);	
+	//EnableFakePack();		
+	//MessageBox(NULL, L"Displayid set", wstr.c_str(), 0);	
 	return vr::VRInitError_None;
 }
 
