@@ -15,13 +15,13 @@
 #define HMD_DLL_EXPORT extern "C" __declspec(dllexport)
 #define HMD_DLL_IMPORT extern "C" __declspec(dllimport)
 
-#define HMD_MODE_FAKEPACK 
 #define HMD_SUPERSAMPLE 1.0
 
 struct MonitorData
 {
 	WCHAR DisplayName[CCHDEVICENAME];
 	bool HMD_FOUND;
+	bool HMD_FAKEPACK;
 	int HMD_POSX;
 	int HMD_POSY;
 	int HMD_WIDTH;

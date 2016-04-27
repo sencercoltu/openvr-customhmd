@@ -22,25 +22,19 @@ CTrackedHMD::CTrackedHMD(std::string id, CServerDriver *pServer) : CTrackedDevic
 	m_PIDValue = 0.05f;
 	m_MonData = { 0 };
 	m_MonData.HMD_POSX = 0;
-	m_MonData.HMD_POSY = -1470;
-#ifdef HMD_MODE_FAKEPACK
-	m_MonData.HMD_WIDTH = 1280;
-	m_MonData.HMD_HEIGHT = 1470;
-	m_MonData.HMD_ASPECT = ((float)(m_MonData.HMD_HEIGHT - 30) / 2.0f) / (float)m_MonData.HMD_WIDTH;
-#else //HMD_MODE_FAKEPACK	
+	m_MonData.HMD_POSY = 0;
 	m_MonData.HMD_WIDTH = 1920;
 	m_MonData.HMD_HEIGHT = 1080;
 	m_MonData.HMD_ASPECT = (float)m_MonData.HMD_WIDTH / (float)m_MonData.HMD_HEIGHT;
-#endif //HMD_MODE_FAKEPACK
 	m_MonData.HMD_FREQ = 60;
 	m_MonData.HMD_FOUND = false;
-	//EnableFakePack();
+	m_MonData.HMD_FAKEPACK = false;	
 	EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, (LPARAM)&m_MonData);
+}
 
-	//m_MonData.HMD_POSX = 0;
-	//m_MonData.HMD_POSY = 0;
-	//m_MonData.HMD_WIDTH /= 2;
-	//m_MonData.HMD_HEIGHT /= 2;
+CTrackedHMD::~CTrackedHMD()
+{
+	//Deactivate();
 }
 
 unsigned int WINAPI CTrackedHMD::ProcessThread(void *p)
@@ -226,12 +220,12 @@ void CTrackedHMD::Run()
 
 			//deðerler radyan *10000 geliyo seriden
 			_yawRaw = (double)htData.yaw / -10000.0;
-			_pitchRaw = (double)htData.pitch / 10000.0;
-			_rollRaw = (double)htData.roll / -10000.0;
+			_pitchRaw = (double)htData.pitch / -10000.0;
+			_rollRaw = (double)htData.roll / 10000.0;
 
 			//if diff is greater than 2 degrees, do minimal smoothing
 			//the smaller the movement(noise), the more smoothing
-			auto smooth = 0.0174533*2.0;
+			auto smooth = 0.03490658503;
 			if (firstPacket)
 			{
 				firstPacket = false;
@@ -240,28 +234,44 @@ void CTrackedHMD::Run()
 				rollPrev = _rollRaw;
 			}
 
-			//auto yawDiff = abs(yawPrev - _yawRaw); if (yawDiff >= smooth) yawDiff = smooth * 0.99f; _yawRaw = (_yawRaw * yawDiff + yawPrev * (smooth - yawDiff)) / smooth;
-			//auto pitchDiff = abs(pitchPrev - _pitchRaw); if (pitchDiff >= smooth) pitchDiff = smooth * 0.99f; _pitchRaw = (_pitchRaw * pitchDiff + pitchPrev * (smooth - pitchDiff)) / smooth;
-			//auto rollDiff = abs(rollPrev - _rollRaw); if (rollDiff >= smooth) rollDiff = smooth * 0.99f; _rollRaw = (_rollRaw * rollDiff + rollPrev * (smooth - rollDiff)) / smooth;
+			auto yawDiff = abs(yawPrev - _yawRaw); if (yawDiff >= smooth) yawDiff = smooth * 0.99f; _yawRaw = (_yawRaw * yawDiff + yawPrev * (smooth - yawDiff)) / smooth;
+			auto pitchDiff = abs(pitchPrev - _pitchRaw); if (pitchDiff >= smooth) pitchDiff = smooth * 0.99f; _pitchRaw = (_pitchRaw * pitchDiff + pitchPrev * (smooth - pitchDiff)) / smooth;
+			auto rollDiff = abs(rollPrev - _rollRaw); if (rollDiff >= smooth) rollDiff = smooth * 0.99f; _rollRaw = (_rollRaw * rollDiff + rollPrev * (smooth - rollDiff)) / smooth;
 
 			_yaw = (_yawRaw - _yawCenter);
 			_pitch = (_pitchRaw - _pitchCenter);
 			_roll = (_rollRaw - _rollCenter);
 
 
-			double num9 = -_roll * 0.5f;
-			double num6 = sin(num9);
-			double num5 = cos(num9);
-			double num8 = -_pitch * 0.5f;
-			double num4 = sin(num8);
-			double num3 = cos(num8);
-			double num7 = _yaw * 0.5f;
-			double num2 = sin(num7);
-			double num = cos(num7);
-			m_Pose.qRotation.x = ((num * num4) * num5) + ((num2 * num3) * num6);
-			m_Pose.qRotation.y = ((num2 * num3) * num5) - ((num * num4) * num6);
-			m_Pose.qRotation.z = ((num * num3) * num6) - ((num2 * num4) * num5);
-			m_Pose.qRotation.w = ((num * num3) * num5) + ((num2 * num4) * num6);
+			//double alpha = -_roll * 0.5f;
+			//double sinAlpha = sin(alpha);
+			//double cosAlpha = cos(alpha);
+			//double num8 = -_pitch * 0.5f;
+			//double num4 = sin(num8);
+			//double num3 = cos(num8);
+			//double num7 = _yaw * 0.5f;
+			//double num2 = sin(num7);
+			//double num = cos(num7);
+			//m_Pose.qRotation.x = ((num * num4) * cosAlpha) + ((num2 * num3) * sinAlpha);
+			//m_Pose.qRotation.y = ((num2 * num3) * cosAlpha) - ((num * num4) * sinAlpha);
+			//m_Pose.qRotation.z = ((num * num3) * sinAlpha) - ((num2 * num4) * cosAlpha);
+			//m_Pose.qRotation.w = ((num * num3) * cosAlpha) + ((num2 * num4) * sinAlpha);
+
+
+
+			double c1 = cos(_yaw / 2.0);
+			double s1 = sin(_yaw / 2.0);
+			double c2 = cos(_roll / 2.0);
+			double s2 = sin(_roll / 2.0);
+			double c3 = cos(_pitch / 2.0);
+			double s3 = sin(_pitch / 2.0);
+			double c1c2 = c1*c2;
+			double s1s2 = s1*s2;
+			m_Pose.qRotation.w = c1c2*c3 - s1s2*s3;
+			m_Pose.qRotation.x = c1c2*s3 + s1s2*c3;
+			m_Pose.qRotation.y = s1*c2*c3 + c1*s2*s3;
+			m_Pose.qRotation.z = c1*s2*c3 - s1*c2*s3;
+
 
 			//m_Pose.poseIsValid = true;
 			//m_Pose.result = ETrackingResult::TrackingResult_Running_OK;
@@ -345,6 +355,7 @@ void CTrackedHMD::GetWindowBounds(int32_t * pnX, int32_t * pnY, uint32_t * pnWid
 bool CTrackedHMD::IsDisplayOnDesktop()
 {
 	//	MessageBox(NULL, L"IsDisplayOnDesktop", L"Info", 0);
+	//return true;
 	return true;
 }
 
@@ -359,13 +370,16 @@ void CTrackedHMD::GetRecommendedRenderTargetSize(uint32_t * pnWidth, uint32_t * 
 {
 	//	TRACE(__FUNCTIONW__);
 //	MessageBox(NULL, L"GetRecommendedRenderTargetSize", L"Info", 0);
-#ifdef HMD_MODE_FAKEPACK
-	*pnWidth = m_MonData.HMD_WIDTH;
-	*pnHeight = (m_MonData.HMD_HEIGHT - 30) / 2;
-#else // HMD_MODE_FAKEPACK
-	*pnWidth = m_MonData.HMD_WIDTH;
-	*pnHeight = m_MonData.HMD_HEIGHT;
-#endif // HMD_MODE_FAKEPACK
+	if (m_MonData.HMD_FAKEPACK)
+	{
+		*pnWidth = m_MonData.HMD_WIDTH;
+		*pnHeight = (m_MonData.HMD_HEIGHT - 30) / 2;
+	}
+	else
+	{
+		*pnWidth = m_MonData.HMD_WIDTH;
+		*pnHeight = m_MonData.HMD_HEIGHT;
+	}
 	*pnWidth = uint32_t(*pnWidth * HMD_SUPERSAMPLE);
 	*pnHeight = uint32_t(*pnHeight * HMD_SUPERSAMPLE);
 }
@@ -373,81 +387,86 @@ void CTrackedHMD::GetRecommendedRenderTargetSize(uint32_t * pnWidth, uint32_t * 
 void CTrackedHMD::GetEyeOutputViewport(EVREye eEye, uint32_t * pnX, uint32_t * pnY, uint32_t * pnWidth, uint32_t * pnHeight)
 {
 	//	MessageBox(NULL, L"GetEyeOutputViewport", L"Info", 0);
-#ifdef HMD_MODE_FAKEPACK
-	//	TRACE(__FUNCTIONW__);
-	uint32_t h = (m_MonData.HMD_HEIGHT - 30) / 2;
-	switch (eEye)
+	if (m_MonData.HMD_FAKEPACK)
 	{
-	case EVREye::Eye_Left:
-		*pnX = 0;
-		*pnY = h + 30;
-		*pnWidth = m_MonData.HMD_WIDTH;
-		*pnHeight = h;
-		break;
-	case EVREye::Eye_Right:
-		*pnX = 0;
-		*pnY = 0;
-		*pnWidth = m_MonData.HMD_WIDTH;
-		*pnHeight = h;
-		break;
+		//	TRACE(__FUNCTIONW__);
+		uint32_t h = (m_MonData.HMD_HEIGHT - 30) / 2;
+		switch (eEye)
+		{
+		case EVREye::Eye_Left:
+			*pnX = 0;
+			*pnY = h + 30;
+			*pnWidth = m_MonData.HMD_WIDTH;
+			*pnHeight = h;
+			break;
+		case EVREye::Eye_Right:
+			*pnX = 0;
+			*pnY = 0;
+			*pnWidth = m_MonData.HMD_WIDTH;
+			*pnHeight = h;
+			break;
+		}
 	}
-#else // HMD_MODE_FAKEPACK
-	//	TRACE(__FUNCTIONW__);
-	switch (eEye)
-	{
-	case EVREye::Eye_Left:
-		*pnX = 0;
-		*pnY = 0;
-		*pnWidth = m_MonData.HMD_WIDTH / 2;
-		*pnHeight = m_MonData.HMD_HEIGHT;
-		break;
-	case EVREye::Eye_Right:
-		*pnX = 0 + (m_MonData.HMD_WIDTH / 2);
-		*pnY = 0;
-		*pnWidth = m_MonData.HMD_WIDTH / 2;
-		*pnHeight = m_MonData.HMD_HEIGHT;
-		break;
+	else 
+	{		
+		switch (eEye)
+		{
+		case EVREye::Eye_Left:
+			*pnX = 0;
+			*pnY = 0;
+			*pnWidth = m_MonData.HMD_WIDTH / 2;
+			*pnHeight = m_MonData.HMD_HEIGHT;
+			break;
+		case EVREye::Eye_Right:
+			*pnX = 0 + (m_MonData.HMD_WIDTH / 2);
+			*pnY = 0;
+			*pnWidth = m_MonData.HMD_WIDTH / 2;
+			*pnHeight = m_MonData.HMD_HEIGHT;
+			break;
+		}
 	}
-#endif // HMD_MODE_FAKEPACK
 }
 
 void CTrackedHMD::GetProjectionRaw(EVREye eEye, float * pfLeft, float * pfRight, float * pfTop, float * pfBottom)
 {
 	//	MessageBox(NULL, L"GetProjectionRaw", L"Info", 0);
 		////	TRACE(__FUNCTIONW__);
-#ifdef HMD_MODE_FAKEPACK
-	switch (eEye)
+	if (m_MonData.HMD_FAKEPACK)
 	{
-	case EVREye::Eye_Left:
-		*pfLeft = -1.0f;
-		*pfRight = 1.0f;
-		*pfTop = -1.0f * m_MonData.HMD_ASPECT;
-		*pfBottom = 1.0f * m_MonData.HMD_ASPECT;
-		break;
-	case EVREye::Eye_Right:
-		*pfLeft = -1.0f;
-		*pfRight = 1.0f;
-		*pfTop = -1.0f * m_MonData.HMD_ASPECT;
-		*pfBottom = 1.0f * m_MonData.HMD_ASPECT;
-		break;
+		switch (eEye)
+		{
+		case EVREye::Eye_Left:
+			*pfLeft = -1.0f;
+			*pfRight = 1.0f;
+			*pfTop = -1.0f * m_MonData.HMD_ASPECT;
+			*pfBottom = 1.0f * m_MonData.HMD_ASPECT;
+			break;
+		case EVREye::Eye_Right:
+			*pfLeft = -1.0f;
+			*pfRight = 1.0f;
+			*pfTop = -1.0f * m_MonData.HMD_ASPECT;
+			*pfBottom = 1.0f * m_MonData.HMD_ASPECT;
+			break;
+		}
 	}
-#else //HMD_MODE_FAKEPACK
-	switch (eEye)
+	else
 	{
-	case EVREye::Eye_Left:
-		*pfLeft = -1.0f;
-		*pfRight = 1.0f;
-		*pfTop = -1.0f / m_MonData.HMD_ASPECT;
-		*pfBottom = 1.0f / m_MonData.HMD_ASPECT;
-		break;
-	case EVREye::Eye_Right:
-		*pfLeft = -1.0f;
-		*pfRight = 1.0f;
-		*pfTop = -1.0f / m_MonData.HMD_ASPECT;
-		*pfBottom = 1.0f / m_MonData.HMD_ASPECT;
-		break;
+		switch (eEye)
+		{
+		case EVREye::Eye_Left:
+			*pfLeft = -1.0f;
+			*pfRight = 1.0f;
+			*pfTop = -1.0f / m_MonData.HMD_ASPECT;
+			*pfBottom = 1.0f / m_MonData.HMD_ASPECT;
+			break;
+		case EVREye::Eye_Right:
+			*pfLeft = -1.0f;
+			*pfRight = 1.0f;
+			*pfTop = -1.0f / m_MonData.HMD_ASPECT;
+			*pfBottom = 1.0f / m_MonData.HMD_ASPECT;
+			break;
+		}
 	}
-#endif //HMD_MODE_FAKEPACK
 }
 
 DistortionCoordinates_t CTrackedHMD::ComputeDistortion(EVREye eEye, float fU, float fV)
@@ -474,7 +493,7 @@ bool CTrackedHMD::GetBoolTrackedDeviceProperty(ETrackedDeviceProperty prop, ETra
 
 	switch (prop)
 	{
-	case vr::Prop_IsOnDesktop_Bool: // avoid "not fullscreen" warnings from vrmonitor
+	case vr::Prop_IsOnDesktop_Bool: 
 		if (pError)
 			*pError = vr::TrackedProp_Success;
 		return false;
@@ -518,11 +537,11 @@ float CTrackedHMD::GetFloatTrackedDeviceProperty(ETrackedDeviceProperty prop, ET
 	case vr::Prop_SecondsFromVsyncToPhotons_Float:
 		if (pError)
 			*pError = vr::TrackedProp_Success;
-		return 200.0f;
+		return 0.0f;
 	case vr::Prop_DisplayFrequency_Float:
 		if (pError)
 			*pError = vr::TrackedProp_Success;
-		return m_MonData.HMD_FREQ * 2;
+		return m_MonData.HMD_FREQ;
 	case vr::Prop_UserIpdMeters_Float:
 		if (pError)
 			*pError = vr::TrackedProp_Success;
@@ -562,18 +581,18 @@ int32_t CTrackedHMD::GetInt32TrackedDeviceProperty(ETrackedDeviceProperty prop, 
 
 	switch (prop)
 	{
-	case vr::Prop_DeviceClass_Int32:
-		if (pError)
-			*pError = vr::TrackedProp_Success;
-		return vr::TrackedDeviceClass_HMD;
+		case vr::Prop_DeviceClass_Int32:
+			if (pError)
+				*pError = vr::TrackedProp_Success;
+			return vr::TrackedDeviceClass_HMD;
 		//case vr::Prop_EdidVendorID_Int32:
 		//	if (pError)
 		//		*pError = vr::TrackedProp_Success;
-		//	return 0x22fa;
+		//	return 1027;
 		//case vr::Prop_EdidProductID_Int32:
 		//	if (pError)
 		//		*pError = vr::TrackedProp_Success;
-		//	return 0x0101;
+		//	return 24577;
 		//case vr::Prop_DisplayMCType_Int32:
 		//case vr::Prop_DisplayGCType_Int32:
 		//case vr::Prop_Axis0Type_Int32:

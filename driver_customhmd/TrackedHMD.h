@@ -10,7 +10,9 @@ class CTrackedHMD :
 	public CTrackedDevice,
 	public IVRDisplayComponent	
 {
-public:
+public:	
+	~CTrackedHMD();
+
 	virtual EVRInitError Activate(uint32_t unObjectId) override;
 	virtual void Deactivate() override;
 	virtual void *GetComponent(const char *pchComponentNameAndVersion) override;

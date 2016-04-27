@@ -62,11 +62,13 @@ BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMoni
 							pMonData->HMD_POSY = monInfo.rcMonitor.top;
 							pMonData->HMD_WIDTH = monInfo.rcMonitor.right - monInfo.rcMonitor.left;
 							pMonData->HMD_HEIGHT = monInfo.rcMonitor.bottom - monInfo.rcMonitor.top;
-#ifdef HMD_MODE_FAKEPACK
-							pMonData->HMD_ASPECT = ((float)(pMonData->HMD_HEIGHT - 30) / 2.0f) / (float)pMonData->HMD_WIDTH;
-#else 
-							pMonData->HMD_ASPECT = (float)pMonData->HMD_WIDTH / (float)pMonData->HMD_HEIGHT;
-#endif 
+							pMonData->HMD_FAKEPACK = false;
+							if (pMonData->HMD_WIDTH == 1280 && pMonData->HMD_HEIGHT == 1470)
+								pMonData->HMD_FAKEPACK = true;
+							if (pMonData->HMD_FAKEPACK)
+								pMonData->HMD_ASPECT = ((float)(pMonData->HMD_HEIGHT - 30) / 2.0f) / (float)pMonData->HMD_WIDTH;
+							else
+								pMonData->HMD_ASPECT = (float)pMonData->HMD_WIDTH / (float)pMonData->HMD_HEIGHT;
 							DEVMODE devMode = {};
 							devMode.dmSize = sizeof(DEVMODE);
 							if (EnumDisplaySettings(monInfo.szDevice, ENUM_CURRENT_SETTINGS, &devMode))
@@ -110,36 +112,4 @@ void HmdMatrix_SetIdentity(vr::HmdMatrix34_t *pMatrix)
 	pMatrix->m[2][1] = 0.f;
 	pMatrix->m[2][2] = 1.f;
 	pMatrix->m[2][3] = 0.f;
-}
-
-void EnableFakePack()
-{
-	//return;
-#ifdef HMD_MODE_FAKEPACK
-	MonitorData m_MonData = {};
-	EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, (LPARAM)&m_MonData);
-
-	//	TRACE(__FUNCTIONW__);
-	DEVMODE displayMode = {};
-	displayMode.dmSize = sizeof(DEVMODE);
-	EnumDisplaySettings(m_MonData.DisplayName, ENUM_CURRENT_SETTINGS, &displayMode);
-
-	if (displayMode.dmPelsWidth != 1280 || displayMode.dmPelsHeight != 1470)
-	{
-		displayMode.dmPelsWidth = 1280;
-		displayMode.dmPelsHeight = 1470;
-		displayMode.dmBitsPerPel = 32;
-		displayMode.dmDisplayFrequency = 60;
-		int ChangeDisplayResult = ChangeDisplaySettingsEx(m_MonData.DisplayName, &displayMode, nullptr, CDS_FULLSCREEN, nullptr);
-		if (ChangeDisplayResult != DISP_CHANGE_SUCCESSFUL)
-		{
-			MessageBox(NULL, L"Error: Failed to change display mode.", L"Error", 0);
-			return;
-		}
-		//MessageBox(NULL, L"Resolution set", L"Info", 0);
-		//Sleep(2000);
-	}
-	//tekrar al yeni halini
-	//EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, (LPARAM)&m_MonData);
-#endif //HMD_MODE_FAKEPACK
 }
