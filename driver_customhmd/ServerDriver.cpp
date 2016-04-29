@@ -23,6 +23,8 @@ void CServerDriver::Cleanup()
 	for (auto iter = trackedDevices_.begin(); iter != trackedDevices_.end(); iter++)
 		delete (*iter);
 	trackedDevices_.clear();
+	driverHost_ = nullptr;
+	logger_ = nullptr;
 }
 
 uint32_t CServerDriver::GetTrackedDeviceCount()

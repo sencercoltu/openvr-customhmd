@@ -5,31 +5,73 @@
 
 CTrackedHMD::CTrackedHMD(std::string id, CServerDriver *pServer) : CTrackedDevice(id, pServer)
 {
-
-	m_Pose = {};
-	m_Pose.vecDriverFromHeadTranslation[0] = 0.0;
-	m_Pose.vecDriverFromHeadTranslation[1] = 0.0;
-	m_Pose.vecDriverFromHeadTranslation[2] = 0.0;
-
-	//m_Pose.vecPosition[1] = 1.0;
-
-	m_Pose.qRotation = HmdQuaternion_Init(1, 0, 0, 0);
-	m_Pose.qWorldFromDriverRotation = HmdQuaternion_Init(1, 0, 0, 0);
-	m_Pose.qDriverFromHeadRotation = HmdQuaternion_Init(1, 0, 0, 0);
+	IVRSettings *pSettings = m_pDriverHost ? m_pDriverHost->GetSettings(vr::IVRSettings_Version) : nullptr;
 
 	m_hThread = nullptr;
 	m_IsRunning = false;
-	m_PIDValue = 0.05f;
-	m_MonData = { 0 };
-	m_MonData.HMD_POSX = 0;
-	m_MonData.HMD_POSY = 0;
-	m_MonData.HMD_WIDTH = 1920;
-	m_MonData.HMD_HEIGHT = 1080;
-	m_MonData.HMD_ASPECT = (float)m_MonData.HMD_WIDTH / (float)m_MonData.HMD_HEIGHT;
-	m_MonData.HMD_FREQ = 60;
-	m_MonData.HMD_FOUND = false;
-	m_MonData.HMD_FAKEPACK = false;	
-	EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, (LPARAM)&m_MonData);
+	m_HMDData = { 0 };
+	m_HMDData.PIDValue = 0.05f;
+	m_HMDData.PosX = 0;
+	m_HMDData.PosY = 0;
+	m_HMDData.ScreenWidth = 1920;
+	m_HMDData.ScreenHeight = 1080;
+	m_HMDData.AspectRatio = (float)m_HMDData.ScreenWidth / (float)m_HMDData.ScreenHeight;
+	m_HMDData.Frequency = 60;
+	m_HMDData.IsConnected = false;
+	m_HMDData.FakePackDetected = false;	
+	m_HMDData.SuperSample = 1.0f;
+	wcscpy_s(m_HMDData.Port, L"\\\\.\\COM3");
+	wcscpy_s(m_HMDData.Model, L"SNYD602");
+
+	m_HMDData.Pose = {};
+	m_HMDData.Pose.vecDriverFromHeadTranslation[0] = 0.0;
+	m_HMDData.Pose.vecDriverFromHeadTranslation[1] = 0.0;
+	m_HMDData.Pose.vecDriverFromHeadTranslation[2] = 0.0;
+
+	//m_Pose.vecPosition[1] = 1.0;
+
+	m_HMDData.Pose.qRotation = HmdQuaternion_Init(1, 0, 0, 0);
+	m_HMDData.Pose.qWorldFromDriverRotation = HmdQuaternion_Init(1, 0, 0, 0);
+	m_HMDData.Pose.qDriverFromHeadRotation = HmdQuaternion_Init(1, 0, 0, 0);
+
+
+	HMDLog tLog(m_pLog);	
+
+	if (pSettings)
+	{
+		char value[128];
+
+		value[0] = 0;
+		pSettings->GetString("driver_customhmd", "monitor", value, sizeof(value), "SNYD602");
+		if (value[0])
+		{	
+			std::string basic_string(value);
+			std::wstring wchar_value(basic_string.begin(), basic_string.end());
+			wcscpy_s(m_HMDData.Model, wchar_value.c_str());
+			
+			tLog.Log(m_HMDData.Model);
+			tLog.Log(" - HMD: MODEL OK\n");
+		}
+
+		value[0] = 0;
+		pSettings->GetString("driver_customhmd", "port", value, sizeof(value), "\\\\.\\COM3");
+		if (value[0])
+		{
+			std::string basic_string(value);
+			std::wstring wchar_value(basic_string.begin(), basic_string.end());
+			wcscpy_s(m_HMDData.Port, wchar_value.c_str());
+			tLog.Log(m_HMDData.Port);
+			tLog.Log(" - HMD: PORT OK\n");
+		}
+
+		m_HMDData.SuperSample = pSettings->GetFloat("driver_customhmd", "supersample", 1.0f);
+	}
+	
+	m_HMDData.Logger = &tLog;
+	tLog.Log("HMD: Enumerating monitors...\n");
+	EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, (LPARAM)&m_HMDData);
+	tLog.Log("HMD: Done.\n");
+	m_HMDData.Logger = nullptr;
 }
 
 CTrackedHMD::~CTrackedHMD()
@@ -51,6 +93,7 @@ unsigned int WINAPI CTrackedHMD::ProcessThread(void *p)
 
 void CTrackedHMD::Run()
 {
+	m_pLog->Log("Thread start\n");
 	//m_PoseUpdated = false;
 	m_pDriverHost->TrackedDevicePropertiesChanged(m_unObjectId);
 
@@ -73,7 +116,7 @@ void CTrackedHMD::Run()
 	double _pitchCenter = 0;
 	double _rollCenter = 0;
 
-	CSerial *pSerial = new CSerial(std::wstring(L"COM3"), 115200);
+	CSerial *pSerial = new CSerial(std::wstring(m_HMDData.Port), 115200);
 	std::string incBuffer;
 
 	char data;
@@ -86,21 +129,21 @@ void CTrackedHMD::Run()
 	long count = 0;
 
 	//Sleep(5000);
-	//if (m_MonData.HMD_FOUND && m_MonData.DisplayName[0])
+	//if (m_HMDData.IsConnected && m_HMDData.DisplayName[0])
 	//{
 	//	DEVMODE settings = {};
 	//	settings.dmSize = sizeof(DEVMODE);
 	//	Sleep(5000);
-	//	if (EnumDisplaySettings(m_MonData.DisplayName, ENUM_CURRENT_SETTINGS, &settings))
+	//	if (EnumDisplaySettings(m_HMDData.DisplayName, ENUM_CURRENT_SETTINGS, &settings))
 	//	{
 	//		MessageBox(nullptr, L"xx", L"yy", 0);
 	//	}
 	//}
 
-	m_Pose.poseIsValid = true;
-	m_Pose.result = ETrackingResult::TrackingResult_Running_OK;
-	m_Pose.willDriftInYaw = false;
-	m_Pose.shouldApplyHeadModel = true;
+	m_HMDData.Pose.poseIsValid = true;
+	m_HMDData.Pose.result = ETrackingResult::TrackingResult_Running_OK;
+	m_HMDData.Pose.willDriftInYaw = false;
+	m_HMDData.Pose.shouldApplyHeadModel = true;
 
 
 	while (m_IsRunning)
@@ -109,7 +152,19 @@ void CTrackedHMD::Run()
 			delay = 20;
 		if (keydown && GetTickCount() - lastdown > delay)
 			keydown = false;
-		if ((GetAsyncKeyState(VK_HOME) & 0x8000) && ((GetAsyncKeyState(VK_CONTROL) & 0x8000)))
+		
+		if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) && ((GetAsyncKeyState(VK_RCONTROL) & 0x8000)))
+		{
+			if (!keydown)
+			{
+				//system button
+				keydown = true;
+				lastdown = GetTickCount();
+				delay /= 2;
+				m_pDriverHost->TrackedDeviceButtonPressed(0, k_EButton_System, 0);
+			}
+		}
+		else if ((GetAsyncKeyState(VK_HOME) & 0x8000) && ((GetAsyncKeyState(VK_LCONTROL) & 0x8000)))
 		{
 			if (!keydown)
 			{
@@ -122,7 +177,7 @@ void CTrackedHMD::Run()
 				delay /= 2;
 			}
 		}
-		else if ((GetAsyncKeyState(VK_END) & 0x8000) && ((GetAsyncKeyState(VK_CONTROL) & 0x8000)))
+		else if ((GetAsyncKeyState(VK_END) & 0x8000) && ((GetAsyncKeyState(VK_LCONTROL) & 0x8000)))
 		{
 			if (!keydown)
 			{
@@ -136,43 +191,43 @@ void CTrackedHMD::Run()
 				delay /= 2;
 			}
 		}
-		else if ((GetAsyncKeyState(VK_RIGHT) & 0x8000) && ((GetAsyncKeyState(VK_CONTROL) & 0x8000)))
+		else if ((GetAsyncKeyState(VK_RIGHT) & 0x8000) && ((GetAsyncKeyState(VK_LCONTROL) & 0x8000)))
 		{
 			if (!keydown)
 			{
-				m_PIDValue += step;
-				m_pDriverHost->PhysicalIpdSet(0, m_PIDValue);
+				m_HMDData.PIDValue += step;
+				m_pDriverHost->PhysicalIpdSet(0, m_HMDData.PIDValue);
 				keydown = true;
 				lastdown = GetTickCount();
 				delay /= 2;
 			}
 		}
-		else if ((GetAsyncKeyState(VK_LEFT) & 0x8000) && ((GetAsyncKeyState(VK_CONTROL) & 0x8000)))
+		else if ((GetAsyncKeyState(VK_LEFT) & 0x8000) && ((GetAsyncKeyState(VK_LCONTROL) & 0x8000)))
 		{
 			if (!keydown)
 			{
-				m_PIDValue -= step;
-				m_pDriverHost->PhysicalIpdSet(0, m_PIDValue);
+				m_HMDData.PIDValue -= step;
+				m_pDriverHost->PhysicalIpdSet(0, m_HMDData.PIDValue);
 				keydown = true;
 				lastdown = GetTickCount();
 				delay /= 2;
 			}
 		}
-		else if ((GetAsyncKeyState(VK_UP) & 0x8000) && ((GetAsyncKeyState(VK_CONTROL) & 0x8000)))
+		else if ((GetAsyncKeyState(VK_UP) & 0x8000) && ((GetAsyncKeyState(VK_LCONTROL) & 0x8000)))
 		{
 			if (!keydown)
 			{
-				m_Pose.vecPosition[1] += 0.1;
+				m_HMDData.Pose.vecPosition[1] += 0.1;
 				keydown = true;
 				lastdown = GetTickCount();
 				delay /= 2;
 			}
 		}
-		else if ((GetAsyncKeyState(VK_DOWN) & 0x8000) && ((GetAsyncKeyState(VK_CONTROL) & 0x8000)))
+		else if ((GetAsyncKeyState(VK_DOWN) & 0x8000) && ((GetAsyncKeyState(VK_LCONTROL) & 0x8000)))
 		{
 			if (!keydown)
 			{
-				m_Pose.vecPosition[1] -= 0.1;
+				m_HMDData.Pose.vecPosition[1] -= 0.1;
 				keydown = true;
 				lastdown = GetTickCount();
 				delay /= 2;
@@ -267,10 +322,10 @@ void CTrackedHMD::Run()
 			double s3 = sin(_pitch / 2.0);
 			double c1c2 = c1*c2;
 			double s1s2 = s1*s2;
-			m_Pose.qRotation.w = c1c2*c3 - s1s2*s3;
-			m_Pose.qRotation.x = c1c2*s3 + s1s2*c3;
-			m_Pose.qRotation.y = s1*c2*c3 + c1*s2*s3;
-			m_Pose.qRotation.z = c1*s2*c3 - s1*c2*s3;
+			m_HMDData.Pose.qRotation.w = c1c2*c3 - s1s2*s3;
+			m_HMDData.Pose.qRotation.x = c1c2*s3 + s1s2*c3;
+			m_HMDData.Pose.qRotation.y = s1*c2*c3 + c1*s2*s3;
+			m_HMDData.Pose.qRotation.z = c1*s2*c3 - s1*c2*s3;
 
 
 			//m_Pose.poseIsValid = true;
@@ -279,7 +334,7 @@ void CTrackedHMD::Run()
 			//m_Pose.shouldApplyHeadModel = true;
 
 			//m_PoseUpdated = true;
-			m_pDriverHost->TrackedDevicePoseUpdated(m_unObjectId, m_Pose);
+			m_pDriverHost->TrackedDevicePoseUpdated(m_unObjectId, m_HMDData.Pose);
 		}
 		catch (...)
 		{
@@ -289,17 +344,19 @@ void CTrackedHMD::Run()
 	}
 
 	delete pSerial;
+
+	m_pLog->Log("Thread stop\n");
 }
 
 EVRInitError CTrackedHMD::Activate(uint32_t unObjectId)
 {
 	//	MessageBox(NULL, L"Activate", L"Info", 0);
-	m_Pose.poseIsValid = true;
-	m_Pose.result = TrackingResult_Running_OK;
-	m_Pose.deviceIsConnected = true;
+	m_HMDData.Pose.poseIsValid = true;
+	m_HMDData.Pose.result = TrackingResult_Running_OK;
+	m_HMDData.Pose.deviceIsConnected = true;
 
-	m_Pose.qWorldFromDriverRotation = HmdQuaternion_Init(1, 0, 0, 0);
-	m_Pose.qDriverFromHeadRotation = HmdQuaternion_Init(1, 0, 0, 0);
+	m_HMDData.Pose.qWorldFromDriverRotation = HmdQuaternion_Init(1, 0, 0, 0);
+	m_HMDData.Pose.qDriverFromHeadRotation = HmdQuaternion_Init(1, 0, 0, 0);
 
 
 	m_unObjectId = unObjectId;
@@ -309,12 +366,13 @@ EVRInitError CTrackedHMD::Activate(uint32_t unObjectId)
 		m_IsRunning = true;
 		ResumeThread(m_hThread);
 	}
-
+	m_pLog->Log("Activate\n");
 	return vr::VRInitError_None;
 }
 
 void CTrackedHMD::Deactivate()
 {
+	m_pLog->Log("Deactivate\n");
 	m_IsRunning = false;
 	if (m_hThread)
 	{
@@ -346,10 +404,10 @@ void CTrackedHMD::GetWindowBounds(int32_t * pnX, int32_t * pnY, uint32_t * pnWid
 {
 	//	TRACE(__FUNCTIONW__);
 //	MessageBox(NULL, L"GetWindowBounds", L"Info", 0);
-	*pnX = m_MonData.HMD_POSX;
-	*pnY = m_MonData.HMD_POSY;
-	*pnWidth = m_MonData.HMD_WIDTH;
-	*pnHeight = m_MonData.HMD_HEIGHT;
+	*pnX = m_HMDData.PosX;
+	*pnY = m_HMDData.PosY;
+	*pnWidth = m_HMDData.ScreenWidth;
+	*pnHeight = m_HMDData.ScreenHeight;
 }
 
 bool CTrackedHMD::IsDisplayOnDesktop()
@@ -370,39 +428,39 @@ void CTrackedHMD::GetRecommendedRenderTargetSize(uint32_t * pnWidth, uint32_t * 
 {
 	//	TRACE(__FUNCTIONW__);
 //	MessageBox(NULL, L"GetRecommendedRenderTargetSize", L"Info", 0);
-	if (m_MonData.HMD_FAKEPACK)
+	if (m_HMDData.FakePackDetected)
 	{
-		*pnWidth = m_MonData.HMD_WIDTH;
-		*pnHeight = (m_MonData.HMD_HEIGHT - 30) / 2;
+		*pnWidth = m_HMDData.ScreenWidth;
+		*pnHeight = (m_HMDData.ScreenHeight - 30) / 2;
 	}
 	else
 	{
-		*pnWidth = m_MonData.HMD_WIDTH;
-		*pnHeight = m_MonData.HMD_HEIGHT;
+		*pnWidth = m_HMDData.ScreenWidth;
+		*pnHeight = m_HMDData.ScreenHeight;
 	}
-	*pnWidth = uint32_t(*pnWidth * HMD_SUPERSAMPLE);
-	*pnHeight = uint32_t(*pnHeight * HMD_SUPERSAMPLE);
+	*pnWidth = uint32_t(*pnWidth * m_HMDData.SuperSample);
+	*pnHeight = uint32_t(*pnHeight * m_HMDData.SuperSample);
 }
 
 void CTrackedHMD::GetEyeOutputViewport(EVREye eEye, uint32_t * pnX, uint32_t * pnY, uint32_t * pnWidth, uint32_t * pnHeight)
 {
 	//	MessageBox(NULL, L"GetEyeOutputViewport", L"Info", 0);
-	if (m_MonData.HMD_FAKEPACK)
+	if (m_HMDData.FakePackDetected)
 	{
 		//	TRACE(__FUNCTIONW__);
-		uint32_t h = (m_MonData.HMD_HEIGHT - 30) / 2;
+		uint32_t h = (m_HMDData.ScreenHeight - 30) / 2;
 		switch (eEye)
 		{
 		case EVREye::Eye_Left:
 			*pnX = 0;
 			*pnY = h + 30;
-			*pnWidth = m_MonData.HMD_WIDTH;
+			*pnWidth = m_HMDData.ScreenWidth;
 			*pnHeight = h;
 			break;
 		case EVREye::Eye_Right:
 			*pnX = 0;
 			*pnY = 0;
-			*pnWidth = m_MonData.HMD_WIDTH;
+			*pnWidth = m_HMDData.ScreenWidth;
 			*pnHeight = h;
 			break;
 		}
@@ -414,14 +472,14 @@ void CTrackedHMD::GetEyeOutputViewport(EVREye eEye, uint32_t * pnX, uint32_t * p
 		case EVREye::Eye_Left:
 			*pnX = 0;
 			*pnY = 0;
-			*pnWidth = m_MonData.HMD_WIDTH / 2;
-			*pnHeight = m_MonData.HMD_HEIGHT;
+			*pnWidth = m_HMDData.ScreenWidth / 2;
+			*pnHeight = m_HMDData.ScreenHeight;
 			break;
 		case EVREye::Eye_Right:
-			*pnX = 0 + (m_MonData.HMD_WIDTH / 2);
+			*pnX = 0 + (m_HMDData.ScreenWidth / 2);
 			*pnY = 0;
-			*pnWidth = m_MonData.HMD_WIDTH / 2;
-			*pnHeight = m_MonData.HMD_HEIGHT;
+			*pnWidth = m_HMDData.ScreenWidth / 2;
+			*pnHeight = m_HMDData.ScreenHeight;
 			break;
 		}
 	}
@@ -431,21 +489,21 @@ void CTrackedHMD::GetProjectionRaw(EVREye eEye, float * pfLeft, float * pfRight,
 {
 	//	MessageBox(NULL, L"GetProjectionRaw", L"Info", 0);
 		////	TRACE(__FUNCTIONW__);
-	if (m_MonData.HMD_FAKEPACK)
+	if (m_HMDData.FakePackDetected)
 	{
 		switch (eEye)
 		{
 		case EVREye::Eye_Left:
 			*pfLeft = -1.0f;
 			*pfRight = 1.0f;
-			*pfTop = -1.0f * m_MonData.HMD_ASPECT;
-			*pfBottom = 1.0f * m_MonData.HMD_ASPECT;
+			*pfTop = -1.0f * m_HMDData.AspectRatio;
+			*pfBottom = 1.0f * m_HMDData.AspectRatio;
 			break;
 		case EVREye::Eye_Right:
 			*pfLeft = -1.0f;
 			*pfRight = 1.0f;
-			*pfTop = -1.0f * m_MonData.HMD_ASPECT;
-			*pfBottom = 1.0f * m_MonData.HMD_ASPECT;
+			*pfTop = -1.0f * m_HMDData.AspectRatio;
+			*pfBottom = 1.0f * m_HMDData.AspectRatio;
 			break;
 		}
 	}
@@ -456,14 +514,14 @@ void CTrackedHMD::GetProjectionRaw(EVREye eEye, float * pfLeft, float * pfRight,
 		case EVREye::Eye_Left:
 			*pfLeft = -1.0f;
 			*pfRight = 1.0f;
-			*pfTop = -1.0f / m_MonData.HMD_ASPECT;
-			*pfBottom = 1.0f / m_MonData.HMD_ASPECT;
+			*pfTop = -1.0f / m_HMDData.AspectRatio;
+			*pfBottom = 1.0f / m_HMDData.AspectRatio;
 			break;
 		case EVREye::Eye_Right:
 			*pfLeft = -1.0f;
 			*pfRight = 1.0f;
-			*pfTop = -1.0f / m_MonData.HMD_ASPECT;
-			*pfBottom = 1.0f / m_MonData.HMD_ASPECT;
+			*pfTop = -1.0f / m_HMDData.AspectRatio;
+			*pfBottom = 1.0f / m_HMDData.AspectRatio;
 			break;
 		}
 	}
@@ -484,7 +542,7 @@ DistortionCoordinates_t CTrackedHMD::ComputeDistortion(EVREye eEye, float fU, fl
 DriverPose_t CTrackedHMD::GetPose()
 {
 	//	TRACE(__FUNCTIONW__);
-	return m_Pose;
+	return m_HMDData.Pose;
 }
 
 bool CTrackedHMD::GetBoolTrackedDeviceProperty(ETrackedDeviceProperty prop, ETrackedPropertyError *pError)
@@ -541,11 +599,11 @@ float CTrackedHMD::GetFloatTrackedDeviceProperty(ETrackedDeviceProperty prop, ET
 	case vr::Prop_DisplayFrequency_Float:
 		if (pError)
 			*pError = vr::TrackedProp_Success;
-		return m_MonData.HMD_FREQ;
+		return m_HMDData.Frequency;
 	case vr::Prop_UserIpdMeters_Float:
 		if (pError)
 			*pError = vr::TrackedProp_Success;
-		return m_PIDValue;
+		return m_HMDData.PIDValue;
 	case vr::Prop_DeviceBatteryPercentage_Float:
 	case vr::Prop_DisplayGCScale_Float:
 	case vr::Prop_DisplayGCPrescale_Float:

@@ -8,31 +8,68 @@
 #include <vector>
 #include <memory>
 #include <string>
-
+#include <locale>
+#include <codecvt>
+#include <HighLevelMonitorConfigurationAPI.h>
 
 //#define TRACE(a) OutputDebugString(a"\n")
 
 #define HMD_DLL_EXPORT extern "C" __declspec(dllexport)
 #define HMD_DLL_IMPORT extern "C" __declspec(dllimport)
 
-#define HMD_SUPERSAMPLE 1.0
+struct HMDLog
+{
+public:
+	HMDLog(vr::IDriverLog *pLogger) 
+	{
+		_logger = pLogger;
+	}
+	void Log(const char *pMsg) {
+		if (!_logger)
+			return;
+		_logger->Log(pMsg);
+	}
+	void Log(const wchar_t *pMsg) {
+		if (!_logger)
+			return;
+		std::wstring wchar_string(pMsg);		
+		const std::string basic_string(wchar_string.begin(), wchar_string.end());
+		_logger->Log(basic_string.c_str());
+	}
+private:
+	vr::IDriverLog *_logger;
+};
 
-struct MonitorData
+struct HMDData
 {
 	WCHAR DisplayName[CCHDEVICENAME];
-	bool HMD_FOUND;
-	bool HMD_FAKEPACK;
-	int HMD_POSX;
-	int HMD_POSY;
-	int HMD_WIDTH;
-	int HMD_HEIGHT;
-	float HMD_FREQ;
-	float HMD_ASPECT;
+	WCHAR Model[128];
+	WCHAR Port[32];
+	bool IsConnected;
+	bool FakePackDetected;
+	int PosX;
+	int PosY;
+	int ScreenWidth;
+	int ScreenHeight;
+	float Frequency;
+	float AspectRatio;	
+	float SuperSample;
+	HMDLog *Logger;
+	float PIDValue;
+	vr::DriverPose_t Pose;
 };
 
 BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData);
 
 vr::HmdQuaternion_t HmdQuaternion_Init(double w, double x, double y, double z);
+
 void HmdMatrix_SetIdentity(vr::HmdMatrix34_t *pMatrix);
-void EnableFakePack();
+
+class CDummyLog : public vr::IDriverLog
+{
+public:
+	virtual void Log(const char *pchLogMessage);
+};
+
+
 #endif // Common_H

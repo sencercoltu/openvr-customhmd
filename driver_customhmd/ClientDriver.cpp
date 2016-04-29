@@ -8,6 +8,11 @@ EVRInitError CClientDriver::Init(IDriverLog * pDriverLog, IClientDriverHost * pD
 	driverHost_ = pDriverHost;
 	userDriverConfigDir_ = pchUserDriverConfigDir;
 	driverInstallDir_ = pchDriverInstallDir;
+
+	if (pchUserDriverConfigDir) logger_->Log(pchUserDriverConfigDir);
+	if (pchDriverInstallDir) logger_->Log(pchDriverInstallDir);
+
+
 	if (!m_bInit)
 	{
 		if (driverHost_)
@@ -32,9 +37,15 @@ void CClientDriver::Cleanup()
 bool CClientDriver::BIsHmdPresent(const char * pchUserConfigDir)
 {	
 	//TRACE(__FUNCTIONW__);
-	MonitorData monData = { 0 };
-	EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, (LPARAM)&monData);
-	return monData.HMD_FOUND;
+	CDummyLog g_DuymmyLog;
+	//HMDLog tLog(&g_DuymmyLog);	
+	HMDData hmdData = { 0 };
+	wcscpy_s(hmdData.Model, L"SNYD602");
+	//hmdData.Logger = &tLog;
+	//if (hmdData.Logger && pchUserConfigDir) hmdData.Logger->Log(pchUserConfigDir);
+	//if (hmdData.Logger) hmdData.Logger->Log("Enumnerating monitors...\n");
+	EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, (LPARAM)&hmdData);
+	return hmdData.IsConnected;
 }
 
 EVRInitError CClientDriver::SetDisplayId(const char * pchDisplayId)

@@ -58,9 +58,7 @@ private:
 	bool m_IsRunning;
 	unsigned int static WINAPI ProcessThread(void *p);
 	void Run();
-	MonitorData m_MonData;	
-	float m_PIDValue;
-	DriverPose_t m_Pose;	
+	HMDData m_HMDData;				
 };
 
 #endif // TrackedHMD_H
