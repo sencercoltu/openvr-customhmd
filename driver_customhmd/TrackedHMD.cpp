@@ -162,6 +162,21 @@ void CTrackedHMD::Run()
 				lastdown = GetTickCount();
 				delay /= 2;
 				m_pDriverHost->TrackedDeviceButtonPressed(0, k_EButton_System, 0);
+				Sleep(1);
+				m_pDriverHost->TrackedDeviceButtonUnpressed(0, k_EButton_System, 0);
+			}
+		}
+		if ((GetAsyncKeyState(VK_LSHIFT) & 0x8000) && ((GetAsyncKeyState(VK_RSHIFT) & 0x8000)))
+		{
+			if (!keydown)
+			{
+				//system button
+				keydown = true;
+				lastdown = GetTickCount();
+				delay /= 2;
+				m_pDriverHost->TrackedDeviceButtonPressed(0, k_EButton_ApplicationMenu, 0);
+				Sleep(1);
+				m_pDriverHost->TrackedDeviceButtonUnpressed(0, k_EButton_ApplicationMenu, 0);
 			}
 		}
 		else if ((GetAsyncKeyState(VK_HOME) & 0x8000) && ((GetAsyncKeyState(VK_LCONTROL) & 0x8000)))
