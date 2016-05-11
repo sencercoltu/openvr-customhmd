@@ -24,28 +24,40 @@ public:
 	{
 		_logger = pLogger;
 	}
-	void Log(const char *pMsg) {
+	void Log(const char *pFmt, ...) {
 		if (!_logger)
 			return;
-		_logger->Log(pMsg);
+		char szMessage[4096];
+		va_list argptr;
+		va_start(argptr, pFmt);
+		vsprintf_s(szMessage, pFmt, argptr);
+		va_end(argptr);		
+		_logger->Log(szMessage);
 	}
-	void Log(const wchar_t *pMsg) {
+	void Log(const wchar_t *pFmt, ...) {
 		if (!_logger)
 			return;
-		std::wstring wchar_string(pMsg);		
+		std::wstring wchar_string(pFmt);
 		const std::string basic_string(wchar_string.begin(), wchar_string.end());
-		_logger->Log(basic_string.c_str());
+
+		char szMessage[4096];
+		va_list argptr;
+		va_start(argptr, pFmt);
+		vsprintf_s(szMessage, basic_string.c_str(), argptr);
+		va_end(argptr);
+		_logger->Log(szMessage);
 	}
 private:
-	vr::IDriverLog *_logger;
+	vr::IDriverLog *_logger; 
 };
 
 struct HMDData
 {
 	WCHAR DisplayName[CCHDEVICENAME];
 	WCHAR Model[128];
-	WCHAR Port[32];
+	WCHAR Port[32];	
 	bool IsConnected;
+	bool DirectMode;
 	bool FakePackDetected;
 	int PosX;
 	int PosY;
@@ -56,6 +68,8 @@ struct HMDData
 	float SuperSample;
 	HMDLog *Logger;
 	float PIDValue;
+	HANDLE hPoseLock;
+	bool PoseUpdated;
 	vr::DriverPose_t Pose;
 };
 

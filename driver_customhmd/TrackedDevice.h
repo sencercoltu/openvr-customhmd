@@ -5,7 +5,7 @@
 
 #include "ServerDriver.h"	
 
-using namespace vr;
+using namespace vr; 
 
 class CTrackedDevice :
 	public virtual ITrackedDeviceServerDriver
