@@ -75,15 +75,10 @@ struct HMDData
 
 BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData);
 
-vr::HmdQuaternion_t HmdQuaternion_Init(double w, double x, double y, double z);
-
-void HmdMatrix_SetIdentity(vr::HmdMatrix34_t *pMatrix);
-
 class CDummyLog : public vr::IDriverLog
 {
 public:
 	virtual void Log(const char *pchLogMessage);
 };
-
 
 #endif // Common_H

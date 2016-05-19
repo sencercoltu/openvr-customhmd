@@ -4,6 +4,7 @@
 #include "Common.h"
 #include "TrackedDevice.h"
 #include "hidapi.h"
+#include "SensorFusion.h"
 
 using namespace vr;
 
@@ -12,8 +13,7 @@ class CTrackedHMD :
 	public IVRDisplayComponent //, public IVRCameraComponent
 {
 public:	
-	~CTrackedHMD();
-
+	~CTrackedHMD();	
 	virtual EVRInitError Activate(uint32_t unObjectId) override;
 	virtual void Deactivate() override;
 	virtual void *GetComponent(const char *pchComponentNameAndVersion) override;
@@ -63,6 +63,7 @@ public:
 protected:
 	virtual std::string GetStringTrackedDeviceProperty(vr::ETrackedDeviceProperty prop, vr::ETrackedPropertyError *pError) override;
 private:
+	CSensorFusion m_SensorFusion;
 	HANDLE m_hThread;
 	bool m_IsRunning;
 	unsigned int static WINAPI ProcessThread(void *p);

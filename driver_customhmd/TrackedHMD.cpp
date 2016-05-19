@@ -14,9 +14,9 @@ CTrackedHMD::CTrackedHMD(std::string id, CServerDriver *pServer) : CTrackedDevic
 	m_HMDData.PosX = 0;
 	m_HMDData.PosY = 0;
 	m_HMDData.ScreenWidth = 1280;
-	m_HMDData.ScreenHeight = 720;
+	m_HMDData.ScreenHeight = 1470;
 	m_HMDData.AspectRatio = ((float)(m_HMDData.ScreenHeight - 30) / 2.0f) / (float)m_HMDData.ScreenWidth;
-	m_HMDData.Frequency = 60;
+	m_HMDData.Frequency = 120;
 	m_HMDData.IsConnected = true;
 	m_HMDData.FakePackDetected = true;
 	m_HMDData.SuperSample = 1.0f;
@@ -33,9 +33,10 @@ CTrackedHMD::CTrackedHMD(std::string id, CServerDriver *pServer) : CTrackedDevic
 
 	//m_Pose.vecPosition[1] = 1.0;
 
-	m_HMDData.Pose.qRotation = HmdQuaternion_Init(1, 0, 0, 0);
-	m_HMDData.Pose.qWorldFromDriverRotation = HmdQuaternion_Init(1, 0, 0, 0);
-	m_HMDData.Pose.qDriverFromHeadRotation = HmdQuaternion_Init(1, 0, 0, 0);
+	m_HMDData.Pose.qRotation = CSensorFusion::HmdQuaternion_Init(1, 0, 0, 0);
+	m_HMDData.Pose.qWorldFromDriverRotation = CSensorFusion::HmdQuaternion_Init(1, 0, 0, 0);
+	m_HMDData.Pose.qDriverFromHeadRotation = CSensorFusion::HmdQuaternion_Init(1, 0, 0, 0);
+
 
 
 	HMDLog *pLog = new HMDLog(m_pLog);
@@ -58,7 +59,7 @@ CTrackedHMD::CTrackedHMD(std::string id, CServerDriver *pServer) : CTrackedDevic
 			pLog->Log(" - HMD: MODEL OK\n");
 		}
 
-		value[0] = 0;
+		/*value[0] = 0;  usb kullan
 		pSettings->GetString("driver_customhmd", "port", value, sizeof(value), "\\\\.\\COM3");
 		if (value[0])
 		{
@@ -67,7 +68,7 @@ CTrackedHMD::CTrackedHMD(std::string id, CServerDriver *pServer) : CTrackedDevic
 			wcscpy_s(m_HMDData.Port, wchar_value.c_str());
 			pLog->Log(m_HMDData.Port);
 			pLog->Log(" - HMD: PORT OK\n");
-		}
+		}*/
 
 		m_HMDData.SuperSample = pSettings->GetFloat("driver_customhmd", "supersample", 1.0f);
 	}
@@ -75,12 +76,24 @@ CTrackedHMD::CTrackedHMD(std::string id, CServerDriver *pServer) : CTrackedDevic
 	m_HMDData.Logger = pLog;
 	pLog->Log("HMD: Enumerating monitors...\n");
 	if (!m_HMDData.DirectMode)
+	{
 		EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, (LPARAM)&m_HMDData);
+		/*if (!m_HMDData.IsConnected)
+		{
+			m_HMDData.PosX = 0;
+			m_HMDData.PosY = 0;
+			m_HMDData.ScreenWidth = 1280/2;
+			m_HMDData.ScreenHeight = 720/2;
+			m_HMDData.Frequency = 60;
+			m_HMDData.AspectRatio = (float)m_HMDData.ScreenWidth / (float)m_HMDData.ScreenHeight;
+			m_HMDData.FakePackDetected = false;
+		}*/
+	}
 
 	pLog->Log("HMD: Done.\n");
 
 }
- 
+
 CTrackedHMD::~CTrackedHMD()
 {
 	//Deactivate();
@@ -118,6 +131,7 @@ void CTrackedHMD::CloseUSB(hid_device **ppHandle)
 	*ppHandle = nullptr;
 }
 
+#define VKD(a) ((GetAsyncKeyState(a) & 0x8000))
 
 void CTrackedHMD::Run()
 {
@@ -132,26 +146,29 @@ void CTrackedHMD::Run()
 	//char *array = (char *)&htData;
 	int pos = 0;
 
-	double _yaw = 0;
-	double _pitch = 0;
-	double _roll = 0;
+	//double _yaw = 0;
+	//double _pitch = 0;
+	//double _roll = 0;
 
-	double _yawRaw = 0;
-	double _pitchRaw = 0;
-	double _rollRaw = 0;
+	//double _yawRaw = 0;
+	//double _pitchRaw = 0;
+	//double _rollRaw = 0;
 
-	double _yawCenter = 0;
-	double _pitchCenter = 0;
-	double _rollCenter = 0;
+	//double _yawCenter = 0;
+	//double _pitchCenter = 0;
+	//double _rollCenter = 0;
 
 	//CSerial *pSerial = new CSerial(std::wstring(m_HMDData.Port), 115200);
 	//std::string incBuffer;
+
 
 
 	int res;
 
 	hid_init();
 
+	//HmdQuaternion_t qIdentity = HmdQuaternion_Init(1, 0, 0, 0);
+	//HmdQuaternion_t qOffset = HmdQuaternion_Init(1, 0, 0, 0);
 
 	//char data;
 	float step = 0.0001f;
@@ -161,6 +178,8 @@ void CTrackedHMD::Run()
 	DWORD delay = 1000;
 
 	long count = 0;
+
+
 
 	//Sleep(5000);
 	//if (m_HMDData.IsConnected && m_HMDData.DisplayName[0])
@@ -174,147 +193,267 @@ void CTrackedHMD::Run()
 	//	}
 	//}
 
+	SensorData adjustment = { 0 };
+
 	m_HMDData.Pose.poseIsValid = true;
 	m_HMDData.Pose.result = ETrackingResult::TrackingResult_Running_OK;
 	m_HMDData.Pose.willDriftInYaw = false;
 	m_HMDData.Pose.shouldApplyHeadModel = true;
 
-	unsigned char buf[33] = { 0 };
-	buf[0] = 0x01;
-	buf[1] = 0x81;
-	QOrient *pOrient = (QOrient *)buf;
+	unsigned char buf[65] = { 0 };
+
+	SensorData *pSensorData = (SensorData *)buf;
+
+	//buf[0] = 0x01;
+	//buf[1] = 0x81;
+	//HmdQuaternion_t *pOrient = (HmdQuaternion_t *)buf;
 	hid_device *pHandle = nullptr;
 
 	while (m_IsRunning)
 	{
-		Sleep(1);
-		if (delay < 20)
-			delay = 20;
-
 		if (keydown && GetTickCount() - lastdown > delay)
-			keydown = false;
+		{
+			keydown = false;			
+		}
+		
+		if (VKD(VK_LCONTROL))
+		{
+			if (!keydown)
+			{
+				if (VKD(VK_RIGHT))
+				{
+					m_HMDData.PIDValue += step;
+					m_pDriverHost->PhysicalIpdSet(0, m_HMDData.PIDValue);
+					keydown = true;
+				}
+				else if (VKD(VK_LEFT))
+				{
+					m_HMDData.PIDValue -= step;
+					m_pDriverHost->PhysicalIpdSet(0, m_HMDData.PIDValue);
+					keydown = true;
+				}
+				else if (VKD(VK_LSHIFT))
+				{
+					int axis = -1;					
 
-		if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) && ((GetAsyncKeyState(VK_RCONTROL) & 0x8000)))
-		{
-			if (!keydown)
-			{
-				//system button
-				keydown = true;
-				lastdown = GetTickCount();
-				delay /= 2;
-				m_pDriverHost->TrackedDeviceButtonPressed(0, k_EButton_System, 0);
-				Sleep(1);
-				m_pDriverHost->TrackedDeviceButtonUnpressed(0, k_EButton_System, 0);
-			}
-		}
-		else if ((GetAsyncKeyState(VK_LSHIFT) & 0x8000) && ((GetAsyncKeyState(VK_RSHIFT) & 0x8000)))
-		{
-			if (!keydown)
-			{
-				//system button
-				keydown = true;
-				lastdown = GetTickCount();
-				delay /= 2;
-				m_pDriverHost->TrackedDeviceButtonPressed(0, k_EButton_ApplicationMenu, 0);
-				Sleep(1);
-				m_pDriverHost->TrackedDeviceButtonUnpressed(0, k_EButton_ApplicationMenu, 0);
-			}
-		}
-		else if ((GetAsyncKeyState(VK_HOME) & 0x8000) && ((GetAsyncKeyState(VK_LCONTROL) & 0x8000)))
-		{
-			if (!keydown)
-			{
-				//center
-				_yawCenter = _yawRaw;
-				_pitchCenter = _pitchRaw;
-				_rollCenter = _rollRaw;
-				keydown = true;
-				lastdown = GetTickCount();
-				delay /= 2;
-			}
-		}
-		else if ((GetAsyncKeyState(VK_END) & 0x8000) && ((GetAsyncKeyState(VK_LCONTROL) & 0x8000)))
-		{
-			if (!keydown)
-			{
-				//center
-				_yawCenter = 0;
-				_pitchCenter = 0;
-				_rollCenter = 0;
-				keydown = true;
-				//firstPacket = false;
-				lastdown = GetTickCount();
-				delay /= 2;
-			}
-		}
-		else if ((GetAsyncKeyState(VK_RIGHT) & 0x8000) && ((GetAsyncKeyState(VK_LCONTROL) & 0x8000)))
-		{
-			if (!keydown)
-			{
-				m_HMDData.PIDValue += step;
-				m_pDriverHost->PhysicalIpdSet(0, m_HMDData.PIDValue);
-				keydown = true;
-				lastdown = GetTickCount();
-				delay /= 2;
-			}
-		}
-		else if ((GetAsyncKeyState(VK_LEFT) & 0x8000) && ((GetAsyncKeyState(VK_LCONTROL) & 0x8000)))
-		{
-			if (!keydown)
-			{
-				m_HMDData.PIDValue -= step;
-				m_pDriverHost->PhysicalIpdSet(0, m_HMDData.PIDValue);
-				keydown = true;
-				lastdown = GetTickCount();
-				delay /= 2;
-			}
-		}
-		else if ((GetAsyncKeyState(VK_UP) & 0x8000) && ((GetAsyncKeyState(VK_LCONTROL) & 0x8000)))
-		{
-			if (!keydown)
-			{
-				m_HMDData.Pose.vecPosition[1] += 0.1;
-				keydown = true;
-				lastdown = GetTickCount();
-				delay /= 2;
-			}
-		}
-		else if ((GetAsyncKeyState(VK_DOWN) & 0x8000) && ((GetAsyncKeyState(VK_LCONTROL) & 0x8000)))
-		{
-			if (!keydown)
-			{
-				m_HMDData.Pose.vecPosition[1] -= 0.1;
-				keydown = true;
-				lastdown = GetTickCount();
-				delay /= 2;
+					if (VKD(VK_NUMPAD4)) //x
+					{
+						axis = 0;
+					}
+					else if (VKD(VK_NUMPAD5)) //y
+					{
+						axis = 1;
+					}
+					else if (VKD(VK_NUMPAD6)) //z
+					{
+						axis = 2;
+					}
+
+					if (axis != -1)
+					{					
+						int sgn = VKD(VK_SUBTRACT) ? -1 : VKD(VK_SUBTRACT) ? 1 : 0;
+						if (VKD(VK_NUMPAD1)) //acc
+						{
+							adjustment.Accel[axis] += sgn;
+							keydown = true;
+						}
+						else if (VKD(VK_NUMPAD1)) //gyro
+						{
+							adjustment.Gyro[axis] += sgn;
+							keydown = true;
+						}
+						else if (VKD(VK_NUMPAD1)) //mag
+						{
+							adjustment.Mag[axis] += sgn;
+							keydown = true;
+						}
+					}
+				}
+				else if (VKD(VK_MULTIPLY))
+				{
+					ZeroMemory(&adjustment, sizeof(adjustment));
+					keydown = true;
+				}
+				else if (VKD(VK_NUMPAD6))
+				{
+					m_HMDData.Pose.vecPosition[0] += 0.01;
+					keydown = true;
+				}
+				else if (VKD(VK_NUMPAD4))
+				{
+					m_HMDData.Pose.vecPosition[0] -= 0.01;
+					keydown = true;
+				}
+				else if (VKD(VK_NUMPAD8))
+				{
+					m_HMDData.Pose.vecPosition[1] += 0.01;
+					keydown = true;
+				}
+				else if (VKD(VK_NUMPAD2))
+				{
+					m_HMDData.Pose.vecPosition[1] -= 0.01;
+					keydown = true;
+				}
+				else if (VKD(VK_NUMPAD9))
+				{
+					m_HMDData.Pose.vecPosition[2] -= 0.01;
+					keydown = true;
+				}
+				else if (VKD(VK_NUMPAD1))
+				{
+					m_HMDData.Pose.vecPosition[2] += 0.01;
+					keydown = true;
+				}
+				else if (VKD(VK_NUMPAD5))
+				{
+					m_HMDData.Pose.vecPosition[0] = 0;
+					m_HMDData.Pose.vecPosition[1] = 0;
+					m_HMDData.Pose.vecPosition[2] = 0;
+					keydown = true;
+				}
+				else
+				{
+					delay = 1000;
+				}
+
+				if (keydown)
+				{
+					lastdown = GetTickCount();
+					delay /= 2;
+					if (delay < 2)
+						delay = 2;
+				}
 			}
 		}
 		else
 		{
-			delay = 1000;
 			keydown = false;
+			delay = 1000;
 		}
+
+		//if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) && ((GetAsyncKeyState(VK_RCONTROL) & 0x8000)))
+		//{
+		//	if (!keydown)
+		//	{
+		//		//system button
+		//		keydown = true;
+		//		lastdown = GetTickCount();
+		//		delay /= 2;
+		//		m_pDriverHost->TrackedDeviceButtonPressed(0, k_EButton_System, 0);
+		//		Sleep(1);
+		//		m_pDriverHost->TrackedDeviceButtonUnpressed(0, k_EButton_System, 0);
+		//	}
+		//}
+		//else if ((GetAsyncKeyState(VK_LSHIFT) & 0x8000) && ((GetAsyncKeyState(VK_RSHIFT) & 0x8000)))
+		//{
+		//	if (!keydown)
+		//	{
+		//		//system button
+		//		keydown = true;
+		//		lastdown = GetTickCount();
+		//		delay /= 2;
+		//		m_pDriverHost->TrackedDeviceButtonPressed(0, k_EButton_ApplicationMenu, 0);
+		//		Sleep(1);
+		//		m_pDriverHost->TrackedDeviceButtonUnpressed(0, k_EButton_ApplicationMenu, 0);
+		//	}
+		//}
+		//else if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000))
+		//{
+		//	if (!keydown)
+		//	{
+		//		if (pHandle)
+		//		{
+		//			if (GetAsyncKeyState(VK_END) & 0x8000)
+		//			{
+		//				buf[0] = 0;
+		//				buf[1] = 2; //reset
+		//				res = hid_write(pHandle, buf, sizeof(buf));
+		//			}
+		//			else 
+		//			{
+		//				buf[0] = 0;
+		//				buf[1] = 1;
+		//				buf[2] = 1;
+		//				res = hid_write(pHandle, buf, sizeof(buf));
+		//			}
+		//		}
+		//		keydown = true;
+		//		lastdown = GetTickCount();
+		//		delay /= 2;
+		//	}
+		//}
+		//else if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000))
+		//{
+		//	if (!keydown)
+		//	{
+		//		//qOffset = qIdentity;
+		//		//m_HMDData.Pose.qWorldFromDriverRotation = qIdentity;
+		//		//m_HMDData.Pose.qDriverFromHeadRotation = m_HMDData.Pose.qRotation;
+		//		if (pHandle)
+		//		{
+		//			buf[0] = 0;
+		//			buf[1] = 2;
+		//			res = hid_write(pHandle, buf, sizeof(buf));
+		//		}
+		//		keydown = true;
+		//		//firstPacket = false;
+		//		lastdown = GetTickCount();
+		//		delay /= 2;
+		//	}
+		//}
+		
+		//else if ((GetAsyncKeyState(VK_UP) & 0x8000) && ((GetAsyncKeyState(VK_LCONTROL) & 0x8000)))
+		//{
+		//	if (!keydown)
+		//	{
+		//		m_HMDData.Pose.vecPosition[1] += 0.1;
+		//		keydown = true;
+		//		lastdown = GetTickCount();
+		//		delay /= 2;
+		//	}
+		//}
+		//else if ((GetAsyncKeyState(VK_DOWN) & 0x8000) && ((GetAsyncKeyState(VK_LCONTROL) & 0x8000)))
+		//{
+		//	if (!keydown)
+		//	{
+		//		m_HMDData.Pose.vecPosition[1] -= 0.1;
+		//		keydown = true;
+		//		lastdown = GetTickCount();
+		//		delay /= 2;
+		//	}
+		//}
+		//else
+		//{
+		//	delay = 1000;
+		//	keydown = false;
+		//}
+
+
 		if (!pHandle)
 		{
 			OpenUSB(&pHandle);
 			if (!pHandle)
 			{
-				MessageBox(nullptr, L"No USB", L"Info", 0);
+				//MessageBox(nullptr, L"No USB", L"Info", 0);
 				Sleep(1000);
 				continue;
 			}
 		}
 		else
-		{			
-			res = hid_read_timeout(pHandle, buf, sizeof(buf), 100);
+		{
+			res = hid_read_timeout(pHandle, buf, sizeof(buf), 10);
 			if (res)
 			{
+				//MessageBox(nullptr, L"Got", L"Info", 0);
 				if (WAIT_OBJECT_0 == WaitForSingleObject(m_HMDData.hPoseLock, INFINITE))
 				{
-					m_HMDData.Pose.qRotation.w = pOrient->w;
-					m_HMDData.Pose.qRotation.x = pOrient->x;
-					m_HMDData.Pose.qRotation.y = pOrient->y;
-					m_HMDData.Pose.qRotation.z = pOrient->z;
+					for (int i = 0; i < 3; i++)
+					{
+						pSensorData->Accel[i] += adjustment.Accel[i];
+						pSensorData->Gyro[i] += adjustment.Gyro[i];
+						pSensorData->Mag[i] += adjustment.Mag[i];
+					}
+					m_HMDData.Pose.qRotation = m_SensorFusion.Fuse(pSensorData);
 					m_HMDData.PoseUpdated = true;
 					ReleaseMutex(m_HMDData.hPoseLock);
 				}
@@ -322,14 +461,15 @@ void CTrackedHMD::Run()
 			else if (res < 0)
 			{
 				//usb fucked up?				
-				MessageBox(nullptr, L"Negative", L"Info", 0);
+				//MessageBox(nullptr, L"Negative", L"Info", 0);
 				CloseUSB(&pHandle);
 				Sleep(1000);
 				continue;
 			}
 			else
 			{
-				MessageBox(nullptr, L"Zero", L"Info", 0);
+				Sleep(1);
+				//MessageBox(nullptr, L"Zero", L"Info", 0);
 			}
 		}
 
@@ -348,8 +488,8 @@ EVRInitError CTrackedHMD::Activate(uint32_t unObjectId)
 	m_HMDData.Pose.result = TrackingResult_Running_OK;
 	m_HMDData.Pose.deviceIsConnected = true;
 
-	m_HMDData.Pose.qWorldFromDriverRotation = HmdQuaternion_Init(1, 0, 0, 0);
-	m_HMDData.Pose.qDriverFromHeadRotation = HmdQuaternion_Init(1, 0, 0, 0);
+	m_HMDData.Pose.qWorldFromDriverRotation = CSensorFusion::HmdQuaternion_Init(1, 0, 0, 0);
+	m_HMDData.Pose.qDriverFromHeadRotation = CSensorFusion::HmdQuaternion_Init(1, 0, 0, 0);
 
 
 	m_unObjectId = unObjectId;
@@ -404,13 +544,13 @@ void CTrackedHMD::GetWindowBounds(int32_t * pnX, int32_t * pnY, uint32_t * pnWid
 
 bool CTrackedHMD::IsDisplayOnDesktop()
 {
-	m_HMDData.Logger->Log(__FUNCTION__": %s\n", m_HMDData.DirectMode ? "false" : "true");
+	//m_HMDData.Logger->Log(__FUNCTION__": %s\n", m_HMDData.DirectMode ? "false" : "true");
 	return !m_HMDData.DirectMode;
 }
 
 bool CTrackedHMD::IsDisplayRealDisplay()
 {
-	m_pLog->Log(__FUNCTION__": true\n");
+	//m_pLog->Log(__FUNCTION__": true\n");
 	return true;
 }
 
@@ -645,12 +785,13 @@ int32_t CTrackedHMD::GetInt32TrackedDeviceProperty(ETrackedDeviceProperty prop, 
 		m_pLog->Log("Prop_EdidVendorID_Int32\n");
 		if (pError)
 			*pError = vr::TrackedProp_Success;
-		return 0x094D; // 0x4D09; //0x1002; // 
+		return 0xD94D; // 0x4DD9; //0x1002; // 
 	case vr::Prop_EdidProductID_Int32:
 		m_pLog->Log("Prop_EdidProductID_Int32\n");
 		if (pError)
 			*pError = vr::TrackedProp_Success;
 		return 0xD602; // 0x02D6; //0x6613; //
+
 	//case vr::Prop_DisplayMCType_Int32:
 	//case vr::Prop_DisplayGCType_Int32:
 	//case vr::Prop_Axis0Type_Int32:
@@ -711,7 +852,7 @@ HmdMatrix34_t CTrackedHMD::GetMatrix34TrackedDeviceProperty(ETrackedDeviceProper
 	//m_pLog->Log(__FUNCTION__"\n");
 	// Default value is identity matrix
 	vr::HmdMatrix34_t default_value;
-	HmdMatrix_SetIdentity(&default_value);
+	CSensorFusion::HmdMatrix_SetIdentity(&default_value);
 
 	switch (prop) {
 	case vr::Prop_StatusDisplayTransform_Matrix34:

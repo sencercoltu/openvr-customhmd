@@ -153,6 +153,7 @@
     <ClCompile Include="ClientDriver.cpp" />
     <ClCompile Include="driver_customhmd.cpp" />
     <ClCompile Include="hid.c" />
+    <ClCompile Include="SensorFusion.cpp" />
     <ClCompile Include="Serial.cpp" />
     <ClCompile Include="ServerDriver.cpp" />
     <ClCompile Include="TrackedController.cpp" />
@@ -163,6 +164,7 @@
     <ClInclude Include="ClientDriver.h" />
     <ClInclude Include="Common.h" />
     <ClInclude Include="hidapi.h" />
+    <ClInclude Include="SensorFusion.h" />
     <ClInclude Include="TrackedController.h" />
     <ClInclude Include="TrackedDevice.h" />
     <ClInclude Include="Serial.h" />
