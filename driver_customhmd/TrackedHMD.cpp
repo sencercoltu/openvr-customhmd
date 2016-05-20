@@ -23,7 +23,7 @@ CTrackedHMD::CTrackedHMD(std::string id, CServerDriver *pServer) : CTrackedDevic
 	m_HMDData.PoseUpdated = false;
 	m_HMDData.hPoseLock = CreateMutex(NULL, FALSE, L"PoseLock");
 
-	wcscpy_s(m_HMDData.Port, L"\\\\.\\COM3");
+	//wcscpy_s(m_HMDData.Port, L"\\\\.\\COM3");
 	wcscpy_s(m_HMDData.Model, L"SNYD602");
 
 	m_HMDData.Pose = {};

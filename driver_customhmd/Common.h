@@ -55,7 +55,7 @@ struct HMDData
 {
 	WCHAR DisplayName[CCHDEVICENAME];
 	WCHAR Model[128];
-	WCHAR Port[32];	
+	//WCHAR Port[32];	
 	bool IsConnected;
 	bool DirectMode;
 	bool FakePackDetected;
