@@ -12,8 +12,8 @@ EVRInitError CServerDriver::Init(IDriverLog * pDriverLog, IServerDriverHost * pD
 	driverHost_ = pDriverHost;
 
 	trackedDevices_.push_back(new CTrackedHMD("SONY HMZ-T2", this));	
-	//trackedDevices_.push_back(new CTrackedController(TrackedControllerRole_LeftHand, "LEFT CONTROLLER", this));
-	//trackedDevices_.push_back(new CTrackedController(TrackedControllerRole_RightHand, "RIGHT CONTROLLER", this));	
+	trackedDevices_.push_back(new CTrackedController(TrackedControllerRole_LeftHand, "LEFT CONTROLLER", this));
+	trackedDevices_.push_back(new CTrackedController(TrackedControllerRole_RightHand, "RIGHT CONTROLLER", this));	
 	return vr::VRInitError_None;
 }
 

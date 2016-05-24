@@ -44,19 +44,19 @@ bool CClientDriver::BIsHmdPresent(const char * pchUserConfigDir)
 		hid_close(handle);
 	}
 	hid_exit();
-	if (ret)
-	{
-		//monitor not detected if directmode active, so skipping mon detection
-		//CDummyLog g_DuymmyLog;
-		//HMDLog tLog(&g_DuymmyLog);	
-		HMDData hmdData = { 0 };
-		wcscpy_s(hmdData.Model, L"SNYD602");
-		//hmdData.Logger = &tLog;
-		//if (hmdData.Logger && pchUserConfigDir) hmdData.Logger->Log(pchUserConfigDir);
-		//if (hmdData.Logger) hmdData.Logger->Log("Enumnerating monitors...\n");
-		EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, (LPARAM)&hmdData);
-		ret &= hmdData.IsConnected;
-	}
+	//if (ret)
+	//{
+	//	//monitor not detected if directmode active, so skipping mon detection
+	//	//CDummyLog g_DuymmyLog;
+	//	//HMDLog tLog(&g_DuymmyLog);	
+	//	HMDData hmdData = { 0 };
+	//	wcscpy_s(hmdData.Model, L"SNYD602");
+	//	//hmdData.Logger = &tLog;
+	//	//if (hmdData.Logger && pchUserConfigDir) hmdData.Logger->Log(pchUserConfigDir);
+	//	//if (hmdData.Logger) hmdData.Logger->Log("Enumnerating monitors...\n");
+	//	EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, (LPARAM)&hmdData);
+	//	ret &= hmdData.IsConnected;
+	//}
 	return ret;
 }
 

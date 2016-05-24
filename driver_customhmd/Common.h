@@ -17,6 +17,8 @@
 #define HMD_DLL_EXPORT extern "C" __declspec(dllexport)
 #define HMD_DLL_IMPORT extern "C" __declspec(dllimport)
 
+#define VKD(a) ((GetAsyncKeyState(a) & 0x8000))
+
 struct HMDLog
 {
 public:
@@ -51,11 +53,17 @@ private:
 	vr::IDriverLog *_logger; 
 };
 
-struct HMDData
+struct TrackerData
+{
+	HANDLE hPoseLock;
+	bool PoseUpdated;
+	vr::DriverPose_t Pose;
+};
+
+struct HMDData : TrackerData
 {
 	WCHAR DisplayName[CCHDEVICENAME];
 	WCHAR Model[128];
-	//WCHAR Port[32];	
 	bool IsConnected;
 	bool DirectMode;
 	bool FakePackDetected;
@@ -67,11 +75,17 @@ struct HMDData
 	float AspectRatio;	
 	float SuperSample;
 	HMDLog *Logger;
-	float PIDValue;
-	HANDLE hPoseLock;
-	bool PoseUpdated;
-	vr::DriverPose_t Pose;
+	float IPDValue;
 };
+
+struct ControllerData : TrackerData
+{
+	WCHAR DisplayName[CCHDEVICENAME];
+	WCHAR Model[128];	
+	vr::VRControllerState_t State;
+	vr::HmdVector3d_t Euler;
+};
+
 
 BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData);
 
