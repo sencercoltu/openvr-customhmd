@@ -2,6 +2,7 @@
 
 #include "Common.h"
 #include "TrackedDevice.h"
+#include "Quaternion.h"
 
 class CTrackedController : 
 	public CTrackedDevice,
@@ -9,7 +10,8 @@ class CTrackedController :
 {
 public:
 	CTrackedController(ETrackedControllerRole role, std::string id, CServerDriver *pServer);
-
+	~CTrackedController();
+	virtual void RunFrame();
 private:
 	ETrackedControllerRole _role;
 
@@ -28,6 +30,11 @@ private:
 	virtual uint32_t GetStringTrackedDeviceProperty(ETrackedDeviceProperty prop, char * pchValue, uint32_t unBufferSize, ETrackedPropertyError * pError) override;
 private:
 	// Inherited via IVRControllerComponent
+	ControllerData m_ControllerData;
+	HANDLE m_hThread;
+	bool m_IsRunning;
+	unsigned int static WINAPI ProcessThread(void *p);
+	void Run();
 	virtual VRControllerState_t GetControllerState() override;
 	virtual bool TriggerHapticPulse(uint32_t unAxisId, uint16_t usPulseDurationMicroseconds) override;
 protected:
