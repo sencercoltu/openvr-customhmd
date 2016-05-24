@@ -5,12 +5,12 @@
 
 CTrackedHMD::CTrackedHMD(std::string id, CServerDriver *pServer) : CTrackedDevice(id, pServer)
 {
-	IVRSettings *pSettings = m_pDriverHost ? m_pDriverHost->GetSettings(vr::IVRSettings_Version) : nullptr;
+	m_pSettings = m_pDriverHost ? m_pDriverHost->GetSettings(vr::IVRSettings_Version) : nullptr;
 
 	m_hThread = nullptr;
 	m_IsRunning = false;
-	m_HMDData = { 0 };
-	m_HMDData.PIDValue = 0.05f;
+	ZeroMemory(&m_HMDData, sizeof(m_HMDData));	
+	m_HMDData.IPDValue = 0.05f;
 	m_HMDData.PosX = 0;
 	m_HMDData.PosY = 0;
 	m_HMDData.ScreenWidth = 1280;
@@ -33,22 +33,20 @@ CTrackedHMD::CTrackedHMD(std::string id, CServerDriver *pServer) : CTrackedDevic
 
 	//m_Pose.vecPosition[1] = 1.0;
 
-	m_HMDData.Pose.qRotation = CSensorFusion::HmdQuaternion_Init(1, 0, 0, 0);
-	m_HMDData.Pose.qWorldFromDriverRotation = CSensorFusion::HmdQuaternion_Init(1, 0, 0, 0);
-	m_HMDData.Pose.qDriverFromHeadRotation = CSensorFusion::HmdQuaternion_Init(1, 0, 0, 0);
-
-
+	m_HMDData.Pose.qRotation = Quaternion();
+	m_HMDData.Pose.qWorldFromDriverRotation = Quaternion();
+	m_HMDData.Pose.qDriverFromHeadRotation = Quaternion();
 
 	HMDLog *pLog = new HMDLog(m_pLog);
 
-	if (pSettings)
+	if (m_pSettings)
 	{
 		char value[128];
 
-		m_HMDData.DirectMode = pSettings->GetBool("steamvr", "directMode", false);
+		m_HMDData.DirectMode = m_pSettings->GetBool("steamvr", "directMode", false);
 
 		value[0] = 0;
-		pSettings->GetString("driver_customhmd", "monitor", value, sizeof(value), "SNYD602");
+		m_pSettings->GetString("driver_customhmd", "monitor", value, sizeof(value), "SNYD602");
 		if (value[0])
 		{
 			std::string basic_string(value);
@@ -70,7 +68,7 @@ CTrackedHMD::CTrackedHMD(std::string id, CServerDriver *pServer) : CTrackedDevic
 			pLog->Log(" - HMD: PORT OK\n");
 		}*/
 
-		m_HMDData.SuperSample = pSettings->GetFloat("driver_customhmd", "supersample", 1.0f);
+		m_HMDData.SuperSample = m_pSettings->GetFloat("driver_customhmd", "supersample", 1.0f);
 	}
 
 	m_HMDData.Logger = pLog;
@@ -92,6 +90,7 @@ CTrackedHMD::CTrackedHMD(std::string id, CServerDriver *pServer) : CTrackedDevic
 
 	pLog->Log("HMD: Done.\n");
 
+	pServer->driverHost_->TrackedDeviceAdded(m_Id.c_str());
 }
 
 CTrackedHMD::~CTrackedHMD()
@@ -131,8 +130,6 @@ void CTrackedHMD::CloseUSB(hid_device **ppHandle)
 	*ppHandle = nullptr;
 }
 
-#define VKD(a) ((GetAsyncKeyState(a) & 0x8000))
-
 void CTrackedHMD::Run()
 {
 	//return;
@@ -167,8 +164,15 @@ void CTrackedHMD::Run()
 
 	hid_init();
 
-	//HmdQuaternion_t qIdentity = HmdQuaternion_Init(1, 0, 0, 0);
-	//HmdQuaternion_t qOffset = HmdQuaternion_Init(1, 0, 0, 0);
+	vr::HmdVector3d_t centerEuler = { 0 };
+	
+	if (m_pSettings)
+	{
+		centerEuler.v[0] = m_pSettings->GetFloat("driver_customhmd", "rotOffsetX", 0.0f);
+		centerEuler.v[1] = m_pSettings->GetFloat("driver_customhmd", "rotOffsetY", 0.0f);
+		centerEuler.v[2] = m_pSettings->GetFloat("driver_customhmd", "rotOffsetZ", 0.0f);
+		m_HMDData.IPDValue = m_pSettings->GetFloat("driver_customhmd", "IPD", 0.05f);
+	}
 
 	//char data;
 	float step = 0.0001f;
@@ -193,7 +197,8 @@ void CTrackedHMD::Run()
 	//	}
 	//}
 
-	SensorData adjustment = { 0 };
+//	SensorData adjustment = { 0 };
+	//vr::HmdQuaternion_t qAdjust = CSensorFusion::HmdQuaternion_Init(1, 0, 0, 0);
 
 	m_HMDData.Pose.poseIsValid = true;
 	m_HMDData.Pose.result = ETrackingResult::TrackingResult_Running_OK;
@@ -202,6 +207,7 @@ void CTrackedHMD::Run()
 
 	unsigned char buf[65] = { 0 };
 
+	//SensorData adjustment = { 0 };
 	SensorData *pSensorData = (SensorData *)buf;
 
 	//buf[0] = 0x01;
@@ -213,65 +219,73 @@ void CTrackedHMD::Run()
 	{
 		if (keydown && GetTickCount() - lastdown > delay)
 		{
-			keydown = false;			
+			keydown = false;
 		}
-		
+
 		if (VKD(VK_LCONTROL))
 		{
 			if (!keydown)
 			{
-				if (VKD(VK_RIGHT))
+				if (VKD(VK_ADD))
 				{
-					m_HMDData.PIDValue += step;
-					m_pDriverHost->PhysicalIpdSet(0, m_HMDData.PIDValue);
+					m_HMDData.IPDValue += step;
+					m_pDriverHost->PhysicalIpdSet(0, m_HMDData.IPDValue);
+					m_pSettings->SetFloat("driver_customhmd", "IPD", m_HMDData.IPDValue);
 					keydown = true;
 				}
-				else if (VKD(VK_LEFT))
+				else if (VKD(VK_SUBTRACT))
 				{
-					m_HMDData.PIDValue -= step;
-					m_pDriverHost->PhysicalIpdSet(0, m_HMDData.PIDValue);
+					m_HMDData.IPDValue -= step;
+					m_pDriverHost->PhysicalIpdSet(0, m_HMDData.IPDValue);
+					m_pSettings->SetFloat("driver_customhmd", "IPD", m_HMDData.IPDValue);
 					keydown = true;
 				}
-				else if (VKD(VK_LSHIFT))
-				{
-					int axis = -1;					
+				else if (VKD(VK_HOME))
+				{					
+					//http://developerblog.myo.com/quaternions/
+					//m_HMDData.Pose.qDriverFromHeadRotation = m_HMDData.Pose.qRotation;
+					//auto q = m_SensorFusion.Value();
+					centerEuler = m_SensorFusion.Value().ToEuler();
+					centerEuler.v[0] *= -1;
+					centerEuler.v[1] *= -1;
+					centerEuler.v[2] *= -1;
 
-					if (VKD(VK_NUMPAD4)) //x
+					if (m_pSettings)
 					{
-						axis = 0;
+						m_pSettings->SetFloat("driver_customhmd", "rotOffsetX", (float)centerEuler.v[0]);
+						m_pSettings->SetFloat("driver_customhmd", "rotOffsetY", (float)centerEuler.v[1]);
+						m_pSettings->SetFloat("driver_customhmd", "rotOffsetZ", (float)centerEuler.v[2]);
+						m_pSettings->Sync(true);
 					}
-					else if (VKD(VK_NUMPAD5)) //y
-					{
-						axis = 1;
-					}
-					else if (VKD(VK_NUMPAD6)) //z
-					{
-						axis = 2;
-					}
+					
 
-					if (axis != -1)
-					{					
-						int sgn = VKD(VK_SUBTRACT) ? -1 : VKD(VK_SUBTRACT) ? 1 : 0;
-						if (VKD(VK_NUMPAD1)) //acc
-						{
-							adjustment.Accel[axis] += sgn;
-							keydown = true;
-						}
-						else if (VKD(VK_NUMPAD1)) //gyro
-						{
-							adjustment.Gyro[axis] += sgn;
-							keydown = true;
-						}
-						else if (VKD(VK_NUMPAD1)) //mag
-						{
-							adjustment.Mag[axis] += sgn;
-							keydown = true;
-						}
-					}
+					//if (pHandle)
+					//{
+					//	buf[0] = 0;
+					//	buf[1] = 1;
+					//	hid_write(pHandle, buf, sizeof(buf));
+					//}
+
+					//m_HMDData.Pose.qDriverFromHeadRotation = m_HMDData.Pose.qWorldFromDriverRotation;
+					keydown = true;
 				}
-				else if (VKD(VK_MULTIPLY))
+				else if (VKD(VK_END))
 				{
-					ZeroMemory(&adjustment, sizeof(adjustment));
+					//m_HMDData.Pose.qWorldFromDriverRotation = qIdentity;
+					//if (pHandle)
+					//{
+					//	buf[0] = 0;
+					//	buf[1] = 2;
+					//	hid_write(pHandle, buf, sizeof(buf));
+					//}
+					centerEuler = { 0 };
+					if (m_pSettings)
+					{
+						m_pSettings->SetFloat("driver_customhmd", "rotOffsetX", (float)centerEuler.v[0]);
+						m_pSettings->SetFloat("driver_customhmd", "rotOffsetY", (float)centerEuler.v[1]);
+						m_pSettings->SetFloat("driver_customhmd", "rotOffsetZ", (float)centerEuler.v[2]);
+						m_pSettings->Sync(true);
+					}
 					keydown = true;
 				}
 				else if (VKD(VK_NUMPAD6))
@@ -401,7 +415,7 @@ void CTrackedHMD::Run()
 		//		delay /= 2;
 		//	}
 		//}
-		
+
 		//else if ((GetAsyncKeyState(VK_UP) & 0x8000) && ((GetAsyncKeyState(VK_LCONTROL) & 0x8000)))
 		//{
 		//	if (!keydown)
@@ -446,14 +460,14 @@ void CTrackedHMD::Run()
 			{
 				//MessageBox(nullptr, L"Got", L"Info", 0);
 				if (WAIT_OBJECT_0 == WaitForSingleObject(m_HMDData.hPoseLock, INFINITE))
-				{
-					for (int i = 0; i < 3; i++)
-					{
-						pSensorData->Accel[i] += adjustment.Accel[i];
-						pSensorData->Gyro[i] += adjustment.Gyro[i];
-						pSensorData->Mag[i] += adjustment.Mag[i];
-					}
-					m_HMDData.Pose.qRotation = m_SensorFusion.Fuse(pSensorData);
+				{	
+					auto euler = m_SensorFusion.Fuse(pSensorData).ToEuler();
+					euler.v[0] += centerEuler.v[0];
+					euler.v[1] += centerEuler.v[1];
+					euler.v[2] += centerEuler.v[2];
+					m_HMDData.Pose.qRotation = Quaternion::FromEuler(euler);
+
+					//m_HMDData.Pose.qRotation = (qCenter *  m_SensorFusion.Fuse(pSensorData) * qCenter.conjugate()).UnitQuaternion();
 					m_HMDData.PoseUpdated = true;
 					ReleaseMutex(m_HMDData.hPoseLock);
 				}
@@ -484,12 +498,13 @@ void CTrackedHMD::Run()
 EVRInitError CTrackedHMD::Activate(uint32_t unObjectId)
 {
 	m_pLog->Log(__FUNCTION__"\n");
+
 	m_HMDData.Pose.poseIsValid = true;
 	m_HMDData.Pose.result = TrackingResult_Running_OK;
 	m_HMDData.Pose.deviceIsConnected = true;
 
-	m_HMDData.Pose.qWorldFromDriverRotation = CSensorFusion::HmdQuaternion_Init(1, 0, 0, 0);
-	m_HMDData.Pose.qDriverFromHeadRotation = CSensorFusion::HmdQuaternion_Init(1, 0, 0, 0);
+	m_HMDData.Pose.qWorldFromDriverRotation = Quaternion();
+	m_HMDData.Pose.qDriverFromHeadRotation = Quaternion();
 
 
 	m_unObjectId = unObjectId;
@@ -741,7 +756,7 @@ float CTrackedHMD::GetFloatTrackedDeviceProperty(ETrackedDeviceProperty prop, ET
 	case vr::Prop_UserIpdMeters_Float:
 		if (pError)
 			*pError = vr::TrackedProp_Success;
-		return m_HMDData.PIDValue;
+		return m_HMDData.IPDValue;
 	case vr::Prop_DeviceBatteryPercentage_Float:
 	case vr::Prop_DisplayGCScale_Float:
 	case vr::Prop_DisplayGCPrescale_Float:
@@ -896,24 +911,24 @@ std::string CTrackedHMD::GetStringTrackedDeviceProperty(vr::ETrackedDeviceProper
 	case vr::Prop_ManufacturerName_String:
 		if (pError)
 			*pError = vr::TrackedProp_Success;
-		return std::string("SONY");
+		return "SONY";
 	case vr::Prop_ModelNumber_String:
 		if (pError)
 			*pError = vr::TrackedProp_Success;
-		return std::string("HMZ-T2");
+		return "HMZ-T2";
 	case vr::Prop_SerialNumber_String:
 		if (pError)
 			*pError = vr::TrackedProp_Success;
-		return std::string("1244244");
+		return m_Id;
 	case vr::Prop_TrackingSystemName_String:
 		if (pError)
 			*pError = vr::TrackedProp_Success;
-		return std::string("Custom Aruino Tracker");
+		return "Custom HeadTracker";
 	case vr::Prop_HardwareRevision_String:
 	case vr::Prop_TrackingFirmwareVersion_String:
 		if (pError)
 			*pError = vr::TrackedProp_Success;
-		return std::string("1.0");
+		return "1.0";
 	case vr::Prop_AttachedDeviceId_String:
 		if (pError)
 			*pError = vr::TrackedProp_Success;
@@ -921,7 +936,7 @@ std::string CTrackedHMD::GetStringTrackedDeviceProperty(vr::ETrackedDeviceProper
 	case vr::Prop_CameraFirmwareDescription_String:
 		if (pError)
 			*pError = vr::TrackedProp_Success;
-		return std::string("Sony HMZ-T2 Camera");
+		return "Sony HMZ-T2 Camera";
 
 	case vr::Prop_RenderModelName_String:
 	case vr::Prop_AllWirelessDongleDescriptions_String:
@@ -977,6 +992,7 @@ void CTrackedHMD::PowerOff()
 void CTrackedHMD::RunFrame()
 {
 	vr::DriverPose_t pose;
+	pose.poseIsValid = false;
 	if (WAIT_OBJECT_0 == WaitForSingleObject(m_HMDData.hPoseLock, INFINITE))
 	{
 		if (m_HMDData.PoseUpdated)
@@ -986,8 +1002,6 @@ void CTrackedHMD::RunFrame()
 		}
 		ReleaseMutex(m_HMDData.hPoseLock);
 	}
-	else
-		return;
-
-	m_pDriverHost->TrackedDevicePoseUpdated(m_unObjectId, pose);
+	if (pose.poseIsValid)
+		m_pDriverHost->TrackedDevicePoseUpdated(m_unObjectId, pose);
 }

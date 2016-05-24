@@ -63,6 +63,7 @@ public:
 protected:
 	virtual std::string GetStringTrackedDeviceProperty(vr::ETrackedDeviceProperty prop, vr::ETrackedPropertyError *pError) override;
 private:
+	IVRSettings *m_pSettings;
 	CSensorFusion m_SensorFusion;
 	HANDLE m_hThread;
 	bool m_IsRunning;
