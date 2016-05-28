@@ -1,10 +1,7 @@
 #ifndef TrackedHMD_H
 #define TrackedHMD_H
 
-#include "Common.h"
 #include "TrackedDevice.h"
-#include "hidapi.h"
-#include "SensorFusion.h"
 
 using namespace vr;
 
@@ -12,66 +9,41 @@ class CTrackedHMD :
 	public CTrackedDevice,
 	public IVRDisplayComponent //, public IVRCameraComponent
 {
-public:	
-	~CTrackedHMD();	
-	virtual EVRInitError Activate(uint32_t unObjectId) override;
-	virtual void Deactivate() override;
-	virtual void *GetComponent(const char *pchComponentNameAndVersion) override;
-	virtual void DebugRequest(const char * pchRequest, char * pchResponseBuffer, uint32_t unResponseBufferSize) override;
-	virtual void GetWindowBounds(int32_t * pnX, int32_t * pnY, uint32_t * pnWidth, uint32_t * pnHeight) override;
-	virtual bool IsDisplayOnDesktop() override;
-	virtual bool IsDisplayRealDisplay() override;
-	virtual void GetRecommendedRenderTargetSize(uint32_t * pnWidth, uint32_t * pnHeight) override;
-	virtual void GetEyeOutputViewport(EVREye eEye, uint32_t * pnX, uint32_t * pnY, uint32_t * pnWidth, uint32_t * pnHeight) override;
-	virtual void GetProjectionRaw(EVREye eEye, float * pfLeft, float * pfRight, float * pfTop, float * pfBottom) override;
-	virtual DistortionCoordinates_t ComputeDistortion(EVREye eEye, float fU, float fV) override;
-	virtual DriverPose_t GetPose() override;	
-	virtual bool GetBoolTrackedDeviceProperty(ETrackedDeviceProperty prop, ETrackedPropertyError * pError) override;
-	virtual float GetFloatTrackedDeviceProperty(ETrackedDeviceProperty prop, ETrackedPropertyError * pError) override;
-	virtual int32_t GetInt32TrackedDeviceProperty(ETrackedDeviceProperty prop, ETrackedPropertyError * pError) override;
-	virtual uint64_t GetUint64TrackedDeviceProperty(ETrackedDeviceProperty prop, ETrackedPropertyError * pError) override;
-	virtual HmdMatrix34_t GetMatrix34TrackedDeviceProperty(ETrackedDeviceProperty prop, ETrackedPropertyError * pError) override;
-	virtual uint32_t GetStringTrackedDeviceProperty(ETrackedDeviceProperty prop, char * pchValue, uint32_t unBufferSize, ETrackedPropertyError * pError) override;
-
-	virtual void CreateSwapTextureSet(uint32_t unPid, uint32_t unFormat, uint32_t unWidth, uint32_t unHeight, void *(*pSharedTextureHandles)[3]);
-	virtual void DestroySwapTextureSet(void *pSharedTextureHandle);
-	virtual void DestroyAllSwapTextureSets(uint32_t unPid);
-	virtual void GetNextSwapTextureSetIndex(void *pSharedTextureHandles[2], uint32_t(*pIndices)[2]);
-	virtual void SubmitLayer(void *pSharedTextureHandles[2], const vr::VRTextureBounds_t(&bounds)[2], const vr::HmdMatrix34_t *pPose);
-	virtual void Present(void *hSyncTexture);
-
-	virtual void PowerOff();
-	virtual void RunFrame();
-public:
-/*	struct HTData
-	{
-		int start; 
-		int led;
-		int yaw;
-		int pitch;
-		int roll;
-	};
-*/
-	struct QOrient
-	{
-		double w;
-		double x;
-		double y;
-		double z;
-	};
-	CTrackedHMD(std::string id, CServerDriver *pServer);	
-protected:
-	virtual std::string GetStringTrackedDeviceProperty(vr::ETrackedDeviceProperty prop, vr::ETrackedPropertyError *pError) override;
 private:
 	IVRSettings *m_pSettings;
-	CSensorFusion m_SensorFusion;
-	HANDLE m_hThread;
-	bool m_IsRunning;
-	unsigned int static WINAPI ProcessThread(void *p);
-	void Run();
-	HMDData m_HMDData;				
-	void OpenUSB(hid_device **ppHandle);
-	void CloseUSB(hid_device **ppHandle);
+	HMDData m_HMDData;		
+public:
+	CTrackedHMD(std::string id, CServerDriver *pServer);	
+	~CTrackedHMD();
+	EVRInitError Activate(uint32_t unObjectId) override;
+	void Deactivate() override;
+	void *GetComponent(const char *pchComponentNameAndVersion) override;
+	void DebugRequest(const char * pchRequest, char * pchResponseBuffer, uint32_t unResponseBufferSize) override;
+	void GetWindowBounds(int32_t * pnX, int32_t * pnY, uint32_t * pnWidth, uint32_t * pnHeight) override;
+	bool IsDisplayOnDesktop() override;
+	bool IsDisplayRealDisplay() override;
+	void GetRecommendedRenderTargetSize(uint32_t * pnWidth, uint32_t * pnHeight) override;
+	void GetEyeOutputViewport(EVREye eEye, uint32_t * pnX, uint32_t * pnY, uint32_t * pnWidth, uint32_t * pnHeight) override;
+	void GetProjectionRaw(EVREye eEye, float * pfLeft, float * pfRight, float * pfTop, float * pfBottom) override;
+	DistortionCoordinates_t ComputeDistortion(EVREye eEye, float fU, float fV) override;
+	DriverPose_t GetPose() override;
+	
+	void CreateSwapTextureSet(uint32_t unPid, uint32_t unFormat, uint32_t unWidth, uint32_t unHeight, void *(*pSharedTextureHandles)[3]) override;
+	void DestroySwapTextureSet(void *pSharedTextureHandle) override;
+	void DestroyAllSwapTextureSets(uint32_t unPid) override;
+	void GetNextSwapTextureSetIndex(void *pSharedTextureHandles[2], uint32_t(*pIndices)[2]) override;
+	void SubmitLayer(void *pSharedTextureHandles[2], const vr::VRTextureBounds_t(&bounds)[2], const vr::HmdMatrix34_t *pPose) override;
+	void Present(void *hSyncTexture) override;
+	void PowerOff() override;	
+
+protected:
+	std::string GetStringProperty(vr::ETrackedDeviceProperty prop, vr::ETrackedPropertyError *pError) override;
+	bool GetBoolProperty(vr::ETrackedDeviceProperty prop, vr::ETrackedPropertyError *pError) override;
+	float GetFloatProperty(ETrackedDeviceProperty prop, ETrackedPropertyError * pError) override;
+	int32_t GetInt32Property(ETrackedDeviceProperty prop, ETrackedPropertyError * pError) override;
+	uint64_t GetUint64Property(ETrackedDeviceProperty prop, ETrackedPropertyError * pError) override;
+	void PoseUpdate(USBData *pData, HmdVector3d_t *pCenterEuler) override;
+	void RunFrame(DWORD currTick) override;
 	/*
 	// Inherited via IVRCameraComponent
 	virtual bool HasCamera() override;

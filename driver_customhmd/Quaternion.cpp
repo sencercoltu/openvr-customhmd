@@ -49,6 +49,13 @@ Quaternion::Quaternion(double v[4])
 	z = v[3];
 }
 
+Quaternion::Quaternion(float v[4])
+{
+	w = v[0];
+	x = v[1];
+	y = v[2];
+	z = v[3];
+}
 
 //Quaternion
 // -copy constructor
@@ -282,7 +289,7 @@ Quaternion Quaternion::conjugate()
 
 Quaternion Quaternion::UnitQuaternion()
 {
-	return (*this).scale(1 / (*this).magnitude());
+	return scale(1.0 / magnitude());
 }
 
 // -parameters : vector of type double
@@ -292,7 +299,7 @@ Quaternion Quaternion::UnitQuaternion()
 void Quaternion::QuatRotation(double v[3])
 {
 	Quaternion  qv(0, v[0], v[1], v[2]);
-	Quaternion  qm = (*this) * qv * (*this).inverse();
+	Quaternion  qm = (*this) * qv * inverse();
 
 	v[0] = qm.x;
 	v[1] = qm.y;
@@ -342,4 +349,20 @@ Quaternion Quaternion::FromEuler(const vr::HmdVector3d_t& e)
 	q.y = s1*c2*c3 + c1*s2*s3;
 	q.z = c1*s2*c3 - s1*c2*s3;
 	return q;
+}
+
+void Quaternion::HmdMatrix_SetIdentity(vr::HmdMatrix34_t *pMatrix)
+{
+	pMatrix->m[0][0] = 1.f;
+	pMatrix->m[0][1] = 0.f;
+	pMatrix->m[0][2] = 0.f;
+	pMatrix->m[0][3] = 0.f;
+	pMatrix->m[1][0] = 0.f;
+	pMatrix->m[1][1] = 1.f;
+	pMatrix->m[1][2] = 0.f;
+	pMatrix->m[1][3] = 0.f;
+	pMatrix->m[2][0] = 0.f;
+	pMatrix->m[2][1] = 0.f;
+	pMatrix->m[2][2] = 1.f;
+	pMatrix->m[2][3] = 0.f;
 }

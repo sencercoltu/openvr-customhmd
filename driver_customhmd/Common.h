@@ -53,6 +53,18 @@ private:
 	vr::IDriverLog *_logger; 
 };
 
+#pragma pack(push)
+#pragma pack(1)
+struct USBData
+{
+	uint8_t Source; //hmd = 0, left controller = 1, right controller = 2
+	float Rotation[4];
+	float Position[3];
+	float Analog[5];
+	uint8_t Digital[5];
+};
+#pragma pack(pop)
+
 struct TrackerData
 {
 	HANDLE hPoseLock;
@@ -76,6 +88,7 @@ struct HMDData : TrackerData
 	float SuperSample;
 	HMDLog *Logger;
 	float IPDValue;
+	USBData LastState;
 };
 
 struct ControllerData : TrackerData
@@ -84,6 +97,7 @@ struct ControllerData : TrackerData
 	WCHAR Model[128];	
 	vr::VRControllerState_t State;
 	vr::HmdVector3d_t Euler;
+	USBData LastState;
 };
 
 
@@ -92,7 +106,7 @@ BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMoni
 class CDummyLog : public vr::IDriverLog
 {
 public:
-	virtual void Log(const char *pchLogMessage);
+	void Log(const char *pchLogMessage) override;
 };
 
 #endif // Common_H

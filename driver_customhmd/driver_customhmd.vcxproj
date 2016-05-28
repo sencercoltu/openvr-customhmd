@@ -154,9 +154,9 @@
     <ClCompile Include="driver_customhmd.cpp" />
     <ClCompile Include="hid.c" />
     <ClCompile Include="Quaternion.cpp" />
-    <ClCompile Include="SensorFusion.cpp" />
     <ClCompile Include="ServerDriver.cpp" />
     <ClCompile Include="TrackedController.cpp" />
+    <ClCompile Include="TrackedDevice.cpp" />
     <ClCompile Include="TrackedHMD.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -165,7 +165,6 @@
     <ClInclude Include="Common.h" />
     <ClInclude Include="hidapi.h" />
     <ClInclude Include="Quaternion.h" />
-    <ClInclude Include="SensorFusion.h" />
     <ClInclude Include="TrackedController.h" />
     <ClInclude Include="TrackedDevice.h" />
     <ClInclude Include="TrackedHMD.h" />

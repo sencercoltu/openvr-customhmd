@@ -34,6 +34,7 @@ struct Quaternion : vr::HmdQuaternion_t
 	// -parameters : 4D vector
 	// -creates a new quaternion based on the elements passed in
 	Quaternion(double v[4]);
+	Quaternion(float v[4]);
 
 	//Quaternion
 	// -copy constructor
@@ -162,6 +163,8 @@ struct Quaternion : vr::HmdQuaternion_t
 	vr::HmdVector3d_t ToEuler();
 
 	static Quaternion FromEuler(const vr::HmdVector3d_t &e);
+
+	static void HmdMatrix_SetIdentity(vr::HmdMatrix34_t *pMatrix);
 };
 
 #endif
