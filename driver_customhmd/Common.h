@@ -11,6 +11,7 @@
 #include <locale>
 #include <codecvt>
 #include <HighLevelMonitorConfigurationAPI.h>
+#include "escapi/escapi.h"
 
 //#define TRACE(a) OutputDebugString(a"\n")
 
@@ -72,6 +73,16 @@ struct TrackerData
 	vr::DriverPose_t Pose;
 };
 
+struct CameraData 
+{
+	char Model[128];
+	int Index;
+	bool IsActive;
+	SimpleCapParams CaptureFrame;
+	vr::CameraVideoStreamFrame_t StreamFrame;
+
+};
+
 struct HMDData : TrackerData
 {
 	WCHAR DisplayName[CCHDEVICENAME];
@@ -89,6 +100,7 @@ struct HMDData : TrackerData
 	HMDLog *Logger;
 	float IPDValue;
 	USBData LastState;
+	CameraData Camera;
 };
 
 struct ControllerData : TrackerData

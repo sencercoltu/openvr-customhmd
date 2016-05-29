@@ -215,5 +215,4 @@ void CServerDriver::AlignHMD(HmdVector3d_t *pAlign)
 		m_pSettings->SetFloat("driver_customhmd", "eoZ", (float)m_Align.v[2]);
 		m_pSettings->Sync(true);
 	}
-
 }
