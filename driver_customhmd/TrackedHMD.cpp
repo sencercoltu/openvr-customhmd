@@ -3,7 +3,7 @@
 #include "TrackedHMD.h"
 
 
-CTrackedHMD::CTrackedHMD(std::string id, CServerDriver *pServer) : CTrackedDevice(id, pServer)
+CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTrackedDevice(displayName, pServer)
 {
 	Prop_TrackingSystemName = "Sony HMZ-T2 HMD";
 	Prop_ModelNumber = "HMZ-T2";
@@ -13,9 +13,7 @@ CTrackedHMD::CTrackedHMD(std::string id, CServerDriver *pServer) : CTrackedDevic
 	Prop_AllWirelessDongleDescriptions = "HMD-None";
 	Prop_ConnectedWirelessDongle = "HMD-None";
 	Prop_Firmware_ProgrammingTarget = "HMD-Multi";
-
-	m_pSettings = m_pDriverHost ? m_pDriverHost->GetSettings(IVRSettings_Version) : nullptr;
-		
+	
 	ZeroMemory(&m_HMDData, sizeof(m_HMDData));
 	m_HMDData.Camera.Index = -1;
 
@@ -34,18 +32,15 @@ CTrackedHMD::CTrackedHMD(std::string id, CServerDriver *pServer) : CTrackedDevic
 
 	//wcscpy_s(m_HMDData.Port, L"\\\\.\\COM3");
 	wcscpy_s(m_HMDData.Model, L"SNYD602");
-
-	m_HMDData.Pose = {};
+		
 	m_HMDData.Pose.willDriftInYaw = false;
 	m_HMDData.Pose.shouldApplyHeadModel = false;
-	m_HMDData.Pose.deviceIsConnected = false;
-	m_HMDData.Pose.poseIsValid = false;
-	m_HMDData.Pose.result = ETrackingResult::TrackingResult_Uninitialized;
-	m_HMDData.Pose.qRotation = Quaternion();
-	m_HMDData.Pose.qWorldFromDriverRotation = Quaternion();
-	m_HMDData.Pose.qDriverFromHeadRotation = Quaternion();
-
-	HMDLog *pLog = new HMDLog(m_pLog);
+	m_HMDData.Pose.deviceIsConnected = true;
+	m_HMDData.Pose.poseIsValid = true;
+	m_HMDData.Pose.result = ETrackingResult::TrackingResult_Running_OK;
+	m_HMDData.Pose.qRotation = Quaternion(1, 0, 0, 0);
+	m_HMDData.Pose.qWorldFromDriverRotation = Quaternion(1, 0, 0, 0);
+	m_HMDData.Pose.qDriverFromHeadRotation = Quaternion(1, 0, 0, 0);
 
 	if (m_pSettings)
 	{
@@ -60,72 +55,43 @@ CTrackedHMD::CTrackedHMD(std::string id, CServerDriver *pServer) : CTrackedDevic
 			std::string basic_string(value);
 			std::wstring wchar_value(basic_string.begin(), basic_string.end());
 			wcscpy_s(m_HMDData.Model, wchar_value.c_str());
-
-			pLog->Log(m_HMDData.Model);
-			pLog->Log(" - HMD: MODEL OK\n");
+			_LOG("Using model %S for detection...", m_HMDData.Model);			
 		}
-
-		/*value[0] = 0;  usb kullan
-		pSettings->GetString("driver_customhmd", "port", value, sizeof(value), "\\\\.\\COM3");
-		if (value[0])
-		{
-			std::string basic_string(value);
-			std::wstring wchar_value(basic_string.begin(), basic_string.end());
-			wcscpy_s(m_HMDData.Port, wchar_value.c_str());
-			pLog->Log(m_HMDData.Port);
-			pLog->Log(" - HMD: PORT OK\n");
-		}*/
 
 		m_HMDData.SuperSample = m_pSettings->GetFloat("driver_customhmd", "supersample", 1.0f);
 	}
 
-	m_HMDData.Logger = pLog;
-	pLog->Log("HMD: Enumerating monitors...\n");
+	m_HMDData.Logger = m_pLog;
+	
 	if (!m_HMDData.DirectMode)
 	{
+		
+		_LOG("HMD: Enumerating monitors...");
 		EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, (LPARAM)&m_HMDData);
-		/*if (!m_HMDData.IsConnected)
-		{
-			m_HMDData.PosX = 0;
-			m_HMDData.PosY = 0;
-			m_HMDData.ScreenWidth = 1280/2;
-			m_HMDData.ScreenHeight = 720/2;
-			m_HMDData.Frequency = 60;
-			m_HMDData.AspectRatio = (float)m_HMDData.ScreenWidth / (float)m_HMDData.ScreenHeight;
-			m_HMDData.FakePackDetected = false;
-		}*/
+		_LOG("HMD: Monitor detection finished.");		
 	}
-
-	pLog->Log("HMD: Done.\n");
-
 	m_pDriverHost->TrackedDeviceAdded(Prop_SerialNumber.c_str());
 }
 
 CTrackedHMD::~CTrackedHMD()
 {
-	//Deactivate();
-	delete m_HMDData.Logger;
-	CloseHandle(m_HMDData.hPoseLock);
-	
+	//Deactivate();		
+	CloseHandle(m_HMDData.hPoseLock);	
 }
 
 EVRInitError CTrackedHMD::Activate(uint32_t unObjectId)
 {
 	CoInitialize(NULL);
-	m_pLog->Log(__FUNCTION__"\n");
+	_LOG(__FUNCTION__" idx: %d", unObjectId);
 	InitCamera();
 	m_unObjectId = unObjectId;
-	m_HMDData.Pose.poseIsValid = true;
-	m_HMDData.Pose.result = TrackingResult_Running_OK;
-	m_HMDData.Pose.deviceIsConnected = true;
 	m_HMDData.IPDValue = m_pSettings->GetFloat("driver_customhmd", "IPD", 0.05f);
-	m_pDriverHost->TrackedDevicePropertiesChanged(m_unObjectId);
 	return VRInitError_None;
 }
 
 void CTrackedHMD::Deactivate()
 {
-	m_pLog->Log(__FUNCTION__"\n");
+	_LOG(__FUNCTION__);
 	m_unObjectId = k_unTrackedDeviceIndexInvalid;
 	DeinitCamrea();
 	CoUninitialize();
@@ -134,10 +100,14 @@ void CTrackedHMD::Deactivate()
 
 void *CTrackedHMD::GetComponent(const char *pchComponentNameAndVersion)
 {
-	m_pLog->Log(__FUNCTION__"\n");
+	_LOG(__FUNCTION__" %s", pchComponentNameAndVersion);
 	if (!_stricmp(pchComponentNameAndVersion, IVRDisplayComponent_Version))
 	{
 		return (IVRDisplayComponent*)this;
+	}
+	else if (!_stricmp(pchComponentNameAndVersion, IVRCameraComponent_Version))
+	{
+		return (IVRCameraComponent*)this;
 	}
 
 	// override this to add a component to a driver
@@ -146,33 +116,32 @@ void *CTrackedHMD::GetComponent(const char *pchComponentNameAndVersion)
 
 void CTrackedHMD::DebugRequest(const char * pchRequest, char * pchResponseBuffer, uint32_t unResponseBufferSize)
 {
-	m_pLog->Log(__FUNCTION__"\n");
+	_LOG(__FUNCTION__" %s", pchRequest);
 }
 
 void CTrackedHMD::GetWindowBounds(int32_t * pnX, int32_t * pnY, uint32_t * pnWidth, uint32_t * pnHeight)
-{
-	m_pLog->Log(__FUNCTION__"\n");
+{	
 	*pnX = m_HMDData.PosX;
 	*pnY = m_HMDData.PosY;
 	*pnWidth = m_HMDData.ScreenWidth;
 	*pnHeight = m_HMDData.ScreenHeight;
+	_LOG(__FUNCTION__" x: %d, y: %d, w: %d, h: %d", *pnX, *pnY, *pnWidth, *pnHeight);
 }
 
 bool CTrackedHMD::IsDisplayOnDesktop()
 {
-	//m_HMDData.Logger->Log(__FUNCTION__": %s\n", m_HMDData.DirectMode ? "false" : "true");
+	_LOG(__FUNCTION__" returning %d", !m_HMDData.DirectMode);
 	return !m_HMDData.DirectMode;
 }
 
 bool CTrackedHMD::IsDisplayRealDisplay()
 {
-	//m_pLog->Log(__FUNCTION__": true\n");
+	_LOG(__FUNCTION__" returning 1");
 	return true;
 }
 
 void CTrackedHMD::GetRecommendedRenderTargetSize(uint32_t * pnWidth, uint32_t * pnHeight)
-{
-	m_pLog->Log(__FUNCTION__"\n");
+{	
 	if (m_HMDData.FakePackDetected)
 	{
 		*pnWidth = m_HMDData.ScreenWidth;
@@ -185,11 +154,11 @@ void CTrackedHMD::GetRecommendedRenderTargetSize(uint32_t * pnWidth, uint32_t * 
 	}
 	*pnWidth = uint32_t(*pnWidth * m_HMDData.SuperSample);
 	*pnHeight = uint32_t(*pnHeight * m_HMDData.SuperSample);
+	_LOG(__FUNCTION__" w: %d, h: %d", *pnWidth, *pnHeight);
 }
 
 void CTrackedHMD::GetEyeOutputViewport(EVREye eEye, uint32_t * pnX, uint32_t * pnY, uint32_t * pnWidth, uint32_t * pnHeight)
-{
-	m_pLog->Log(__FUNCTION__"\n");
+{	
 	if (m_HMDData.FakePackDetected)
 	{
 		uint32_t h = (m_HMDData.ScreenHeight - 30) / 2;
@@ -227,11 +196,11 @@ void CTrackedHMD::GetEyeOutputViewport(EVREye eEye, uint32_t * pnX, uint32_t * p
 			break;
 		}
 	}
+	_LOG(__FUNCTION__" Eye: %d, x: %d, y: %d, w: %d, h: %d", eEye, *pnX, *pnY, *pnWidth, *pnHeight);
 }
 
 void CTrackedHMD::GetProjectionRaw(EVREye eEye, float * pfLeft, float * pfRight, float * pfTop, float * pfBottom)
-{
-	m_pLog->Log(__FUNCTION__"\n");
+{	
 	if (m_HMDData.FakePackDetected)
 	{
 		switch (eEye)
@@ -268,6 +237,7 @@ void CTrackedHMD::GetProjectionRaw(EVREye eEye, float * pfLeft, float * pfRight,
 			break;
 		}
 	}
+	_LOG(__FUNCTION__" Eye: %d, l: %f, r: %f, t: %f, b: %f", eEye, *pfLeft, *pfRight, *pfTop, *pfBottom);
 }
 
 DistortionCoordinates_t CTrackedHMD::ComputeDistortion(EVREye eEye, float fU, float fV)
@@ -407,37 +377,37 @@ std::string CTrackedHMD::GetStringProperty(ETrackedDeviceProperty prop, ETracked
 
 void CTrackedHMD::CreateSwapTextureSet(uint32_t unPid, uint32_t unFormat, uint32_t unWidth, uint32_t unHeight, void *(*pSharedTextureHandles)[3])
 {
-	m_pLog->Log(__FUNCTION__"\n");
+	_LOG(__FUNCTION__" id: %d, fmt: %d, w: %d, h: %d", unPid, unFormat, unWidth, unHeight);
 }
 
 void CTrackedHMD::DestroySwapTextureSet(void *pSharedTextureHandle)
 {
-	m_pLog->Log(__FUNCTION__"\n");
+	_LOG(__FUNCTION__);
 }
 
 void CTrackedHMD::DestroyAllSwapTextureSets(uint32_t unPid)
 {
-	m_pLog->Log(__FUNCTION__"\n");
+	_LOG(__FUNCTION__" id: %d", unPid);
 }
 
 void CTrackedHMD::GetNextSwapTextureSetIndex(void *pSharedTextureHandles[2], uint32_t(*pIndices)[2])
 {
-	m_pLog->Log(__FUNCTION__"\n");
+	_LOG(__FUNCTION__);
 }
 
 void CTrackedHMD::SubmitLayer(void *pSharedTextureHandles[2], const VRTextureBounds_t(&bounds)[2], const HmdMatrix34_t *pPose)
 {
-	m_pLog->Log(__FUNCTION__"\n");
+	_LOG(__FUNCTION__);
 }
 
 void CTrackedHMD::Present(void *hSyncTexture)
 {
-	m_pLog->Log(__FUNCTION__"\n");
+	_LOG(__FUNCTION__);
 }
 
 void CTrackedHMD::PowerOff()
 {
-	m_pLog->Log(__FUNCTION__"\n");
+	_LOG(__FUNCTION__);
 }
 
 void CTrackedHMD::RunFrame(DWORD currTick)
@@ -456,7 +426,7 @@ void CTrackedHMD::RunFrame(DWORD currTick)
 			if (VKD(VK_ADD))
 			{
 				m_HMDData.IPDValue += step;
-				m_pDriverHost->PhysicalIpdSet(0, m_HMDData.IPDValue);
+				m_pDriverHost->PhysicalIpdSet(m_unObjectId, m_HMDData.IPDValue);
 				m_pSettings->SetFloat("driver_customhmd", "IPD", m_HMDData.IPDValue);
 				m_pSettings->Sync(true);
 				m_KeyDown = true;
@@ -464,7 +434,7 @@ void CTrackedHMD::RunFrame(DWORD currTick)
 			else if (VKD(VK_SUBTRACT))
 			{
 				m_HMDData.IPDValue -= step;
-				m_pDriverHost->PhysicalIpdSet(0, m_HMDData.IPDValue);
+				m_pDriverHost->PhysicalIpdSet(m_unObjectId, m_HMDData.IPDValue);
 				m_pSettings->SetFloat("driver_customhmd", "IPD", m_HMDData.IPDValue);
 				m_pSettings->Sync(true);
 				m_KeyDown = true;
@@ -574,7 +544,16 @@ void CTrackedHMD::RunFrame(DWORD currTick)
 }
 
 void CTrackedHMD::PoseUpdate(USBData *pData, HmdVector3d_t *pCenterEuler)
-{
+{	
+	DWORD currTick = GetTickCount();
+	if (m_HMDData.Camera.IsActive && m_HMDData.Camera.Index > -1 && m_HMDData.Camera.pfCallback && (currTick - m_HMDData.Camera.LastFrameTime) >= 33)
+	{			
+		_LOG("Camera callback %d, %d after %d ms.", m_HMDData.Camera.StreamFrame.m_nFrameSequence, m_HMDData.Camera.CallbackCount, currTick - m_HMDData.Camera.LastFrameTime);
+		m_HMDData.Camera.CallbackCount = 0;
+		m_HMDData.Camera.pfCallback->OnCameraVideoSinkCallback();		
+		m_HMDData.Camera.LastFrameTime = currTick;
+	}
+
 	if (pData->Source != 0)
 		return;
 	if (WAIT_OBJECT_0 == WaitForSingleObject(m_HMDData.hPoseLock, INFINITE))
@@ -590,25 +569,23 @@ void CTrackedHMD::PoseUpdate(USBData *pData, HmdVector3d_t *pCenterEuler)
 	}
 }
 
-
-
 bool CTrackedHMD::HasCamera()
 {		
-	m_pLog->Log(__FUNCTION__"\n");
+	_LOG(__FUNCTION__" returning 1");
 	return true;
 }
 
 bool CTrackedHMD::GetCameraFirmwareDescription(char *pBuffer, uint32_t nBufferLen)
 {
-	m_pLog->Log(__FUNCTION__"\n");
+	_LOG(__FUNCTION__);
 	strncpy_s(pBuffer, 14, "HeadSet Camera", nBufferLen);
 	return true;
 }
 
 bool CTrackedHMD::GetCameraFrameDimensions(vr::ECameraVideoStreamFormat nVideoStreamFormat, uint32_t *pWidth, uint32_t *pHeight)
 {
-	m_pLog->Log(__FUNCTION__"\n");
-	if (nVideoStreamFormat == CVS_FORMAT_RGB24)
+	_LOG(__FUNCTION__" fmt: %d", nVideoStreamFormat);
+	//if (nVideoStreamFormat == CVS_FORMAT_RGB24)
 	{
 		if (pWidth) *pWidth = 320;
 		if (pHeight) *pHeight = 240;
@@ -619,36 +596,40 @@ bool CTrackedHMD::GetCameraFrameDimensions(vr::ECameraVideoStreamFormat nVideoSt
 
 bool CTrackedHMD::GetCameraFrameBufferingRequirements(int *pDefaultFrameQueueSize, uint32_t *pFrameBufferDataSize)
 {
-	m_pLog->Log(__FUNCTION__"\n");
-	return false;
+	_LOG(__FUNCTION__);
+	*pDefaultFrameQueueSize = 1;
+	*pFrameBufferDataSize = 320 * 240 * sizeof(int);
+	return true;
 }
 
 bool CTrackedHMD::SetCameraFrameBuffering(int nFrameBufferCount, void **ppFrameBuffers, uint32_t nFrameBufferDataSize)
 {
-	m_pLog->Log(__FUNCTION__"\n");
-	return false;
+	_LOG(__FUNCTION__" fc: %d, ds: %d, ptr: %p", nFrameBufferCount, nFrameBufferDataSize, *ppFrameBuffers);
+	*ppFrameBuffers = m_HMDData.Camera.CaptureFrame.mTargetBuf;
+	return true;
 }
 
 bool CTrackedHMD::SetCameraVideoStreamFormat(vr::ECameraVideoStreamFormat nVideoStreamFormat)
 {
-	m_pLog->Log(__FUNCTION__"\n");
+	_LOG(__FUNCTION__" fmt: %d", nVideoStreamFormat);
 	if (nVideoStreamFormat != CVS_FORMAT_RGB24) return false;
 	return true;
 }
 
 vr::ECameraVideoStreamFormat CTrackedHMD::GetCameraVideoStreamFormat()
 {
-	m_pLog->Log(__FUNCTION__"\n");
+	_LOG(__FUNCTION__);
 	return CVS_FORMAT_RGB24;
 }
 
 bool CTrackedHMD::StartVideoStream()
 {
-	m_pLog->Log(__FUNCTION__"\n");
-	MessageBox(nullptr, L"START", L"START", 0);
+	_LOG(__FUNCTION__);
 	if (!m_HMDData.Camera.IsActive && m_HMDData.Camera.Index > -1)
 	{		
 		m_HMDData.Camera.IsActive = true;
+		m_HMDData.Camera.StartTime = GetTickCount();
+		m_HMDData.Camera.LastFrameTime = m_HMDData.Camera.StartTime;
 		doCapture(m_HMDData.Camera.Index);
 		return true;
 	}
@@ -657,7 +638,7 @@ bool CTrackedHMD::StartVideoStream()
 
 void CTrackedHMD::StopVideoStream()
 {
-	m_pLog->Log(__FUNCTION__"\n");
+	_LOG(__FUNCTION__);
 	if (m_HMDData.Camera.IsActive && m_HMDData.Camera.Index > -1)
 	{		
 		m_HMDData.Camera.IsActive = false;
@@ -666,64 +647,83 @@ void CTrackedHMD::StopVideoStream()
 
 bool CTrackedHMD::IsVideoStreamActive()
 {
-	m_pLog->Log(__FUNCTION__"\n");
+	_LOG(__FUNCTION__" retuning %d", m_HMDData.Camera.IsActive);
 	return m_HMDData.Camera.IsActive;
 }
 
 float CTrackedHMD::GetVideoStreamElapsedTime()
 {
-	m_pLog->Log(__FUNCTION__"\n");
-	return 0.0f;
+	_LOG(__FUNCTION__);	
+	return (float)(GetTickCount() - m_HMDData.Camera.StartTime) / 1000.0f;
 }
 
 const vr::CameraVideoStreamFrame_t *CTrackedHMD::GetVideoStreamFrame()
 {
-	m_pLog->Log(__FUNCTION__"\n");
-	vr::CameraVideoStreamFrame_t *pFrame = &m_HMDData.Camera.StreamFrame;
+	m_HMDData.Camera.CallbackCount++;
+	if (m_HMDData.Camera.CallbackCount > 1)
+		return nullptr;
+	//_LOG(__FUNCTION__);
+	
+	m_HMDData.Camera.StreamFrame.m_nFrameSequence++;
+	vr::CameraVideoStreamFrame_t *pFrame = new vr::CameraVideoStreamFrame_t();
+	memcpy(pFrame, &m_HMDData.Camera.StreamFrame, sizeof(vr::CameraVideoStreamFrame_t));
+	pFrame->m_flFrameElapsedTime = (GetTickCount() - m_HMDData.Camera.StartTime) / 1000.0;	
+	pFrame->m_nISPReferenceTimeStamp = m_HMDData.Camera.StartTime;
+	pFrame->m_nISPFrameTimeStamp = GetTickCount();
+	//pFrame->m_nSyncCounter = (DWORD)((pFrame->m_nISPFrameTimeStamp - pFrame->m_nISPReferenceTimeStamp) / 33.33);
+	
+	pFrame->m_nFrameCaptureTicks_ServerAbsolute = pFrame->m_nISPFrameTimeStamp;	
+	pFrame->m_StandingTrackedDevicePose.bDeviceIsConnected = true;
+	pFrame->m_StandingTrackedDevicePose.bPoseIsValid = true;
+	pFrame->m_StandingTrackedDevicePose.eTrackingResult = TrackingResult_Running_OK;
+	
+	pFrame->m_pImageData = m_HMDData.Camera.CaptureFrame.mTargetBuf;	
 	doCapture(m_HMDData.Camera.Index);
-	pFrame->m_nFrameSequence++;
 	return pFrame;
 }
 
 void CTrackedHMD::ReleaseVideoStreamFrame(const vr::CameraVideoStreamFrame_t *pFrameImage)
 {
-	m_pLog->Log(__FUNCTION__"\n");
+	//_LOG(__FUNCTION__);
+	//free(pFrameImage->m_pImageData);
+	delete pFrameImage;
+	
 	//if (pFrameImage)
 	//	delete pFrameImage;
 }
 
 bool CTrackedHMD::SetAutoExposure(bool bEnable)
 {
-	m_pLog->Log(__FUNCTION__"\n");
-	return false;
+	_LOG(__FUNCTION__" en: %d", bEnable);
+	return true;
 }
 
 bool CTrackedHMD::PauseVideoStream()
 {
-	m_pLog->Log(__FUNCTION__"\n");
+	_LOG(__FUNCTION__);
 	if (m_HMDData.Camera.IsActive)
 	{
 		StopVideoStream();
 		return true;
-	}
+	}	
 	return false;
 }
 
 bool CTrackedHMD::ResumeVideoStream()
 {	
-	m_pLog->Log(__FUNCTION__"\n");
+	_LOG(__FUNCTION__);
 	return StartVideoStream();
 }
 
 bool CTrackedHMD::IsVideoStreamPaused()
-{
-	m_pLog->Log(__FUNCTION__"\n");
-	return IsVideoStreamActive();
+{	
+	_LOG(__FUNCTION__" returning %d", !m_HMDData.Camera.IsActive);
+	return !m_HMDData.Camera.IsActive;;
 }
 
 bool CTrackedHMD::GetCameraDistortion(float flInputU, float flInputV, float *pflOutputU, float *pflOutputV)
 {
-	m_pLog->Log(__FUNCTION__"\n");
+	//_LOG(__FUNCTION__" iu: %f, iv: %f", flInputU, flInputV);
 	*pflOutputU = flInputU;
 	*pflOutputV = flInputV;
 	return true;
@@ -731,79 +731,117 @@ bool CTrackedHMD::GetCameraDistortion(float flInputU, float flInputV, float *pfl
 
 bool CTrackedHMD::GetCameraProjection(float flWidthPixels, float flHeightPixels, float flZNear, float flZFar, vr::HmdMatrix44_t *pProjection)
 {
-	m_pLog->Log(__FUNCTION__"\n");
-	//*pProjection = Quaternion::HmdMatrix_SetIdentity();
-	return false;
+	_LOG(__FUNCTION__" w: %f, h: %f, n: %f, f: %f", flWidthPixels, flHeightPixels, flZNear, flZFar);
+
+	Quaternion::HmdMatrix_SetIdentity(pProjection);
+
+	float r = 0, l = flWidthPixels, b = flHeightPixels, t = 0, n = flZNear, f = flZFar;
+
+	pProjection->m[0][0] = 2 / (r - l);
+	pProjection->m[0][1] = 0;
+	pProjection->m[0][2] = 0;
+	pProjection->m[0][3] = 0;
+	pProjection->m[1][0] = 0;
+	pProjection->m[1][1] = 2 / (t - b);
+	pProjection->m[1][2] = 0;
+	pProjection->m[1][3] = 0;
+	pProjection->m[2][0] = 0;
+	pProjection->m[2][1] = 0;
+	pProjection->m[2][2] = -2 / (f - n);
+	pProjection->m[2][3] = 0;
+	pProjection->m[3][0] = -(r + l) / (r - l);
+	pProjection->m[3][1] = -(t + b) / (t - b);
+	pProjection->m[3][2] = -(f + n) / (f - n);
+	pProjection->m[3][3] = 1;
+	
+	//pProjection->m[0][0] = 2 * flZNear / flWidthPixels;
+	//pProjection->m[0][2] = 1.0f;
+	//pProjection->m[1][1] = 2 * flZNear / flHeightPixels;
+	//pProjection->m[1][2] = 1.0f;
+	//pProjection->m[2][2] = -(flZFar + flZNear) / (flZFar - flZNear);
+	//pProjection->m[2][3] = -(2 * flZNear * flZFar) / (flZFar - flZNear);
+	//pProjection->m[3][2] = -1.0f;
+	//pProjection->m[3][3] = 0.0f;
+	return true;
 }
 
 bool CTrackedHMD::GetRecommendedCameraUndistortion(uint32_t *pUndistortionWidthPixels, uint32_t *pUndistortionHeightPixels)
 {
-	m_pLog->Log(__FUNCTION__"\n");
-	return false;
+	_LOG(__FUNCTION__);
+	*pUndistortionWidthPixels = 320;
+	*pUndistortionHeightPixels = 240;
+	return true;
 }
 
 bool CTrackedHMD::SetCameraUndistortion(uint32_t nUndistortionWidthPixels, uint32_t nUndistortionHeightPixels)
 {
-	m_pLog->Log(__FUNCTION__"\n");
-	return false;
+	_LOG(__FUNCTION__" w: %d, h: %d", nUndistortionWidthPixels, nUndistortionHeightPixels);
+	return true;
 }
 
 bool CTrackedHMD::GetCameraFirmwareVersion(uint64_t *pFirmwareVersion)
 {
-	m_pLog->Log(__FUNCTION__"\n");
+	_LOG(__FUNCTION__);
 	*pFirmwareVersion = 1244245;
 	return true;
 }
 
 bool CTrackedHMD::SetFrameRate(int nISPFrameRate, int nSensorFrameRate)
 {
-	m_pLog->Log(__FUNCTION__"\n");
+	_LOG(__FUNCTION__" ifr: %d, sfr: %d ", nISPFrameRate, nSensorFrameRate);
 	return true;
 }
 
 bool CTrackedHMD::SetCameraVideoSinkCallback(vr::ICameraVideoSinkCallback *pCameraVideoSinkCallback)
 {
-	m_pLog->Log(__FUNCTION__"\n");
-	return false;
+	_LOG(__FUNCTION__" cb: %p", pCameraVideoSinkCallback);
+	m_HMDData.Camera.pfCallback = pCameraVideoSinkCallback;
+	return true;
 }
 
 bool CTrackedHMD::GetCameraCompatibilityMode(vr::ECameraCompatibilityMode *pCameraCompatibilityMode)
 {
-	m_pLog->Log(__FUNCTION__"\n");
+	_LOG(__FUNCTION__);
 	*pCameraCompatibilityMode = CAMERA_COMPAT_MODE_ISO_30FPS;
-	return false;
+	return true;
 }
 
 bool CTrackedHMD::SetCameraCompatibilityMode(vr::ECameraCompatibilityMode nCameraCompatibilityMode)
-{
-	m_pLog->Log(__FUNCTION__"\n");
+{ 
+	_LOG(__FUNCTION__" cm: %d", nCameraCompatibilityMode);
 	if (nCameraCompatibilityMode == CAMERA_COMPAT_MODE_ISO_30FPS) return true;
 	return false;
 }
 
 bool CTrackedHMD::GetCameraFrameBounds(vr::EVRTrackedCameraFrameType eFrameType, uint32_t *pLeft, uint32_t *pTop, uint32_t *pWidth, uint32_t *pHeight)
 {
-	m_pLog->Log(__FUNCTION__"\n");
-	return false;
-}
+	_LOG(__FUNCTION__" ft: %d", eFrameType);
+	auto w = m_HMDData.ScreenWidth / 2;
+	auto h = (m_HMDData.ScreenHeight - 30) / 4;
+	*pLeft = m_HMDData.PosX + (w / 2);
+	*pTop = m_HMDData.PosY + (h / 2);
+	*pWidth = w;
+	*pHeight = h;
+	return true;
+} 
 
 bool CTrackedHMD::GetCameraIntrinsics(vr::EVRTrackedCameraFrameType eFrameType, HmdVector2_t *pFocalLength, HmdVector2_t *pCenter)
 {
-	m_pLog->Log(__FUNCTION__"\n");
+	_LOG(__FUNCTION__" ft: %d", eFrameType);
 	return false;
 }
 
 
 bool CTrackedHMD::InitCamera()
 {	
-	m_pLog->Log(__FUNCTION__"\n");
+	_LOG(__FUNCTION__);
 	if (m_HMDData.Camera.Index != -1)
 		return true;
 
 	int devices = countCaptureDevices();
 	if (devices <= 0)
 	{
-		m_pLog->Log("HMD: Camera not found!\n");
+		_LOG("HMD: Camera not found!");
 		return false;
 	}
 
@@ -817,24 +855,33 @@ bool CTrackedHMD::InitCamera()
 		getCaptureDeviceName(i, cameraName, sizeof(cameraName));
 		if (!strcmp(cameraName, desiredCamera))
 		{
-			m_pLog->Log("HMD: Camera initializing...\n");
+			_LOG("HMD: Camera initializing...");
 			m_HMDData.Camera.Index = i;
 
 			m_HMDData.Camera.CaptureFrame.mWidth = 320;
 			m_HMDData.Camera.CaptureFrame.mHeight = 240;
 			m_HMDData.Camera.CaptureFrame.mTargetBuf = (int *)malloc(m_HMDData.Camera.CaptureFrame.mHeight * m_HMDData.Camera.CaptureFrame.mWidth * sizeof(int));
+			//for (int i = 0; i < 320 * 240; i++)
+			//	m_HMDData.Camera.CaptureFrame.mTargetBuf[i] = i;
 
-			m_HMDData.Camera.StreamFrame.m_nBufferCount = 0;
+			m_HMDData.Camera.StreamFrame.m_nBufferCount = 1;
 			m_HMDData.Camera.StreamFrame.m_nBufferIndex = 0;
 			m_HMDData.Camera.StreamFrame.m_nWidth = m_HMDData.Camera.CaptureFrame.mWidth;
 			m_HMDData.Camera.StreamFrame.m_nHeight = m_HMDData.Camera.CaptureFrame.mHeight;
 			m_HMDData.Camera.StreamFrame.m_nStreamFormat = CVS_FORMAT_RGB24;
+			m_HMDData.Camera.StreamFrame.m_flFrameDeliveryRate = 33.33;
 			m_HMDData.Camera.StreamFrame.m_nImageDataSize = m_HMDData.Camera.CaptureFrame.mHeight * m_HMDData.Camera.CaptureFrame.mWidth * sizeof(int);			
-			m_HMDData.Camera.StreamFrame.m_pImageData = m_HMDData.Camera.CaptureFrame.mTargetBuf;
-
+			//m_HMDData.Camera.StreamFrame.m_pImageData = m_HMDData.Camera.CaptureFrame.mTargetBuf;
+			m_HMDData.Camera.StreamFrame.m_StandingTrackedDevicePose.bDeviceIsConnected = true;
+			m_HMDData.Camera.StreamFrame.m_StandingTrackedDevicePose.bPoseIsValid = true;
+			m_HMDData.Camera.StreamFrame.m_StandingTrackedDevicePose.eTrackingResult = TrackingResult_Running_OK;
+			Quaternion::HmdMatrix_SetIdentity(&m_HMDData.Camera.StreamFrame.m_StandingTrackedDevicePose.mDeviceToAbsoluteTracking);
+			
 			initCapture(m_HMDData.Camera.Index, &m_HMDData.Camera.CaptureFrame);
 			doCapture(m_HMDData.Camera.Index);
 			
+			m_HMDData.Camera.StartTime = GetTickCount();
+
 			return true;
 		}
 	}
@@ -843,10 +890,11 @@ bool CTrackedHMD::InitCamera()
 
 void CTrackedHMD::DeinitCamrea()
 {
-	m_pLog->Log(__FUNCTION__"\n");
+	_LOG(__FUNCTION__);
 	if (m_HMDData.Camera.Index == -1)
 		return;
-	m_pLog->Log("HMD: Camera deinitializing.\n");
+	StopVideoStream();
+	_LOG("HMD: Camera deinitializing...");
 	deinitCapture(m_HMDData.Camera.Index);
 	if (m_HMDData.Camera.CaptureFrame.mTargetBuf)
 		free(m_HMDData.Camera.CaptureFrame.mTargetBuf);

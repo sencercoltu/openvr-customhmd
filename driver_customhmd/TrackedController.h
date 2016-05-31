@@ -10,7 +10,7 @@ private:
 	ETrackedControllerRole _role;
 	ControllerData m_ControllerData;
 public:
-	CTrackedController(ETrackedControllerRole role, std::string id, CServerDriver *pServer);
+	CTrackedController(ETrackedControllerRole role, std::string displayName, CServerDriver *pServer);
 	~CTrackedController();
 	
 	EVRInitError Activate(uint32_t unObjectId) override;

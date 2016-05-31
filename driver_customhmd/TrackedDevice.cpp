@@ -1,14 +1,22 @@
 #include "TrackedDevice.h"
 
-CTrackedDevice::CTrackedDevice(std::string id, CServerDriver *pServer)
+CTrackedDevice::CTrackedDevice(std::string displayName, CServerDriver *pServer)
 {
+	m_pLog = pServer->m_pLog;
+
+	_LOG(__FUNCTION__" %s", displayName.c_str());
+
+	
+	m_DisplayName = displayName;	
 	m_pServer = pServer;
+	m_pDriverHost = pServer->m_pDriverHost;
+
+	m_pSettings = m_pDriverHost ? m_pDriverHost->GetSettings(IVRSettings_Version) : nullptr;
+
 	m_KeyDown = false;
 	m_LastDown = GetTickCount();
 	m_Delay = 500;
 
-	m_pDriverHost = pServer->m_pDriverHost;
-	m_pLog = pServer->m_pLogger;
 	m_unObjectId = k_unTrackedDeviceIndexInvalid;
 
 	Prop_TrackingFirmwareVersion = "1.0.0T";
@@ -20,7 +28,8 @@ CTrackedDevice::CTrackedDevice(std::string id, CServerDriver *pServer)
 
 CTrackedDevice::~CTrackedDevice()
 {
-
+	_LOG(__FUNCTION__" %s", m_DisplayName.c_str());
+	m_pLog = nullptr;
 }
 
 bool CTrackedDevice::GetBoolTrackedDeviceProperty(ETrackedDeviceProperty prop, ETrackedPropertyError *pError)

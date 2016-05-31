@@ -13,17 +13,17 @@
 #include <HighLevelMonitorConfigurationAPI.h>
 #include "escapi/escapi.h"
 
-//#define TRACE(a) OutputDebugString(a"\n")
+#define _LOG(f, ...) m_pLog->Log(f, __VA_ARGS__)
 
 #define HMD_DLL_EXPORT extern "C" __declspec(dllexport)
 #define HMD_DLL_IMPORT extern "C" __declspec(dllimport)
 
 #define VKD(a) ((GetAsyncKeyState(a) & 0x8000))
 
-struct HMDLog
+struct CDriverLog
 {
 public:
-	HMDLog(vr::IDriverLog *pLogger) 
+	CDriverLog(vr::IDriverLog *pLogger)
 	{
 		_logger = pLogger;
 	}
@@ -35,6 +35,7 @@ public:
 		va_start(argptr, pFmt);
 		vsprintf_s(szMessage, pFmt, argptr);
 		va_end(argptr);		
+		strcat_s(szMessage, "\n");
 		_logger->Log(szMessage);
 	}
 	void Log(const wchar_t *pFmt, ...) {
@@ -42,12 +43,12 @@ public:
 			return;
 		std::wstring wchar_string(pFmt);
 		const std::string basic_string(wchar_string.begin(), wchar_string.end());
-
 		char szMessage[4096];
 		va_list argptr;
 		va_start(argptr, pFmt);
 		vsprintf_s(szMessage, basic_string.c_str(), argptr);
 		va_end(argptr);
+		strcat_s(szMessage, "\n");
 		_logger->Log(szMessage);
 	}
 private:
@@ -80,7 +81,10 @@ struct CameraData
 	bool IsActive;
 	SimpleCapParams CaptureFrame;
 	vr::CameraVideoStreamFrame_t StreamFrame;
-
+	vr::ICameraVideoSinkCallback *pfCallback;
+	DWORD CallbackCount;
+	DWORD StartTime;
+	DWORD LastFrameTime;
 };
 
 struct HMDData : TrackerData
@@ -97,7 +101,7 @@ struct HMDData : TrackerData
 	float Frequency;
 	float AspectRatio;	
 	float SuperSample;
-	HMDLog *Logger;
+	CDriverLog *Logger;
 	float IPDValue;
 	USBData LastState;
 	CameraData Camera;

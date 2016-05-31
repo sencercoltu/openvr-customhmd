@@ -16,10 +16,10 @@ public:
 	virtual HiddenAreaMesh_t GetHiddenAreaMesh(EVREye eEye) override;
 	virtual uint32_t GetMCImage(uint32_t * pImgWidth, uint32_t * pImgHeight, uint32_t * pChannels, void * pDataBuffer, uint32_t unBufferLen) override;	
 private:	
-	IDriverLog* logger_ = nullptr;
-	IClientDriverHost* driverHost_ = nullptr;
-	std::string userDriverConfigDir_;
-	std::string driverInstallDir_;	
-	bool m_bInit;
+	IVRSettings *m_pSettings;
+	CDriverLog* m_pLog;
+	IClientDriverHost* m_pDriverHost;
+	std::string m_UserDriverConfigDir;
+	std::string m_DriverInstallDir;		
 };
 #endif // ClientDriver_H

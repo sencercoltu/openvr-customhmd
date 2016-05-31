@@ -9,12 +9,11 @@ class CTrackedHMD :
 	public CTrackedDevice,
 	public IVRDisplayComponent , public IVRCameraComponent
 {
-private:
-	IVRSettings *m_pSettings;
+private:	
 	HMDData m_HMDData;		
 
 public:
-	CTrackedHMD(std::string id, CServerDriver *pServer);	
+	CTrackedHMD(std::string displayName, CServerDriver *pServer);
 	~CTrackedHMD();
 	EVRInitError Activate(uint32_t unObjectId) override;
 	void Deactivate() override;

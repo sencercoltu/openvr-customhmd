@@ -7,11 +7,13 @@ EVRInitError CServerDriver::Init(IDriverLog * pDriverLog, IServerDriverHost * pD
 {	
 	m_CurrTick = m_LastTick = GetTickCount();
 
-	m_pLogger = pDriverLog;
+	m_pLog = new CDriverLog(pDriverLog);
 
-	m_pLogger->Log(__FUNCTION__"\n");
+	_LOG(__FUNCTION__" start");
 
 	m_pDriverHost = pDriverHost;
+	m_UserDriverConfigDir = pchUserDriverConfigDir;
+	m_DriverInstallDir = pchDriverInstallDir;
 
 	m_pSettings = pDriverHost ? pDriverHost->GetSettings(IVRSettings_Version) : nullptr;
 	m_Align = { 0 };
@@ -35,6 +37,8 @@ EVRInitError CServerDriver::Init(IDriverLog * pDriverLog, IServerDriverHost * pD
 		m_IsRunning = true;
 		ResumeThread(m_hThread);
 	}
+
+	_LOG(__FUNCTION__" end");
 	return VRInitError_None;
 }
 
@@ -48,12 +52,16 @@ void CServerDriver::Cleanup()
 		m_hThread = nullptr;
 	}
 
-	m_pLogger->Log(__FUNCTION__"\n");
+	_LOG(__FUNCTION__);
 	for (auto iter = m_TrackedDevices.begin(); iter != m_TrackedDevices.end(); iter++)
 		delete (*iter);
 	m_TrackedDevices.clear();
+
 	m_pDriverHost = nullptr;
-	m_pLogger = nullptr;
+	m_UserDriverConfigDir.clear();
+	m_DriverInstallDir.clear();
+	delete m_pLog;
+	m_pLog = nullptr;
 }
 
 unsigned int WINAPI CServerDriver::ProcessThread(void *p)
@@ -150,13 +158,13 @@ void CServerDriver::Run()
 
 uint32_t CServerDriver::GetTrackedDeviceCount()
 {
-	m_pLogger->Log(__FUNCTION__"\n");
+	_LOG(__FUNCTION__" returns %d", m_TrackedDevices.size());
 	return (uint32_t)m_TrackedDevices.size();
 }
 
 ITrackedDeviceServerDriver * CServerDriver::GetTrackedDeviceDriver(uint32_t unWhich)
 {
-	m_pLogger->Log(__FUNCTION__"\n");
+	_LOG(__FUNCTION__" idx: %d", unWhich);
 	//if (0 != _stricmp(pchInterfaceVersion, ITrackedDeviceServerDriver_Version))
 	//	return nullptr;	
 	if (unWhich >= m_TrackedDevices.size())
@@ -166,7 +174,7 @@ ITrackedDeviceServerDriver * CServerDriver::GetTrackedDeviceDriver(uint32_t unWh
 
 ITrackedDeviceServerDriver * CServerDriver::FindTrackedDeviceDriver(const char * pchId)
 {
-	m_pLogger->Log(__FUNCTION__"\n");
+	_LOG(__FUNCTION__" id: %s", pchId);
 	for (auto iter = m_TrackedDevices.begin(); iter != m_TrackedDevices.end(); iter++)
 	{
 		if (0 == std::strcmp(pchId, (*iter)->Prop_SerialNumber.c_str()))
@@ -186,18 +194,18 @@ void CServerDriver::RunFrame()
 
 bool CServerDriver::ShouldBlockStandbyMode()
 {
-	m_pLogger->Log(__FUNCTION__"\n");
+	_LOG(__FUNCTION__);
 	return false;
 }
 
 void CServerDriver::EnterStandby()
 {
-	m_pLogger->Log(__FUNCTION__"\n");
+	_LOG(__FUNCTION__);
 }
 
 void CServerDriver::LeaveStandby()
 {
-	m_pLogger->Log(__FUNCTION__"\n");
+	_LOG(__FUNCTION__);
 }
 
 const char * const * CServerDriver::GetInterfaceVersions()

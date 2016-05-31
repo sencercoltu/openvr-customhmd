@@ -165,6 +165,8 @@ struct Quaternion : vr::HmdQuaternion_t
 	static Quaternion FromEuler(const vr::HmdVector3d_t &e);
 
 	static void HmdMatrix_SetIdentity(vr::HmdMatrix34_t *pMatrix);
+
+	static void HmdMatrix_SetIdentity(vr::HmdMatrix44_t *pMatrix);
 };
 
 #endif

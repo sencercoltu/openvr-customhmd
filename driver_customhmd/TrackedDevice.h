@@ -16,9 +16,9 @@ class CTrackedDevice :
 {
 	friend class CServerDriver;
 public:
-	CTrackedDevice(std::string id, CServerDriver *pServer);
+	CTrackedDevice(std::string displayName, CServerDriver *pServer);
 	~CTrackedDevice();
-
+	
 	//std::string m_Id;
 	virtual void RunFrame(DWORD currTick) {}
 
@@ -38,11 +38,14 @@ protected:
 	virtual uint64_t GetUint64Property(ETrackedDeviceProperty prop, ETrackedPropertyError * pError) = 0;
 
 	virtual void PoseUpdate(USBData *pData, HmdVector3d_t *pCenterEuler) = 0;
-protected:
-	IDriverLog *m_pLog;
+protected:	
+	IVRSettings *m_pSettings;
+	CDriverLog *m_pLog;
 	IServerDriverHost *m_pDriverHost;
 	CServerDriver *m_pServer;
 	uint32_t m_unObjectId;
+
+	std::string m_DisplayName;
 
 	bool m_KeyDown;
 	DWORD m_LastDown;

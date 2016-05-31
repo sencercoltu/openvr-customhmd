@@ -31,7 +31,7 @@ HMD_DLL_EXPORT void* HmdDriverFactory(const char* interface_name, int* return_co
 BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
 {
 	auto pMonData = (HMDData *)dwData;
-	if (pMonData->Logger) pMonData->Logger->Log("Enumerate callback\n");
+	if (pMonData->Logger) pMonData->Logger->Log("Monitor Enumeration callback..");
 
 	MONITORINFOEX monInfo = {};
 	monInfo.cbSize = sizeof(monInfo);
@@ -42,11 +42,10 @@ BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMoni
 		ZeroMemory(&ddMon, sizeof(ddMon));
 		ddMon.cb = sizeof(ddMon);
 		DWORD devMon = 0;
-		if (pMonData->Logger) pMonData->Logger->Log("Enumerating monitors for:\n");
-		if (pMonData->Logger) pMonData->Logger->Log(monInfo.szDevice);		
+		if (pMonData->Logger) pMonData->Logger->Log("Enumerating monitors for %S...", monInfo.szDevice);		
 		while (EnumDisplayDevices(monInfo.szDevice, devMon, &ddMon, 0))
 		{			
-			if (pMonData->Logger) pMonData->Logger->Log(ddMon.DeviceID);
+			if (pMonData->Logger) pMonData->Logger->Log("Checking %S...", ddMon.DeviceID);
 			if (ddMon.StateFlags & DISPLAY_DEVICE_ACTIVE && !(ddMon.StateFlags & DISPLAY_DEVICE_MIRRORING_DRIVER))
 			{
 				wsprintf(DeviceID, L"%s", ddMon.DeviceID);
@@ -81,7 +80,7 @@ BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMoni
 								pMonData->Frequency = (float)devMode.dmDisplayFrequency;
 							pMonData->IsConnected = true;
 
-							if (pMonData->Logger) pMonData->Logger->Log("\nFOUND MONITOR\n");
+							if (pMonData->Logger) pMonData->Logger->Log("Found monitor %S.", pMonData->DisplayName);
 							return FALSE;
 						}
 					}
@@ -92,7 +91,7 @@ BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMoni
 			ZeroMemory(&ddMon, sizeof(ddMon));
 			ddMon.cb = sizeof(ddMon);		
 		}
-		if (pMonData->Logger) pMonData->Logger->Log("No more monitors.\n");
+		if (pMonData->Logger) pMonData->Logger->Log("No more monitors!");
 	}
 	return TRUE;
 }
