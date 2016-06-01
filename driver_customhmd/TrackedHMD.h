@@ -10,7 +10,9 @@ class CTrackedHMD :
 	public IVRDisplayComponent , public IVRCameraComponent
 {
 private:	
-	HMDData m_HMDData;		
+	HMDData m_HMDData;			
+	unsigned int static WINAPI CameraThread(void *p);
+	void RunCamera();
 
 public:
 	CTrackedHMD(std::string displayName, CServerDriver *pServer);
@@ -79,7 +81,7 @@ protected:
 private:	
 	bool InitCamera();
 	void DeinitCamrea();
-
+	void YUY2oNV12(uint8_t *inputBuffer, uint8_t *outputBuffer, int width, int height);
 };
 
 #endif // TrackedHMD_H

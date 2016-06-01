@@ -530,6 +530,7 @@ int CaptureClass::scanMediaTypes(unsigned int aWidth, unsigned int aHeight)
 	while (nativeTypeErrorCode == S_OK && besterror)
 	{
 		IMFMediaType * nativeType = NULL;
+		
 		nativeTypeErrorCode = mReader->GetNativeMediaType(
 			(DWORD)MF_SOURCE_READER_FIRST_VIDEO_STREAM,
 			count,
@@ -662,7 +663,7 @@ HRESULT CaptureClass::initCapture(int aDevice)
 
 		hr = setVideoType(type);
 
-		DO_OR_DIE_CRITSECTION;
+		DO_OR_DIE_CRITSECTION; 
 
 		hr = mReader->SetCurrentMediaType(
 			(DWORD)MF_SOURCE_READER_FIRST_VIDEO_STREAM,

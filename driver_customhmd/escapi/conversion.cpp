@@ -2,6 +2,7 @@
 #include "conversion.h"
 
 
+
 ConversionFunction gFormatConversions[] =
 {
 	{ MFVideoFormat_RGB32, TransformImage_RGB32 },

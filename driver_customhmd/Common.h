@@ -77,11 +77,15 @@ struct TrackerData
 struct CameraData 
 {
 	char Model[128];
+	HANDLE hLock;
 	int Index;
 	bool IsActive;
+	HANDLE hThread;
 	SimpleCapParams CaptureFrame;
-	vr::CameraVideoStreamFrame_t StreamFrame;
-	vr::ICameraVideoSinkCallback *pfCallback;
+	vr::ECameraVideoStreamFormat StreamFormat;
+	vr::CameraVideoStreamFrame_t ActiveStreamFrame;
+	vr::CameraVideoStreamFrame_t *pCallbackStreamFrame;
+	vr::ICameraVideoSinkCallback *pfCallback;	
 	DWORD CallbackCount;
 	DWORD StartTime;
 	DWORD LastFrameTime;

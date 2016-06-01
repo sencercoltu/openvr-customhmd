@@ -66,10 +66,9 @@ void CServerDriver::Cleanup()
 
 unsigned int WINAPI CServerDriver::ProcessThread(void *p)
 {
-	if (!p) return -1;
 	auto serverDriver = static_cast<CServerDriver *>(p);
-	if (serverDriver)
-		serverDriver->Run();
+	if (serverDriver)					
+		serverDriver->Run();	
 	_endthreadex(0);
 	return 0;
 }

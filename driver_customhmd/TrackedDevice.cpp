@@ -19,9 +19,9 @@ CTrackedDevice::CTrackedDevice(std::string displayName, CServerDriver *pServer)
 
 	m_unObjectId = k_unTrackedDeviceIndexInvalid;
 
-	Prop_TrackingFirmwareVersion = "1.0.0T";
-	Prop_HardwareRevision = "1.0.0H";
-	Prop_DriverVersion = "1.0.0D";
+	Prop_TrackingFirmwareVersion = "2.2.0";
+	Prop_HardwareRevision = "2.0.0";
+	Prop_DriverVersion = "1.0.0";
 	Prop_Firmware_ManualUpdateURL = "https://github.com/sencercoltu/openvr-customhmd";
 
 }
@@ -122,7 +122,7 @@ uint64_t CTrackedDevice::GetUint64TrackedDeviceProperty(ETrackedDeviceProperty p
 			case Prop_RadioVersion_Uint64:				
 			case Prop_DongleVersion_Uint64:
 				SET_ERROR(TrackedProp_Success);
-				return 1234;
+				return 0;
 			default:
 				SET_ERROR(TrackedProp_UnknownProperty);
 				break;
