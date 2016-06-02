@@ -7,7 +7,7 @@ class CTrackedController :
 	public IVRControllerComponent
 {
 private:
-	ETrackedControllerRole _role;
+	ETrackedControllerRole m_Role;
 	ControllerData m_ControllerData;
 public:
 	CTrackedController(ETrackedControllerRole role, std::string displayName, CServerDriver *pServer);
@@ -28,7 +28,7 @@ protected:
 	float GetFloatProperty(ETrackedDeviceProperty prop, ETrackedPropertyError * pError) override;
 	int32_t GetInt32Property(ETrackedDeviceProperty prop, ETrackedPropertyError * pError) override;
 	uint64_t GetUint64Property(ETrackedDeviceProperty prop, ETrackedPropertyError * pError) override;
-	void PoseUpdate(USBData *pData, HmdVector3d_t *pCenterEuler) override;
+	void PoseUpdate(USBData *pData, HmdVector3d_t *pCenterEuler, HmdVector3d_t *pRelativePos) override;
 	void RunFrame(DWORD currTick) override;
 };
 

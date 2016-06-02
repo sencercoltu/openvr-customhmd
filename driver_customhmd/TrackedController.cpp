@@ -3,7 +3,7 @@
 
 CTrackedController::CTrackedController(ETrackedControllerRole role, std::string displayName, CServerDriver *pServer) : CTrackedDevice(displayName, pServer)
 {
-	_role = role;
+	m_Role = role;
 
 	Prop_TrackingSystemName = "Nunchuck Controller";
 	Prop_ModelNumber = "Nunchuck";
@@ -203,6 +203,7 @@ VRControllerState_t CTrackedController::GetControllerState()
 
 bool CTrackedController::TriggerHapticPulse(uint32_t unAxisId, uint16_t usPulseDurationMicroseconds)
 {
+	_LOG(__FUNCTION__" axId: %d, dur: %d", unAxisId, usPulseDurationMicroseconds);
 	return true;
 }
 
@@ -217,12 +218,12 @@ void CTrackedController::RunFrame(DWORD currTick)
 	{
 		if (!m_KeyDown)
 		{
-			if (VKD(VK_DECIMAL) && _role == TrackedControllerRole_RightHand)
+			if (VKD(VK_DECIMAL) && m_Role == TrackedControllerRole_RightHand)
 			{
 				m_pDriverHost->ProximitySensorState(m_unObjectId, true);
 				m_KeyDown = true;
 			}
-			if (VKD(VK_DELETE) && _role == TrackedControllerRole_RightHand)
+			if (VKD(VK_DELETE) && m_Role == TrackedControllerRole_RightHand)
 			{
 				m_pDriverHost->TrackedDeviceButtonPressed(m_unObjectId, k_EButton_Grip, 0);
 				Sleep(10);
@@ -261,7 +262,7 @@ void CTrackedController::RunFrame(DWORD currTick)
 				m_pDriverHost->TrackedDeviceButtonUnpressed(m_unObjectId, k_EButton_DPad_Right, 0);
 				m_KeyDown = true;
 			}
-			if (VKD(VK_DIVIDE) && _role == TrackedControllerRole_LeftHand)
+			if (VKD(VK_DIVIDE) && m_Role == TrackedControllerRole_LeftHand)
 			{
 				//system button
 				m_pDriverHost->TrackedDeviceButtonPressed(m_unObjectId, k_EButton_System, 0);
@@ -269,7 +270,7 @@ void CTrackedController::RunFrame(DWORD currTick)
 				m_pDriverHost->TrackedDeviceButtonUnpressed(m_unObjectId, k_EButton_System, 0);
 				m_KeyDown = true;
 			}
-			if (VKD(VK_MULTIPLY) && _role == TrackedControllerRole_RightHand)
+			if (VKD(VK_MULTIPLY) && m_Role == TrackedControllerRole_RightHand)
 			{
 				//app button
 				m_pDriverHost->TrackedDeviceButtonPressed(m_unObjectId, k_EButton_ApplicationMenu, 0);
@@ -277,7 +278,7 @@ void CTrackedController::RunFrame(DWORD currTick)
 				m_pDriverHost->TrackedDeviceButtonUnpressed(m_unObjectId, k_EButton_ApplicationMenu, 0);
 				m_KeyDown = true;
 			}
-			if (VKD(VK_RETURN) && _role == TrackedControllerRole_RightHand)
+			if (VKD(VK_RETURN) && m_Role == TrackedControllerRole_RightHand)
 			{
 				m_ControllerData.State.ulButtonPressed = ButtonMaskFromId(k_EButton_Axis1);
 				m_ControllerData.State.rAxis[1].x = 1.0;
@@ -333,10 +334,27 @@ void CTrackedController::RunFrame(DWORD currTick)
 	}
 }
 
-void CTrackedController::PoseUpdate(USBData *pData, HmdVector3d_t *pCenterEuler)
-{
-	return;
-	if (pData->Source != _role)
+void CTrackedController::PoseUpdate(USBData *pData, HmdVector3d_t *pCenterEuler, HmdVector3d_t *pRelativePos)
+{	
+	memcpy(m_ControllerData.Pose.vecPosition, pRelativePos, sizeof(HmdVector3d_t)); //geçici
+
+	switch (m_Role)
+	{
+	case ETrackedControllerRole::TrackedControllerRole_LeftHand:
+		m_ControllerData.Pose.vecPosition[0] += -0.2;
+		m_ControllerData.Pose.vecPosition[1] += -0.2;
+		m_ControllerData.Pose.vecPosition[2] += -0.5;
+		break;
+	case ETrackedControllerRole::TrackedControllerRole_RightHand:
+		m_ControllerData.Pose.vecPosition[0] += 0.2;
+		m_ControllerData.Pose.vecPosition[1] += -0.2;
+		m_ControllerData.Pose.vecPosition[2] += -0.5;
+		break;
+	}
+
+	m_ControllerData.PoseUpdated = true;
+
+	if (pData->Source != m_Role)
 		return;
 	if (WAIT_OBJECT_0 == WaitForSingleObject(m_ControllerData.hPoseLock, INFINITE))
 	{
@@ -345,7 +363,23 @@ void CTrackedController::PoseUpdate(USBData *pData, HmdVector3d_t *pCenterEuler)
 		euler.v[0] = euler.v[0] + pCenterEuler->v[0];
 		euler.v[1] = euler.v[1] + pCenterEuler->v[1];
 		euler.v[2] = euler.v[2] + pCenterEuler->v[2];
-		m_ControllerData.Pose.qRotation = Quaternion::FromEuler(euler).UnitQuaternion();
+		m_ControllerData.Pose.qRotation = Quaternion::FromEuler(euler).UnitQuaternion();		
+		memcpy(m_ControllerData.Pose.vecPosition, pRelativePos, sizeof(HmdVector3d_t));
+
+		switch (m_Role)
+		{
+		case ETrackedControllerRole::TrackedControllerRole_LeftHand:
+			m_ControllerData.Pose.vecPosition[0] += -0.2;
+			m_ControllerData.Pose.vecPosition[1] += -0.2;
+			m_ControllerData.Pose.vecPosition[2] += -0.5;
+			break;
+		case ETrackedControllerRole::TrackedControllerRole_RightHand:
+			m_ControllerData.Pose.vecPosition[0] += 0.2;
+			m_ControllerData.Pose.vecPosition[1] += -0.2;
+			m_ControllerData.Pose.vecPosition[2] += -0.5;
+			break;
+		}
+
 		m_ControllerData.PoseUpdated = true;
 		ReleaseMutex(m_ControllerData.hPoseLock);
 	}
