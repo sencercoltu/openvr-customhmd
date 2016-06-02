@@ -359,13 +359,16 @@ uint64_t CTrackedHMD::GetUint64Property(ETrackedDeviceProperty prop, ETrackedPro
 		return 18;
 	case Prop_FirmwareVersion_Uint64:
 		SET_ERROR(TrackedProp_Success);
-		return 1454541759;
+		return 1462663157;
 	case Prop_HardwareRevision_Uint64:
 		SET_ERROR(TrackedProp_Success);
 		return 2147614720;
 	case Prop_FPGAVersion_Uint64:
 		SET_ERROR(TrackedProp_Success);
-		return 523;
+		return 262;
+	case Prop_DongleVersion_Uint64:
+		SET_ERROR(TrackedProp_Success);
+		return 1461100729;
 	}
 
 
@@ -577,6 +580,7 @@ void CTrackedHMD::PoseUpdate(USBData *pData, HmdVector3d_t *pCenterEuler)
 }
 
 
+#define FRAME_BUFFER_COUNT 1
 
 bool CTrackedHMD::HasCamera()
 {
@@ -606,15 +610,18 @@ bool CTrackedHMD::GetCameraFrameDimensions(vr::ECameraVideoStreamFormat nVideoSt
 bool CTrackedHMD::GetCameraFrameBufferingRequirements(int *pDefaultFrameQueueSize, uint32_t *pFrameBufferDataSize)
 {
 	_LOG(__FUNCTION__);
-	*pDefaultFrameQueueSize = 1;
-	*pFrameBufferDataSize = 320 * 240 * sizeof(int);
+	*pDefaultFrameQueueSize = FRAME_BUFFER_COUNT;
+	*pFrameBufferDataSize = 115200; // sizeof(CameraVideoStreamFrame_t);
 	return true;
 }
 
 bool CTrackedHMD::SetCameraFrameBuffering(int nFrameBufferCount, void **ppFrameBuffers, uint32_t nFrameBufferDataSize)
 {
-	_LOG(__FUNCTION__" fc: %d, ds: %d, ptr: %p pptr:%p sf: %p", nFrameBufferCount, nFrameBufferDataSize, *ppFrameBuffers, ppFrameBuffers, m_HMDData.Camera.pCallbackStreamFrame);
-	m_HMDData.Camera.pCallbackStreamFrame = (CameraVideoStreamFrame_t*)*ppFrameBuffers;
+	auto ppBuffers = (CameraVideoStreamFrame_t**)ppFrameBuffers;
+	auto pFirstBuffer = *ppBuffers;
+	_LOG(__FUNCTION__" fc: %d, ds: %d, ptr: %p pptr:%p sf: %p, pimg:%p", nFrameBufferCount, nFrameBufferDataSize, pFirstBuffer, ppBuffers, m_HMDData.Camera.pCallbackStreamFrame, pFirstBuffer->m_pImageData);
+	m_HMDData.Camera.pCallbackStreamFrame = pFirstBuffer;
+	*m_HMDData.Camera.pCallbackStreamFrame = m_HMDData.Camera.ActiveStreamFrame;
 	return true;
 }
 
@@ -643,7 +650,7 @@ bool CTrackedHMD::StartVideoStream()
 			m_HMDData.Camera.hThread = reinterpret_cast<HANDLE>(_beginthreadex(nullptr, 0, CameraThread, this, CREATE_SUSPENDED, nullptr));
 			if (m_HMDData.Camera.hThread)
 			{
-				m_HMDData.Camera.IsActive = true;
+				m_HMDData.Camera.IsActive = true;				
 				m_HMDData.Camera.StartTime = currTick;
 				m_HMDData.Camera.LastFrameTime = m_HMDData.Camera.StartTime;
 				ResumeThread(m_HMDData.Camera.hThread);
@@ -694,22 +701,27 @@ float CTrackedHMD::GetVideoStreamElapsedTime()
 const vr::CameraVideoStreamFrame_t *CTrackedHMD::GetVideoStreamFrame()
 {
 	m_HMDData.Camera.CallbackCount++;
-	if (m_HMDData.Camera.CallbackCount > 1)
+	if (m_HMDData.Camera.CallbackCount > m_HMDData.Camera.ActiveStreamFrame.m_nBufferCount)
 		return nullptr;
 
-	_LOG(__FUNCTION__" sf: %p", m_HMDData.Camera.pCallbackStreamFrame);
-	return m_HMDData.Camera.pCallbackStreamFrame;
+	//unsigned char crc = 0;
+	//for (int i = 0; i < 115200; i++)
+	//	crc ^= ((unsigned char *)m_HMDData.Camera.pCallbackStreamFrame->m_pImageData)[i];
+
+	//_LOG(__FUNCTION__" sf: %p, img: %p, crc: %d", m_HMDData.Camera.pCallbackStreamFrame, m_HMDData.Camera.pCallbackStreamFrame->m_pImageData, crc);
+
+	return m_HMDData.Camera.pCallbackStreamFrame + m_HMDData.Camera.ActiveStreamFrame.m_nBufferIndex;
 }
 
 void CTrackedHMD::ReleaseVideoStreamFrame(const vr::CameraVideoStreamFrame_t *pFrameImage)
 {
-	_LOG(__FUNCTION__" %p", pFrameImage);
-	//_LOG(__FUNCTION__);
-	//free(pFrameImage->m_pImageData);
-	//delete pFrameImage;
+	//nothing to do here
 
-	//if (pFrameImage)
-	//	delete pFrameImage;
+	//unsigned char crc = 0;
+	//for (int i = 0; i < 115200; i++)
+	//	crc ^= ((unsigned char *)m_HMDData.Camera.pCallbackStreamFrame->m_pImageData)[i];
+
+	//_LOG(__FUNCTION__" sf: %p, img: %p, crc: %d", pFrameImage, pFrameImage->m_pImageData, crc);
 }
 
 bool CTrackedHMD::SetAutoExposure(bool bEnable)
@@ -886,11 +898,11 @@ bool CTrackedHMD::InitCamera()
 				m_HMDData.Camera.CaptureFrame.mTargetFormat = MFVideoFormat_NV12;
 				initCaptureWithOptions(m_HMDData.Camera.Index, &m_HMDData.Camera.CaptureFrame, CAPTURE_OPTION_RAWDATA);
 				m_HMDData.Camera.StartTime = GetTickCount();
-				m_HMDData.Camera.ActiveStreamFrame.m_nBufferCount = 1;
+				m_HMDData.Camera.ActiveStreamFrame.m_nBufferCount = FRAME_BUFFER_COUNT;
 				m_HMDData.Camera.ActiveStreamFrame.m_nBufferIndex = 0;
 				m_HMDData.Camera.ActiveStreamFrame.m_nWidth = m_HMDData.Camera.CaptureFrame.mWidth;
 				m_HMDData.Camera.ActiveStreamFrame.m_nHeight = m_HMDData.Camera.CaptureFrame.mHeight;
-				m_HMDData.Camera.ActiveStreamFrame.m_nImageDataSize = m_HMDData.Camera.CaptureFrame.mHeight * m_HMDData.Camera.CaptureFrame.mWidth * sizeof(int);
+				m_HMDData.Camera.ActiveStreamFrame.m_nImageDataSize = 115200;
 				m_HMDData.Camera.StreamFormat = CVS_FORMAT_NV12;
 				m_HMDData.Camera.ActiveStreamFrame.m_StandingTrackedDevicePose.bDeviceIsConnected = true;
 				m_HMDData.Camera.ActiveStreamFrame.m_StandingTrackedDevicePose.bPoseIsValid = true;
@@ -942,7 +954,8 @@ unsigned int WINAPI CTrackedHMD::CameraThread(void *p)
 void CTrackedHMD::RunCamera()
 {
 	m_HMDData.Camera.LastFrameTime = GetTickCount();
-	doCapture(m_HMDData.Camera.Index);
+	m_HMDData.Camera.ActiveStreamFrame.m_nBufferIndex = 0;
+	doCapture(m_HMDData.Camera.Index);	
 	bool isActive = m_HMDData.Camera.IsActive;
 	while (isActive)
 	{
@@ -978,7 +991,7 @@ void CTrackedHMD::RunCamera()
 				m_HMDData.Camera.ActiveStreamFrame.m_nImageDataSize = 115200;
 
 
-				memcpy(m_HMDData.Camera.pCallbackStreamFrame, &m_HMDData.Camera.ActiveStreamFrame, sizeof(m_HMDData.Camera.ActiveStreamFrame));
+				memcpy(m_HMDData.Camera.pCallbackStreamFrame + m_HMDData.Camera.ActiveStreamFrame.m_nBufferIndex, &m_HMDData.Camera.ActiveStreamFrame, sizeof(CameraVideoStreamFrame_t));
 
 				//char fn[MAX_PATH];
 				//sprintf_s(fn, "D:\\XXX\\Frame%d.yuv", m_HMDData.Camera.ActiveStreamFrame.m_nFrameSequence);
@@ -988,13 +1001,12 @@ void CTrackedHMD::RunCamera()
 				//	fwrite(m_HMDData.Camera.ActiveStreamFrame.m_pImageData, 1, m_HMDData.Camera.ActiveStreamFrame.m_nImageDataSize, fp);
 				//	fclose(fp);
 				//}
-				//const char *pSrc = (const char *)m_HMDData.Camera.CaptureFrame.mTargetBuf;
-				//char *pDst = (char *)m_HMDData.Camera.ActiveStreamFrame.m_pImageData;				
-				//ARGBToNV12(pSrc, 320 * sizeof(int) * 8, pDst, 320/8, pDst+(320 * 240 /8), 320 /8, 320, 240);
+
 
 				m_HMDData.Camera.pfCallback->OnCameraVideoSinkCallback(); 
 
 				m_HMDData.Camera.ActiveStreamFrame.m_nFrameSequence++;
+				m_HMDData.Camera.ActiveStreamFrame.m_nBufferIndex = (m_HMDData.Camera.ActiveStreamFrame.m_nBufferIndex + 1) % FRAME_BUFFER_COUNT;
 				doCapture(m_HMDData.Camera.Index);
 			}
 			isActive = m_HMDData.Camera.IsActive;

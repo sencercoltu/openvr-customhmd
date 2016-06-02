@@ -1,0 +1,176 @@
+Operating System
+
+OS:	Windows 7 Service Pack 1
+Version:	6.1.65536.7601
+Graphics:	GeForce GTX 980/PCIe/SSE2
+Admin:	Yes, user is an admin
+Power:	High performance
+
+
+
+Headset
+
+
+Steam VR
+
+
+Steam:	Public
+Branch:	beta
+Driver:	lighthouse
+Display:	LHR-65EBA190
+Compositor:	Running
+
+Geometry:	2160x1200 @ (1280, 29)
+Render Target Size:	1512x1680
+
+
+Values from OS
+
+Number of screens:	2
+
+HMD display on:	\\.\DISPLAY2
+Geometry:	2160x1200 @ (1280, 29)
+Logical DPI:	96x96
+Orientation:	LandscapePrimary:Landscape
+Physical DPI:	72x72.0567
+Physical size:	762x423mm
+Refresh rate:	90Hz
+
+non-HMD display:	\\.\DISPLAY1
+Geometry:	1280x720 @ (0, 0)
+Logical DPI:	96x96
+Orientation:	LandscapePrimary:Landscape
+Physical DPI:	71.9292x72
+Physical size:	452x254mm
+Refresh rate:	60Hz
+
+
+
+Devices
+
+Device 1 - LHR-65EBA190 Headset Vive Developer Edition HTC
+Firmware: 1446501814 steamservices@firmware-win32 2015-11-02 FPGA 0.51
+Hardware Revision: product 1 rev 2.0.0 lot 0/0/0 0
+Hardware Id: 0x01020000
+Firmware Version: 1446501814 / 1441055390 (OK)
+FPGA Version: 51 / 51 (OK)
+VSync to Photons: 0.0111111
+Display Frequency:	90
+User IPD (m):	0.0635
+Current Universe ID:	0
+Previous Universe ID:	0
+Display Firmware Version:	
+
+Device 2 - VRC-66689F249C Controller 2 Flextronics
+Firmware: 1446501858 steamservices@firmware-win32 2015-11-02 FPGA 0.51 VRC 1434405653
+Hardware Revision: product 3 rev 2.2.0 lot 0/0/0 0
+Hardware Id: 0x03020200
+Firmware Version: 1446501858 / 1441055399 (OK)
+FPGA Version: 51 / 51 (OK)
+VRC Version: 1434405653 / 1434405653 (OK)
+Dongle Version: 1438120568 / 1433310329 (OK)
+Attached Device ID: 2034563021
+Supported Buttons:	12884901895
+Axis 0 Type:	1
+Axis 1 Type:	3
+Axis 2 Type:	0
+Axis 3 Type:	0
+Axis 3 Type:	0
+Connected Dongle:	66689F249C Version: 1438120568
+
+Device 3 - VRC-055AAB4B7E Controller 2 Flextronics
+Firmware: 1446501858 steamservices@firmware-win32 2015-11-02 FPGA 0.51 VRC 1434405653
+Hardware Revision: product 3 rev 2.2.0 lot 0/0/0 0
+Hardware Id: 0x03020200
+Firmware Version: 1446501858 / 1441055399 (OK)
+FPGA Version: 51 / 51 (OK)
+VRC Version: 1434405653 / 1434405653 (OK)
+Dongle Version: 1438120568 / 1433310329 (OK)
+Attached Device ID: 3712286668
+Supported Buttons:	12884901895
+Axis 0 Type:	1
+Axis 1 Type:	3
+Axis 2 Type:	0
+Axis 3 Type:	0
+Axis 3 Type:	0
+Connected Dongle:	055AAB4B7E Version: 1438120568
+
+Device 4 - LHB-9CE514D7 Base Robin 
+Firmware: 1
+Hardware Revision: 
+Hardware Id: 0x09010000
+Firmware Version: 1 / 1 (OK)
+FOV Left: 60
+FOV Right:	60
+FOV Top:	60
+FOV Bottom:	60
+Range Minimum (m):	1
+Range Maximum (m):	5
+
+Device 5 - LHB-889AB664 Base Robin 
+Firmware: 1
+Hardware Revision: 
+Hardware Id: 0x09010000
+Firmware Version: 1 / 1 (OK)
+FOV Left: 60
+FOV Right:	60
+FOV Top:	60
+FOV Bottom:	60
+Range Minimum (m):	1
+Range Maximum (m):	5
+
+
+
+
+Chaperone
+
+Play Area Size:	None found
+Hard Bounds:	None found
+
+
+
+Path Registry
+
+Runtime Version:	1446847085
+
+Runtime Directory:	C:\Program Files (x86)\Steam\steamapps\common\SteamVR
+Log Directory:	C:\Program Files (x86)\Steam\logs
+Config Directory:	C:\Program Files (x86)\Steam\config
+
+
+
+
+Environment Variables
+
+ForceDXGICreateFactory	
+SteamEnableNativeController	
+VR_CONFIG_PATH	C:\Program Files (x86)\Steam\config
+VR_LOG_PATH	C:\Program Files (x86)\Steam\logs
+VR_OVERRIDE	
+
+
+
+Performance
+
+Drops over entire run:
+83 single frame
+9 2 frame
+6 3 frame
+4 4 or more
+Total 235 in 3120 frames
+
+
+
+Config Files
+
+C:/Program Files (x86)/Steam/config/steamvr.vrsettings
+{
+"jsonid" : "vrsettings",
+"perfcheck" : {
+"allowTimingStore" : false,
+"heuristicActive" : true,
+"notifyInHMD" : true,
+"notifyOnlyOnce" : true
+},
+"version" : "1"
+}

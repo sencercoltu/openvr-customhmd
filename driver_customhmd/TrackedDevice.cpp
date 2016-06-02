@@ -122,7 +122,7 @@ uint64_t CTrackedDevice::GetUint64TrackedDeviceProperty(ETrackedDeviceProperty p
 			case Prop_RadioVersion_Uint64:				
 			case Prop_DongleVersion_Uint64:
 				SET_ERROR(TrackedProp_Success);
-				return 0;
+				return 1;
 			default:
 				SET_ERROR(TrackedProp_UnknownProperty);
 				break;

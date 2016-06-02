@@ -149,12 +149,30 @@ uint64_t CTrackedController::GetUint64Property(ETrackedDeviceProperty prop, ETra
 			ButtonMaskFromId(k_EButton_Axis1) |
 			ButtonMaskFromId(k_EButton_Axis2) |
 			ButtonMaskFromId(k_EButton_Axis3) |
-			ButtonMaskFromId(k_EButton_Axis4);
-			//k_EButton_DPad_Left = 3,
-			//k_EButton_DPad_Up = 4,
-			//k_EButton_DPad_Right = 5,
-			//k_EButton_DPad_Down = 6,
-			//k_EButton_A = 7,
+			ButtonMaskFromId(k_EButton_Axis4) |
+			ButtonMaskFromId(k_EButton_DPad_Left) |
+			ButtonMaskFromId(k_EButton_DPad_Up) |
+			ButtonMaskFromId(k_EButton_DPad_Right) |
+			ButtonMaskFromId(k_EButton_DPad_Down) |
+			ButtonMaskFromId(k_EButton_A);
+	case Prop_HardwareRevision_Uint64:
+		SET_ERROR(TrackedProp_Success);
+		return 0x03020200;
+	case Prop_FirmwareVersion_Uint64:
+		SET_ERROR(TrackedProp_Success);
+		return 1441055399;
+	case Prop_FPGAVersion_Uint64:
+		SET_ERROR(TrackedProp_Success);
+		return 51;
+	case Prop_DongleVersion_Uint64:
+		SET_ERROR(TrackedProp_Success);
+		return 1433310329;
+	case Prop_VRCVersion_Uint64:
+		SET_ERROR(TrackedProp_Success);
+		return 1434405653;
+	case Prop_RadioVersion_Uint64:
+		SET_ERROR(TrackedProp_Success);
+		return 1;
 	}
 
 	SET_ERROR(TrackedProp_NotYetAvailable);
@@ -201,7 +219,7 @@ void CTrackedController::RunFrame(DWORD currTick)
 				m_KeyDown = true;
 			}
 			if (VKD(VK_DELETE) && _role == TrackedControllerRole_RightHand)
-			{				
+			{
 				m_pDriverHost->TrackedDeviceButtonPressed(m_unObjectId, k_EButton_Grip, 0);
 				Sleep(10);
 				m_pDriverHost->TrackedDeviceButtonUnpressed(m_unObjectId, k_EButton_Grip, 0);
@@ -265,7 +283,7 @@ void CTrackedController::RunFrame(DWORD currTick)
 				m_ControllerData.State.rAxis[1].x = 0.0;
 				m_pDriverHost->TrackedDeviceButtonUnpressed(m_unObjectId, k_EButton_SteamVR_Trigger, 0);
 				m_KeyDown = true;
-				
+
 			}
 
 			if (m_KeyDown)
@@ -307,7 +325,7 @@ void CTrackedController::RunFrame(DWORD currTick)
 	}
 	if (pose.poseIsValid)
 	{
-		m_pDriverHost->TrackedDevicePoseUpdated(m_unObjectId, pose);		
+		m_pDriverHost->TrackedDevicePoseUpdated(m_unObjectId, pose);
 	}
 }
 
