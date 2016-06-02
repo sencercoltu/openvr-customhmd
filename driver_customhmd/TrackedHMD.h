@@ -81,7 +81,7 @@ protected:
 private:	
 	bool InitCamera();
 	void DeinitCamrea();
-	void YUY2oNV12(uint8_t *inputBuffer, uint8_t *outputBuffer, int width, int height);
+	void YUY2toNV12(uint8_t *inputBuffer, uint8_t *outputBuffer, int width, int height, int inStride, int outStride);
 };
 
 #endif // TrackedHMD_H

@@ -10,8 +10,8 @@ struct SimpleCapParams
 	int mWidth;
 	/* Buffer height */
 	int mHeight;
-
-	GUID mTargetFormat;
+	GUID *pMediaFormat;
+	LONG *pStride;
 };
 
 enum CAPTURE_PROPETIES

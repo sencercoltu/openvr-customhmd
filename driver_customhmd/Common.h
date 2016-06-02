@@ -81,6 +81,8 @@ struct CameraData
 	int Index;
 	bool IsActive;
 	HANDLE hThread;
+	LONG Stride;
+	GUID MediaFormat;
 	SimpleCapParams CaptureFrame;
 	vr::ECameraVideoStreamFormat StreamFormat;
 	vr::CameraVideoStreamFrame_t ActiveStreamFrame;

@@ -131,6 +131,7 @@ STDMETHODIMP CaptureClass::OnReadSample(
 					hr = buffer.LockBuffer(mDefaultStride, mCaptureBufferHeight, &scanline0, &stride);
 
 					DO_OR_DIE_CRITSECTION;
+					*gParams[mWhoAmI].pStride = stride;
 
 					mConvertFn(
 						(BYTE *)mCaptureBuffer,
@@ -157,6 +158,7 @@ STDMETHODIMP CaptureClass::OnReadSample(
 							scanline0 += stride * mCaptureBufferHeight;
 							stride = -stride;
 						}
+						*gParams[mWhoAmI].pStride = stride;
 						LONG bytes = stride * mCaptureBufferHeight;
 						CopyMemory(mCaptureBuffer, scanline0, bytes);
 					}
@@ -402,6 +404,8 @@ HRESULT CaptureClass::getFormat(DWORD aIndex, GUID *aSubtype) const
 HRESULT CaptureClass::setConversionFunction(REFGUID aSubtype)
 {
 	mConvertFn = NULL;
+
+	*gParams[mWhoAmI].pMediaFormat = aSubtype;
 
 	// If raw data is desired, skip conversion
 	if (gOptions[mWhoAmI] & CAPTURE_OPTION_RAWDATA)

@@ -157,22 +157,22 @@ uint64_t CTrackedController::GetUint64Property(ETrackedDeviceProperty prop, ETra
 			ButtonMaskFromId(k_EButton_A);
 	case Prop_HardwareRevision_Uint64:
 		SET_ERROR(TrackedProp_Success);
-		return 0x03020200;
+		return 0x81010500;
 	case Prop_FirmwareVersion_Uint64:
 		SET_ERROR(TrackedProp_Success);
 		return 1441055399;
 	case Prop_FPGAVersion_Uint64:
 		SET_ERROR(TrackedProp_Success);
-		return 51;
+		return 262;
 	case Prop_DongleVersion_Uint64:
 		SET_ERROR(TrackedProp_Success);
-		return 1433310329;
+		return 1461100729;
 	case Prop_VRCVersion_Uint64:
 		SET_ERROR(TrackedProp_Success);
-		return 1434405653;
+		return 1458917656;
 	case Prop_RadioVersion_Uint64:
 		SET_ERROR(TrackedProp_Success);
-		return 1;
+		return 1456805318;
 	}
 
 	SET_ERROR(TrackedProp_NotYetAvailable);
@@ -186,6 +186,10 @@ std::string CTrackedController::GetStringProperty(ETrackedDeviceProperty prop, E
 	case Prop_AttachedDeviceId_String:
 		SET_ERROR(TrackedProp_Success);
 		return Prop_SerialNumber;
+	case Prop_ConnectedWirelessDongle_String:		
+		SET_ERROR(TrackedProp_Success);
+		return "8983038AF4";
+
 	}
 	SET_ERROR(TrackedProp_ValueNotProvidedByDevice);
 	return "";
