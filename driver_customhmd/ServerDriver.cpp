@@ -17,6 +17,7 @@ EVRInitError CServerDriver::Init(IDriverLog * pDriverLog, IServerDriverHost * pD
 
 	m_pSettings = pDriverHost ? pDriverHost->GetSettings(IVRSettings_Version) : nullptr;
 	m_Align = { 0 };
+	m_Relative = { 0 };
 	if (m_pSettings)
 	{
 		m_Align.v[0] = m_pSettings->GetFloat("driver_customhmd", "eoX", 0.0f);
@@ -128,7 +129,7 @@ void CServerDriver::Run()
 			{
 				lastTick = GetTickCount();				
 				for (auto iter = m_TrackedDevices.begin(); iter != m_TrackedDevices.end(); iter++)
-					(*iter)->PoseUpdate(pUSBData, &m_Align);
+					(*iter)->PoseUpdate(pUSBData, &m_Align, &m_Relative);
 			}
 			else if (res < 0)
 			{

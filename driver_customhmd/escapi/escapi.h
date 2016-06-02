@@ -1,5 +1,7 @@
 /* Extremely Simple Capture API */
 
+typedef void (*pfCameraFrameCallback)(char *pFrame, int width, int height, int stride, GUID *pMediaFormat, void *pUserData);
+
 struct SimpleCapParams
 {
 	/* Target buffer. 
@@ -12,6 +14,9 @@ struct SimpleCapParams
 	int mHeight;
 	GUID *pMediaFormat;
 	LONG *pStride;
+	void *pUserData;
+	int Options;
+	pfCameraFrameCallback pfCallback;
 };
 
 enum CAPTURE_PROPETIES
@@ -45,17 +50,17 @@ enum CAPTURE_PROPETIES
 #define CAPTURE_OPTIONS_MASK (CAPTURE_OPTION_RAWDATA) 
 
 void getCaptureDeviceName(unsigned int deviceno, char *namebuffer, int bufferlength);
-int ESCAPIDLLVersion();
-int ESCAPIVersion();
+//int ESCAPIDLLVersion();
+//int ESCAPIVersion();
 int countCaptureDevices();
 void initCOM();
 int initCapture(unsigned int deviceno, struct SimpleCapParams *aParams);
 void deinitCapture(unsigned int deviceno);
-void doCapture(unsigned int deviceno);
-int isCaptureDone(unsigned int deviceno);
+//void doCapture(unsigned int deviceno);
+//int isCaptureDone(unsigned int deviceno);
 int getCaptureErrorLine(unsigned int deviceno);
 int getCaptureErrorCode(unsigned int deviceno);
 float getCapturePropertyValue(unsigned int deviceno, int prop);
 int getCapturePropertyAuto(unsigned int deviceno, int prop);
 int setCaptureProperty(unsigned int deviceno, int prop, float value, int autoval);
-int initCaptureWithOptions(unsigned int deviceno, struct SimpleCapParams *aParams, unsigned int aOptions);
+//int initCaptureWithOptions(unsigned int deviceno, struct SimpleCapParams *aParams, unsigned int aOptions);

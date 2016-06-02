@@ -29,7 +29,7 @@ private:
 	std::string m_UserDriverConfigDir;
 	std::string m_DriverInstallDir;
 	IVRSettings *m_pSettings;
-	HmdVector3d_t m_Align;
+	HmdVector3d_t m_Align, m_Relative;
 	std::vector<CTrackedDevice *> m_TrackedDevices;
 	HANDLE m_hThread;
 	bool m_IsRunning;

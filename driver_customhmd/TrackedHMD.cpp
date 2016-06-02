@@ -92,7 +92,7 @@ void CTrackedHMD::Deactivate()
 {
 	_LOG(__FUNCTION__);
 	m_unObjectId = k_unTrackedDeviceIndexInvalid;
-	DeinitCamrea();
+	DeinitCamera();
 	CoUninitialize();
 	//	TRACE(__FUNCTIONW__);
 }
@@ -565,7 +565,7 @@ void CTrackedHMD::RunFrame(DWORD currTick)
 		m_pDriverHost->TrackedDevicePoseUpdated(m_unObjectId, pose);
 }
 
-void CTrackedHMD::PoseUpdate(USBData *pData, HmdVector3d_t *pCenterEuler)
+void CTrackedHMD::PoseUpdate(USBData *pData, HmdVector3d_t *pCenterEuler, HmdVector3d_t *pRelativePos)
 {
 	if (pData->Source != 0)
 		return;
@@ -578,8 +578,10 @@ void CTrackedHMD::PoseUpdate(USBData *pData, HmdVector3d_t *pCenterEuler)
 		euler.v[2] = euler.v[2] + pCenterEuler->v[2];
 		m_HMDData.Pose.qRotation = Quaternion::FromEuler(euler).UnitQuaternion();
 		m_HMDData.PoseUpdated = true;
-		ReleaseMutex(m_HMDData.hPoseLock);
+		memcpy(pRelativePos, m_HMDData.Pose.vecPosition, sizeof(HmdVector3d_t)); //to server driver
+		ReleaseMutex(m_HMDData.hPoseLock);		
 	}
+	
 }
 
 
@@ -655,16 +657,19 @@ bool CTrackedHMD::StartVideoStream()
 		if (!m_HMDData.Camera.IsActive && m_HMDData.Camera.Index > -1)
 		{
 			DWORD currTick = GetTickCount();
-			m_HMDData.Camera.hThread = reinterpret_cast<HANDLE>(_beginthreadex(nullptr, 0, CameraThread, this, CREATE_SUSPENDED, nullptr));
-			if (m_HMDData.Camera.hThread)
-			{
+			//m_HMDData.Camera.hThread = reinterpret_cast<HANDLE>(_beginthreadex(nullptr, 0, CameraThread, this, CREATE_SUSPENDED, nullptr));
+			//if (m_HMDData.Camera.hThread)
+			//{
 				m_HMDData.Camera.IsActive = true;				
 				m_HMDData.Camera.StartTime = currTick;
 				m_HMDData.Camera.LastFrameTime = m_HMDData.Camera.StartTime;
-				ResumeThread(m_HMDData.Camera.hThread);
-			}
+				m_HMDData.Camera.ActiveStreamFrame.m_nBufferIndex = 0;
+
+				//ResumeThread(m_HMDData.Camera.hThread);
+			//}
 		}
 		ReleaseMutex(m_HMDData.Camera.hLock);
+		setCaptureProperty(m_HMDData.Camera.Index, CAPTURE_EXPOSURE, 0.5f, 0);
 	}
 	return m_HMDData.Camera.IsActive;
 }
@@ -672,26 +677,26 @@ bool CTrackedHMD::StartVideoStream()
 void CTrackedHMD::StopVideoStream()
 {
 	_LOG(__FUNCTION__);
-	HANDLE hTemp = nullptr;
+//	HANDLE hTemp = nullptr;
 	if (WAIT_OBJECT_0 == WaitForSingleObject(m_HMDData.Camera.hLock, INFINITE))
 	{
-		if (m_HMDData.Camera.IsActive)
-		{
+		//if (m_HMDData.Camera.IsActive)
+		//{
 			m_HMDData.Camera.IsActive = false;
-			if (m_HMDData.Camera.hThread)
-			{
-				hTemp = m_HMDData.Camera.hThread;
-				m_HMDData.Camera.hThread = nullptr;
-			}
-		}
+			//if (m_HMDData.Camera.hThread)
+			//{
+			//	hTemp = m_HMDData.Camera.hThread;
+			//	m_HMDData.Camera.hThread = nullptr;
+			//}
+		//}
 		ReleaseMutex(m_HMDData.Camera.hLock);
 	}
 
-	if (hTemp)
-	{
-		WaitForSingleObject(hTemp, INFINITE);
-		CloseHandle(hTemp);
-	}
+	//if (hTemp)
+	//{
+	//	WaitForSingleObject(hTemp, INFINITE);
+	//	CloseHandle(hTemp);
+	//}
 }
 
 bool CTrackedHMD::IsVideoStreamActive()
@@ -762,36 +767,14 @@ bool CTrackedHMD::GetCameraDistortion(float flInputU, float flInputV, float *pfl
 bool CTrackedHMD::GetCameraProjection(float flWidthPixels, float flHeightPixels, float flZNear, float flZFar, vr::HmdMatrix44_t *pProjection)
 {
 	_LOG(__FUNCTION__" w: %f, h: %f, n: %f, f: %f", flWidthPixels, flHeightPixels, flZNear, flZFar);
-
 	Quaternion::HmdMatrix_SetIdentity(pProjection);
-
-	float r = 0, l = flWidthPixels, b = flHeightPixels, t = 0, n = flZNear, f = flZFar;
-
-	pProjection->m[0][0] = 2 / (r - l);
-	pProjection->m[0][1] = 0;
-	pProjection->m[0][2] = 0;
-	pProjection->m[0][3] = 0;
-	pProjection->m[1][0] = 0;
-	pProjection->m[1][1] = 2 / (t - b);
-	pProjection->m[1][2] = 0;
-	pProjection->m[1][3] = 0;
-	pProjection->m[2][0] = 0;
-	pProjection->m[2][1] = 0;
-	pProjection->m[2][2] = -2 / (f - n);
-	pProjection->m[2][3] = 0;
-	pProjection->m[3][0] = -(r + l) / (r - l);
-	pProjection->m[3][1] = -(t + b) / (t - b);
-	pProjection->m[3][2] = -(f + n) / (f - n);
-	pProjection->m[3][3] = 1;
-
-	//pProjection->m[0][0] = 2 * flZNear / flWidthPixels;
-	//pProjection->m[0][2] = 1.0f;
-	//pProjection->m[1][1] = 2 * flZNear / flHeightPixels;
-	//pProjection->m[1][2] = 1.0f;
-	//pProjection->m[2][2] = -(flZFar + flZNear) / (flZFar - flZNear);
-	//pProjection->m[2][3] = -(2 * flZNear * flZFar) / (flZFar - flZNear);
-	//pProjection->m[3][2] = -1.0f;
-	//pProjection->m[3][3] = 0.0f;
+	float aspect = (float)FRAME_HEIGHT / (float)FRAME_WIDTH; //  1 / tan(angleOfView * 0.5 * M_PI / 180);
+	pProjection->m[0][0] = 0.2f * aspect; // scale the x coordinates of the projected point 
+	pProjection->m[1][1] = 0.2f; // scale the y coordinates of the projected point 
+	pProjection->m[2][2] = -flZFar / (flZFar - flZNear); // used to remap z to [0,1] 
+	pProjection->m[3][2] = -flZFar * flZNear / (flZFar - flZNear); // used to remap z [0,1] 
+	pProjection->m[2][3] = -1; // set w = -z 
+	pProjection->m[3][3] = 0;
 	return true;
 }
 
@@ -846,8 +829,8 @@ bool CTrackedHMD::SetCameraCompatibilityMode(vr::ECameraCompatibilityMode nCamer
 bool CTrackedHMD::GetCameraFrameBounds(vr::EVRTrackedCameraFrameType eFrameType, uint32_t *pLeft, uint32_t *pTop, uint32_t *pWidth, uint32_t *pHeight)
 {
 	_LOG(__FUNCTION__" ft: %d", eFrameType);
-	auto w = FRAME_WIDTH; // m_HMDData.ScreenWidth / 2;
-	auto h = FRAME_HEIGHT; // (m_HMDData.ScreenHeight - 30) / 4;
+	auto w = m_HMDData.ScreenWidth / 2;
+	auto h = (m_HMDData.ScreenHeight - 30) / 4;
 	*pLeft = 0; // m_HMDData.PosX + (w / 2);
 	*pTop = 0; // m_HMDData.PosY + (h / 2);
 	*pWidth = w;
@@ -890,14 +873,15 @@ bool CTrackedHMD::InitCamera()
 			if (WAIT_OBJECT_0 == WaitForSingleObject(m_HMDData.Camera.hLock, INFINITE))
 			{
 				m_HMDData.Camera.Index = i;
+				m_HMDData.Camera.CaptureFrame.pfCallback = OnCameraFrameUpdateCallback;
+				m_HMDData.Camera.CaptureFrame.pUserData = this;
+				m_HMDData.Camera.CaptureFrame.Options = CAPTURE_OPTION_RAWDATA;
 				m_HMDData.Camera.CaptureFrame.pStride = &m_HMDData.Camera.Stride;
 				m_HMDData.Camera.CaptureFrame.pMediaFormat = &m_HMDData.Camera.MediaFormat;
 				m_HMDData.Camera.CaptureFrame.mWidth = FRAME_WIDTH;
 				m_HMDData.Camera.CaptureFrame.mHeight = FRAME_HEIGHT;
 				m_HMDData.Camera.CaptureFrame.mTargetBuf = (int *)malloc(m_HMDData.Camera.CaptureFrame.mHeight * m_HMDData.Camera.CaptureFrame.mWidth * sizeof(int));				
-				initCaptureWithOptions(m_HMDData.Camera.Index, &m_HMDData.Camera.CaptureFrame, CAPTURE_OPTION_RAWDATA);
-				setCaptureProperty(m_HMDData.Camera.Index, CAPTURE_EXPOSURE, 0.6f, 0);
-
+				initCapture(m_HMDData.Camera.Index, &m_HMDData.Camera.CaptureFrame);				
 				m_HMDData.Camera.StartTime = GetTickCount();
 				m_HMDData.Camera.ActiveStreamFrame.m_nBufferCount = FRAME_BUFFER_COUNT;
 				m_HMDData.Camera.ActiveStreamFrame.m_nBufferIndex = 0;
@@ -919,7 +903,7 @@ bool CTrackedHMD::InitCamera()
 	return false;
 }
 
-void CTrackedHMD::DeinitCamrea()
+void CTrackedHMD::DeinitCamera()
 {
 	_LOG(__FUNCTION__);
 	StopVideoStream();
@@ -942,82 +926,146 @@ void CTrackedHMD::DeinitCamrea()
 	m_HMDData.Camera.Index = -1;
 }
 
-unsigned int WINAPI CTrackedHMD::CameraThread(void *p)
+void CTrackedHMD::OnCameraFrameUpdateCallback(char *pFrame, int width, int height, int stride, GUID *pMediaFormat, void *pUserData)
 {
-	auto pHmd = static_cast<CTrackedHMD *>(p);
-	if (pHmd)
-		pHmd->RunCamera();
-	_endthreadex(0);
-	return 0;
-
+	auto pThis = (CTrackedHMD *)pUserData;
+	pThis->OnCameraFrameUpdate(pFrame, width, height, stride, pMediaFormat);
 }
 
-void CTrackedHMD::RunCamera()
+void CTrackedHMD::OnCameraFrameUpdate(char *pFrame, int width, int height, int stride, GUID *pMediaFormat)
 {
-	m_HMDData.Camera.LastFrameTime = GetTickCount();
-	m_HMDData.Camera.ActiveStreamFrame.m_nBufferIndex = 0;
-	doCapture(m_HMDData.Camera.Index);	
-	bool isActive = m_HMDData.Camera.IsActive;
-	while (isActive)
+	if (WAIT_OBJECT_0 == WaitForSingleObject(m_HMDData.Camera.hLock, INFINITE))
 	{
-		if (WAIT_OBJECT_0 == WaitForSingleObject(m_HMDData.Camera.hLock, INFINITE))
+		if (m_HMDData.Camera.pfCallback && m_HMDData.Camera.pCallbackStreamFrame && m_HMDData.Camera.IsActive)
 		{
-			if (m_HMDData.Camera.pfCallback && m_HMDData.Camera.pCallbackStreamFrame && isCaptureDone(m_HMDData.Camera.Index))
+			DWORD currTick = GetTickCount();
+			auto diff = currTick - m_HMDData.Camera.LastFrameTime;
+			//_LOG("Camera callback %d, %d after %d ms.", m_HMDData.Camera.ActiveStreamFrame.m_nFrameSequence, m_HMDData.Camera.CallbackCount, diff);
+
+			m_HMDData.Camera.ActiveStreamFrame.m_flFrameElapsedTime = (currTick - m_HMDData.Camera.StartTime) / 1000.0;
+			m_HMDData.Camera.ActiveStreamFrame.m_flFrameDeliveryRate = 1000.0 / diff;
+			m_HMDData.Camera.ActiveStreamFrame.m_flFrameCaptureTime_DriverAbsolute = currTick - m_HMDData.Camera.StartTime;
+			m_HMDData.Camera.ActiveStreamFrame.m_nFrameCaptureTicks_ServerAbsolute = currTick - m_HMDData.Camera.StartTime;
+
+			m_HMDData.Camera.ActiveStreamFrame.m_nStreamFormat = m_HMDData.Camera.StreamFormat;
+
+			m_HMDData.Camera.ActiveStreamFrame.m_nExposureTime = 1000 / diff;
+
+			m_HMDData.Camera.ActiveStreamFrame.m_nISPReferenceTimeStamp = m_HMDData.Camera.StartTime;
+			m_HMDData.Camera.ActiveStreamFrame.m_nISPFrameTimeStamp = currTick;
+
+			m_HMDData.Camera.ActiveStreamFrame.m_StandingTrackedDevicePose.bDeviceIsConnected = true;
+			m_HMDData.Camera.ActiveStreamFrame.m_StandingTrackedDevicePose.bPoseIsValid = true;
+			m_HMDData.Camera.ActiveStreamFrame.m_StandingTrackedDevicePose.eTrackingResult = TrackingResult_Running_OK;
+			m_HMDData.Camera.ActiveStreamFrame.m_StandingTrackedDevicePose.vAngularVelocity.v[0] = 2;
+
+			m_HMDData.Camera.CallbackCount = 0;
+			m_HMDData.Camera.LastFrameTime = currTick;
+
+			//memcpy(m_HMDData.Camera.ActiveStreamFrame.m_pImageData, m_HMDData.Camera.CaptureFrame.mTargetBuf, m_HMDData.Camera.ActiveStreamFrame.m_nImageDataSize);
+			if (*pMediaFormat == MFVideoFormat_YUY2)
+				YUY2toNV12((uint8_t *)m_HMDData.Camera.CaptureFrame.mTargetBuf, (uint8_t *)m_HMDData.Camera.ActiveStreamFrame.m_pImageData, FRAME_WIDTH, FRAME_HEIGHT, stride, FRAME_WIDTH);
+
+			memcpy(m_HMDData.Camera.pCallbackStreamFrame + m_HMDData.Camera.ActiveStreamFrame.m_nBufferIndex, &m_HMDData.Camera.ActiveStreamFrame, sizeof(CameraVideoStreamFrame_t));
+			memcpy(((char *)m_HMDData.Camera.pCallbackStreamFrame) + sizeof(CameraVideoStreamFrame_t), m_HMDData.Camera.ActiveStreamFrame.m_pImageData, FRAME_DATA_SIZE_NV12);
+
+			/*
+			char fn[MAX_PATH];
+			sprintf_s(fn, "D:\\XXX\\Frame%d.yuv", m_HMDData.Camera.ActiveStreamFrame.m_nFrameSequence);
+			FILE *fp = _fsopen(fn, "wb", _SH_DENYNO);
+			if (fp)
 			{
-				DWORD currTick = GetTickCount();
-				auto diff = currTick - m_HMDData.Camera.LastFrameTime;
-				//_LOG("Camera callback %d, %d after %d ms.", m_HMDData.Camera.ActiveStreamFrame.m_nFrameSequence, m_HMDData.Camera.CallbackCount, diff);
-
-				m_HMDData.Camera.ActiveStreamFrame.m_flFrameElapsedTime = (currTick - m_HMDData.Camera.StartTime) / 1000.0;
-				m_HMDData.Camera.ActiveStreamFrame.m_flFrameDeliveryRate = 1000.0 / diff;
-				m_HMDData.Camera.ActiveStreamFrame.m_flFrameCaptureTime_DriverAbsolute = currTick - m_HMDData.Camera.StartTime;
-				m_HMDData.Camera.ActiveStreamFrame.m_nFrameCaptureTicks_ServerAbsolute = currTick - m_HMDData.Camera.StartTime;
-
-				m_HMDData.Camera.ActiveStreamFrame.m_nStreamFormat = m_HMDData.Camera.StreamFormat;
-
-				m_HMDData.Camera.ActiveStreamFrame.m_nExposureTime = 1000 / diff;
-
-				m_HMDData.Camera.ActiveStreamFrame.m_nISPReferenceTimeStamp = m_HMDData.Camera.StartTime;
-				m_HMDData.Camera.ActiveStreamFrame.m_nISPFrameTimeStamp = currTick;
-
-				m_HMDData.Camera.ActiveStreamFrame.m_StandingTrackedDevicePose.bDeviceIsConnected = true;
-				m_HMDData.Camera.ActiveStreamFrame.m_StandingTrackedDevicePose.bPoseIsValid = true;
-				m_HMDData.Camera.ActiveStreamFrame.m_StandingTrackedDevicePose.eTrackingResult = TrackingResult_Running_OK;
-				m_HMDData.Camera.ActiveStreamFrame.m_StandingTrackedDevicePose.vAngularVelocity.v[0] = 2;
-
-				m_HMDData.Camera.CallbackCount = 0;
-				m_HMDData.Camera.LastFrameTime = currTick;
-
-				//memcpy(m_HMDData.Camera.ActiveStreamFrame.m_pImageData, m_HMDData.Camera.CaptureFrame.mTargetBuf, m_HMDData.Camera.ActiveStreamFrame.m_nImageDataSize);
-				if (m_HMDData.Camera.MediaFormat == MFVideoFormat_YUY2)
-					YUY2toNV12((uint8_t *)m_HMDData.Camera.CaptureFrame.mTargetBuf, (uint8_t *)m_HMDData.Camera.ActiveStreamFrame.m_pImageData, FRAME_WIDTH, FRAME_HEIGHT, *m_HMDData.Camera.CaptureFrame.pStride, FRAME_WIDTH);
-
-				memcpy(m_HMDData.Camera.pCallbackStreamFrame + m_HMDData.Camera.ActiveStreamFrame.m_nBufferIndex, &m_HMDData.Camera.ActiveStreamFrame, sizeof(CameraVideoStreamFrame_t));
-				memcpy(((char *)m_HMDData.Camera.pCallbackStreamFrame) + sizeof(CameraVideoStreamFrame_t), m_HMDData.Camera.ActiveStreamFrame.m_pImageData, FRAME_DATA_SIZE_NV12);
-
-				/*
-				char fn[MAX_PATH];
-				sprintf_s(fn, "D:\\XXX\\Frame%d.yuv", m_HMDData.Camera.ActiveStreamFrame.m_nFrameSequence);
-				FILE *fp = _fsopen(fn, "wb", _SH_DENYNO);
-				if (fp)
-				{
-					fwrite(m_HMDData.Camera.ActiveStreamFrame.m_pImageData, 1, m_HMDData.Camera.ActiveStreamFrame.m_nImageDataSize, fp);
-					fclose(fp);
-				}
-				*/
-
-				m_HMDData.Camera.pfCallback->OnCameraVideoSinkCallback(); 
-
-				m_HMDData.Camera.ActiveStreamFrame.m_nFrameSequence++;
-				m_HMDData.Camera.ActiveStreamFrame.m_nBufferIndex = (m_HMDData.Camera.ActiveStreamFrame.m_nBufferIndex + 1) % FRAME_BUFFER_COUNT;
-				doCapture(m_HMDData.Camera.Index);
+			fwrite(m_HMDData.Camera.ActiveStreamFrame.m_pImageData, 1, m_HMDData.Camera.ActiveStreamFrame.m_nImageDataSize, fp);
+			fclose(fp);
 			}
-			isActive = m_HMDData.Camera.IsActive;
-			ReleaseMutex(m_HMDData.Camera.hLock);
-		}
-		Sleep(32);
+			*/
+
+			m_HMDData.Camera.pfCallback->OnCameraVideoSinkCallback();
+
+			m_HMDData.Camera.ActiveStreamFrame.m_nFrameSequence++;
+			m_HMDData.Camera.ActiveStreamFrame.m_nBufferIndex = (m_HMDData.Camera.ActiveStreamFrame.m_nBufferIndex + 1) % FRAME_BUFFER_COUNT;			
+		}		
+		ReleaseMutex(m_HMDData.Camera.hLock);
 	}
 }
+
+
+//unsigned int WINAPI CTrackedHMD::CameraThread(void *p)
+//{
+//	auto pHmd = static_cast<CTrackedHMD *>(p);
+//	if (pHmd)
+//		pHmd->RunCamera();
+//	_endthreadex(0);
+//	return 0;
+//
+//}
+
+//void CTrackedHMD::RunCamera()
+//{
+//	m_HMDData.Camera.LastFrameTime = GetTickCount();
+//	m_HMDData.Camera.ActiveStreamFrame.m_nBufferIndex = 0;
+//	doCapture(m_HMDData.Camera.Index);	
+//	bool isActive = m_HMDData.Camera.IsActive;
+//	while (isActive)
+//	{
+//		if (WAIT_OBJECT_0 == WaitForSingleObject(m_HMDData.Camera.hLock, INFINITE))
+//		{
+//			if (m_HMDData.Camera.pfCallback && m_HMDData.Camera.pCallbackStreamFrame && isCaptureDone(m_HMDData.Camera.Index))
+//			{
+//				DWORD currTick = GetTickCount();
+//				auto diff = currTick - m_HMDData.Camera.LastFrameTime;
+//				//_LOG("Camera callback %d, %d after %d ms.", m_HMDData.Camera.ActiveStreamFrame.m_nFrameSequence, m_HMDData.Camera.CallbackCount, diff);
+//
+//				m_HMDData.Camera.ActiveStreamFrame.m_flFrameElapsedTime = (currTick - m_HMDData.Camera.StartTime) / 1000.0;
+//				m_HMDData.Camera.ActiveStreamFrame.m_flFrameDeliveryRate = 1000.0 / diff;
+//				m_HMDData.Camera.ActiveStreamFrame.m_flFrameCaptureTime_DriverAbsolute = currTick - m_HMDData.Camera.StartTime;
+//				m_HMDData.Camera.ActiveStreamFrame.m_nFrameCaptureTicks_ServerAbsolute = currTick - m_HMDData.Camera.StartTime;
+//
+//				m_HMDData.Camera.ActiveStreamFrame.m_nStreamFormat = m_HMDData.Camera.StreamFormat;
+//
+//				m_HMDData.Camera.ActiveStreamFrame.m_nExposureTime = 1000 / diff;
+//
+//				m_HMDData.Camera.ActiveStreamFrame.m_nISPReferenceTimeStamp = m_HMDData.Camera.StartTime;
+//				m_HMDData.Camera.ActiveStreamFrame.m_nISPFrameTimeStamp = currTick;
+//
+//				m_HMDData.Camera.ActiveStreamFrame.m_StandingTrackedDevicePose.bDeviceIsConnected = true;
+//				m_HMDData.Camera.ActiveStreamFrame.m_StandingTrackedDevicePose.bPoseIsValid = true;
+//				m_HMDData.Camera.ActiveStreamFrame.m_StandingTrackedDevicePose.eTrackingResult = TrackingResult_Running_OK;
+//				m_HMDData.Camera.ActiveStreamFrame.m_StandingTrackedDevicePose.vAngularVelocity.v[0] = 2;
+//
+//				m_HMDData.Camera.CallbackCount = 0;
+//				m_HMDData.Camera.LastFrameTime = currTick;
+//
+//				//memcpy(m_HMDData.Camera.ActiveStreamFrame.m_pImageData, m_HMDData.Camera.CaptureFrame.mTargetBuf, m_HMDData.Camera.ActiveStreamFrame.m_nImageDataSize);
+//				if (m_HMDData.Camera.MediaFormat == MFVideoFormat_YUY2)
+//					YUY2toNV12((uint8_t *)m_HMDData.Camera.CaptureFrame.mTargetBuf, (uint8_t *)m_HMDData.Camera.ActiveStreamFrame.m_pImageData, FRAME_WIDTH, FRAME_HEIGHT, *m_HMDData.Camera.CaptureFrame.pStride, FRAME_WIDTH);
+//
+//				memcpy(m_HMDData.Camera.pCallbackStreamFrame + m_HMDData.Camera.ActiveStreamFrame.m_nBufferIndex, &m_HMDData.Camera.ActiveStreamFrame, sizeof(CameraVideoStreamFrame_t));
+//				memcpy(((char *)m_HMDData.Camera.pCallbackStreamFrame) + sizeof(CameraVideoStreamFrame_t), m_HMDData.Camera.ActiveStreamFrame.m_pImageData, FRAME_DATA_SIZE_NV12);
+//
+//				/*
+//				char fn[MAX_PATH];
+//				sprintf_s(fn, "D:\\XXX\\Frame%d.yuv", m_HMDData.Camera.ActiveStreamFrame.m_nFrameSequence);
+//				FILE *fp = _fsopen(fn, "wb", _SH_DENYNO);
+//				if (fp)
+//				{
+//					fwrite(m_HMDData.Camera.ActiveStreamFrame.m_pImageData, 1, m_HMDData.Camera.ActiveStreamFrame.m_nImageDataSize, fp);
+//					fclose(fp);
+//				}
+//				*/
+//
+//				m_HMDData.Camera.pfCallback->OnCameraVideoSinkCallback(); 
+//
+//				m_HMDData.Camera.ActiveStreamFrame.m_nFrameSequence++;
+//				m_HMDData.Camera.ActiveStreamFrame.m_nBufferIndex = (m_HMDData.Camera.ActiveStreamFrame.m_nBufferIndex + 1) % FRAME_BUFFER_COUNT;
+//				doCapture(m_HMDData.Camera.Index);
+//			}
+//			isActive = m_HMDData.Camera.IsActive;
+//			ReleaseMutex(m_HMDData.Camera.hLock);
+//		}
+//		Sleep(32);
+//	}
+//}
 
 void CTrackedHMD::YUY2toNV12(uint8_t *inputBuffer, uint8_t *outputBuffer, int width, int height, int inStride, int outStride)
 {

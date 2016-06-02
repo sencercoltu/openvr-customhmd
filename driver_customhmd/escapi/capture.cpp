@@ -19,8 +19,8 @@
 #include "choosedeviceparam.h"
 
 extern struct SimpleCapParams gParams[];
-extern int gDoCapture[];
-extern int gOptions[];
+//extern int gDoCapture[];
+//extern int gOptions[];
 
 #define DO_OR_DIE { if (mErrorLine) return hr; if (!SUCCEEDED(hr)) { mErrorLine = __LINE__; mErrorCode = hr; return hr; } }
 #define DO_OR_DIE_CRITSECTION { if (mErrorLine) { LeaveCriticalSection(&mCritsec); return hr;} if (!SUCCEEDED(hr)) { LeaveCriticalSection(&mCritsec); mErrorLine = __LINE__; mErrorCode = hr; return hr; } }
@@ -109,7 +109,7 @@ STDMETHODIMP CaptureClass::OnReadSample(
 
 	if (SUCCEEDED(aStatus))
 	{
-		if (gDoCapture[mWhoAmI] == -1)
+		//if (gDoCapture[mWhoAmI] == -1)
 		{
 			if (aSample)
 			{
@@ -145,7 +145,7 @@ STDMETHODIMP CaptureClass::OnReadSample(
 				else
 				{
 					// No convert function?
-					if (gOptions[mWhoAmI] & CAPTURE_OPTION_RAWDATA)
+					if (gParams[mWhoAmI].Options & CAPTURE_OPTION_RAWDATA)
 					{
 						// Ah ok, raw data was requested, so let's copy it then.
 
@@ -176,7 +176,9 @@ STDMETHODIMP CaptureClass::OnReadSample(
 								(j * mCaptureBufferWidth / gParams[mWhoAmI].mWidth)];
 					}
 				}
-				gDoCapture[mWhoAmI] = 1;
+				//gDoCapture[mWhoAmI] = 1;
+				if (gParams[mWhoAmI].pfCallback)
+					gParams[mWhoAmI].pfCallback((char *)dst, gParams[mWhoAmI].mWidth, gParams[mWhoAmI].mHeight, *gParams[mWhoAmI].pStride, gParams[mWhoAmI].pMediaFormat, gParams[mWhoAmI].pUserData);
 			}
 		}
 	}
@@ -408,7 +410,7 @@ HRESULT CaptureClass::setConversionFunction(REFGUID aSubtype)
 	*gParams[mWhoAmI].pMediaFormat = aSubtype;
 
 	// If raw data is desired, skip conversion
-	if (gOptions[mWhoAmI] & CAPTURE_OPTION_RAWDATA)
+	if (gParams[mWhoAmI].Options & CAPTURE_OPTION_RAWDATA)
 		return S_OK; 
 
 	for (DWORD i = 0; i < gConversionFormats; i++)

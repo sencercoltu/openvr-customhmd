@@ -80,7 +80,7 @@ struct CameraData
 	HANDLE hLock;
 	int Index;
 	bool IsActive;
-	HANDLE hThread;
+	//HANDLE hThread;
 	LONG Stride;
 	GUID MediaFormat;
 	SimpleCapParams CaptureFrame;

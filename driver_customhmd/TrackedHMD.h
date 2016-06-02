@@ -11,8 +11,8 @@ class CTrackedHMD :
 {
 private:	
 	HMDData m_HMDData;			
-	unsigned int static WINAPI CameraThread(void *p);
-	void RunCamera();
+	//unsigned int static WINAPI CameraThread(void *p);
+	//void RunCamera();
 
 public:
 	CTrackedHMD(std::string displayName, CServerDriver *pServer);
@@ -75,13 +75,15 @@ protected:
 	float GetFloatProperty(ETrackedDeviceProperty prop, ETrackedPropertyError * pError) override;
 	int32_t GetInt32Property(ETrackedDeviceProperty prop, ETrackedPropertyError * pError) override;
 	uint64_t GetUint64Property(ETrackedDeviceProperty prop, ETrackedPropertyError * pError) override;
-	void PoseUpdate(USBData *pData, HmdVector3d_t *pCenterEuler) override;
+	void PoseUpdate(USBData *pData, HmdVector3d_t *pCenterEuler, HmdVector3d_t *pRelativePos) override;
 	void RunFrame(DWORD currTick) override;
 
 private:	
 	bool InitCamera();
-	void DeinitCamrea();
+	void DeinitCamera();
 	void YUY2toNV12(uint8_t *inputBuffer, uint8_t *outputBuffer, int width, int height, int inStride, int outStride);
+	static void OnCameraFrameUpdateCallback(char *pFrame, int width, int height, int stride, GUID *pMediaFormat, void *pUserData);
+	void OnCameraFrameUpdate(char *pFrame, int width, int height, int stride, GUID *pMediaFormat);
 };
 
 #endif // TrackedHMD_H

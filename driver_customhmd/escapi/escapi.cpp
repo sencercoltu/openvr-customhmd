@@ -6,8 +6,8 @@
 #define MAXDEVICES 16
 
 extern struct SimpleCapParams gParams[];
-extern int gDoCapture[];
-extern int gOptions[];
+//extern int gDoCapture[];
+//extern int gOptions[];
 
 extern HRESULT InitDevice(int device);
 extern void CleanupDevice(int device);
@@ -56,9 +56,9 @@ int initCapture(unsigned int deviceno, struct SimpleCapParams *aParams)
 		return 0;
 	if (aParams == NULL || aParams->mHeight <= 0 || aParams->mWidth <= 0 || aParams->mTargetBuf == 0)
 		return 0;
-	gDoCapture[deviceno] = 0;
+	//gDoCapture[deviceno] = 0;
 	gParams[deviceno] = *aParams;
-	gOptions[deviceno] = 0;
+	//gOptions[deviceno] = 0;
 	if (FAILED(InitDevice(deviceno))) return 0;
 	return 1;
 }
@@ -75,18 +75,18 @@ void doCapture(unsigned int deviceno)
 	if (deviceno > MAXDEVICES)
 		return;
 	CheckForFail(deviceno);
-	gDoCapture[deviceno] = -1;
+	//gDoCapture[deviceno] = -1;
 }
 
-int isCaptureDone(unsigned int deviceno)
-{
-	if (deviceno > MAXDEVICES)
-		return 0;
-	CheckForFail(deviceno);
-	if (gDoCapture[deviceno] == 1)
-		return 1;
-	return 0;
-}
+//int isCaptureDone(unsigned int deviceno)
+//{
+//	if (deviceno > MAXDEVICES)
+//		return 0;
+//	CheckForFail(deviceno);
+//	if (gDoCapture[deviceno] == 1)
+//		return 1;
+//	return 0;
+//}
 
 int getCaptureErrorLine(unsigned int deviceno)
 {
@@ -123,18 +123,18 @@ int setCaptureProperty(unsigned int deviceno, int prop, float value, int autoval
 	return SetProperty(deviceno, prop, value, autoval);
 }
 
-int initCaptureWithOptions(unsigned int deviceno, struct SimpleCapParams *aParams, unsigned int aOptions)
-{
-	if (deviceno > MAXDEVICES)
-		return 0;
-	if (aParams == NULL || aParams->mHeight <= 0 || aParams->mWidth <= 0 || aParams->mTargetBuf == 0)
-		return 0;
-	if ((aOptions & CAPTURE_OPTIONS_MASK) != aOptions)
-		return 0;
-	gDoCapture[deviceno] = 0;
-	gParams[deviceno] = *aParams;
-	gOptions[deviceno] = aOptions;
-	if (FAILED(InitDevice(deviceno))) return 0;
-	return 1;
-}
+//int initCaptureWithOptions(unsigned int deviceno, struct SimpleCapParams *aParams, unsigned int aOptions)
+//{
+//	if (deviceno > MAXDEVICES)
+//		return 0;
+//	if (aParams == NULL || aParams->mHeight <= 0 || aParams->mWidth <= 0 || aParams->mTargetBuf == 0)
+//		return 0;
+//	if ((aOptions & CAPTURE_OPTIONS_MASK) != aOptions)
+//		return 0;
+//	gDoCapture[deviceno] = 0;
+//	gParams[deviceno] = *aParams;
+//	//gOptions[deviceno] = aOptions;
+//	if (FAILED(InitDevice(deviceno))) return 0;
+//	return 1;
+//}
 
