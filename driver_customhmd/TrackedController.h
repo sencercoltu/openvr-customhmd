@@ -9,6 +9,13 @@ class CTrackedController :
 private:
 	ETrackedControllerRole m_Role;
 	ControllerData m_ControllerData;
+	struct SendButtonData
+	{		
+		EVRButtonId k_EButton;
+		CTrackedController *pController;
+		int Duration;		
+	};
+	void SendButton(EVRButtonId k_EButton);
 public:
 	CTrackedController(ETrackedControllerRole role, std::string displayName, CServerDriver *pServer);
 	~CTrackedController();

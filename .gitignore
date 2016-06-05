@@ -30,3 +30,5 @@ _ReSharper*/
 driver_customhmd/*.sdf
 driver_customhmd/*.opendb
 driver_customhmd/*.filters
+*.ipch
+*.VC.db

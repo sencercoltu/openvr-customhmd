@@ -457,11 +457,21 @@ HRESULT CaptureClass::setVideoType(IMFMediaType *aType)
 	DO_OR_DIE;
 
 	hr = MFGetAttributeSize(aType, MF_MT_FRAME_SIZE, &width, &height);
+	UINT32 frameRate = 0;
+	UINT32 frameRateMin = 0;
+	UINT32 frameRateMax = 0;
+	UINT32 denominator = 0;
+
+	//hr = MFGetAttributeRatio(aType, MF_MT_FRAME_RATE, &frameRate, &denominator);
+	//hr = MFGetAttributeRatio(aType, MF_MT_FRAME_RATE_RANGE_MIN, &frameRateMin, &denominator);
+	hr = MFGetAttributeRatio(aType, MF_MT_FRAME_RATE_RANGE_MAX, &frameRateMax, &denominator);
+	
+	hr = MFSetAttributeRatio(aType, MF_MT_FRAME_RATE, frameRateMax, denominator);
 
 	DO_OR_DIE;
-
+		
 	hr = MFGetStrideForBitmapInfoHeader(subtype.Data1, width, &mDefaultStride);
-
+	
 	mCaptureBuffer = new unsigned int[width * height];
 	mCaptureBufferWidth = width;
 	mCaptureBufferHeight = height;
@@ -663,6 +673,7 @@ HRESULT CaptureClass::initCapture(int aDevice)
 			preferredmode,
 			&type
 			);
+
 		ScopedRelease<IMFMediaType> type_s(type);
 
 		DO_OR_DIE_CRITSECTION;
@@ -676,6 +687,7 @@ HRESULT CaptureClass::initCapture(int aDevice)
 			NULL,
 			type
 			);
+
 
 		DO_OR_DIE_CRITSECTION;
 

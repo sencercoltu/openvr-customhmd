@@ -3,6 +3,7 @@
 
 CTrackedController::CTrackedController(ETrackedControllerRole role, std::string displayName, CServerDriver *pServer) : CTrackedDevice(displayName, pServer)
 {
+	_LOG(__FUNCTION__);
 	m_Role = role;
 
 	Prop_TrackingSystemName = "Nunchuck Controller";
@@ -45,27 +46,32 @@ CTrackedController::CTrackedController(ETrackedControllerRole role, std::string 
 
 CTrackedController::~CTrackedController()
 {
+	_LOG(__FUNCTION__);
 	//Deactivate();	
 	CloseHandle(m_ControllerData.hPoseLock);
 }
 
 EVRInitError CTrackedController::Activate(uint32_t unObjectId)
 {
+	_LOG(__FUNCTION__);
 	m_unObjectId = unObjectId;
 	return VRInitError_None;
 }
 
 void CTrackedController::Deactivate()
 {
+	_LOG(__FUNCTION__);
 	m_unObjectId = k_unTrackedDeviceIndexInvalid;
 }
 
 void CTrackedController::PowerOff()
 {
+	_LOG(__FUNCTION__);
 }
 
 void * CTrackedController::GetComponent(const char * pchComponentNameAndVersion)
 {
+	_LOG(__FUNCTION__);
 	if (!_stricmp(pchComponentNameAndVersion, IVRControllerComponent_Version))
 	{
 		return (IVRControllerComponent*)this;
@@ -77,10 +83,12 @@ void * CTrackedController::GetComponent(const char * pchComponentNameAndVersion)
 
 void CTrackedController::DebugRequest(const char * pchRequest, char * pchResponseBuffer, uint32_t unResponseBufferSize)
 {
+	_LOG(__FUNCTION__);
 }
 
 DriverPose_t CTrackedController::GetPose()
 {
+	_LOG(__FUNCTION__);
 	DriverPose_t pose;
 	if (WAIT_OBJECT_0 == WaitForSingleObject(m_ControllerData.hPoseLock, INFINITE))
 	{
@@ -186,7 +194,7 @@ std::string CTrackedController::GetStringProperty(ETrackedDeviceProperty prop, E
 	case Prop_AttachedDeviceId_String:
 		SET_ERROR(TrackedProp_Success);
 		return Prop_SerialNumber;
-	case Prop_ConnectedWirelessDongle_String:		
+	case Prop_ConnectedWirelessDongle_String:
 		SET_ERROR(TrackedProp_Success);
 		return "8983038AF4";
 
@@ -197,6 +205,7 @@ std::string CTrackedController::GetStringProperty(ETrackedDeviceProperty prop, E
 
 VRControllerState_t CTrackedController::GetControllerState()
 {
+	_LOG(__FUNCTION__);
 	m_ControllerData.State.unPacketNum++;
 	return m_ControllerData.State;
 }
@@ -205,6 +214,17 @@ bool CTrackedController::TriggerHapticPulse(uint32_t unAxisId, uint16_t usPulseD
 {
 	_LOG(__FUNCTION__" axId: %d, dur: %d", unAxisId, usPulseDurationMicroseconds);
 	return true;
+}
+
+void CTrackedController::SendButton(EVRButtonId k_EButton)
+{
+	m_ControllerData.State.unPacketNum++;
+	m_ControllerData.State.ulButtonTouched = m_ControllerData.State.ulButtonPressed = ButtonMaskFromId(k_EButton);	
+	m_pDriverHost->TrackedDeviceButtonTouched(m_unObjectId, k_EButton, 0);
+	m_pDriverHost->TrackedDeviceButtonPressed(m_unObjectId, k_EButton, 0);	
+	m_ControllerData.State.ulButtonTouched = m_ControllerData.State.ulButtonPressed = 0;	
+	m_pDriverHost->TrackedDeviceButtonUnpressed(m_unObjectId, k_EButton, 0);
+	m_pDriverHost->TrackedDeviceButtonUntouched(m_unObjectId, k_EButton, 0);
 }
 
 void CTrackedController::RunFrame(DWORD currTick)
@@ -223,70 +243,75 @@ void CTrackedController::RunFrame(DWORD currTick)
 				m_pDriverHost->ProximitySensorState(m_unObjectId, true);
 				m_KeyDown = true;
 			}
-			if (VKD(VK_DELETE) && m_Role == TrackedControllerRole_RightHand)
+			if (VKD(VK_DELETE) && m_Role == TrackedControllerRole_LeftHand)
 			{
-				m_pDriverHost->TrackedDeviceButtonPressed(m_unObjectId, k_EButton_Grip, 0);
-				Sleep(10);
-				m_pDriverHost->TrackedDeviceButtonUnpressed(m_unObjectId, k_EButton_Grip, 0);
+				SendButton(k_EButton_Grip);								
 				m_KeyDown = true;
 			}
 			if (VKD(VK_UP))
 			{
-				m_ControllerData.Euler.v[2] -= 0.01;
-				m_pDriverHost->TrackedDeviceButtonPressed(m_unObjectId, k_EButton_DPad_Up, 0);
-				Sleep(10);
-				m_pDriverHost->TrackedDeviceButtonUnpressed(m_unObjectId, k_EButton_DPad_Up, 0);
+				if (VKD(VK_LSHIFT) && m_Role == TrackedControllerRole_LeftHand)
+					SendButton(k_EButton_DPad_Up);
+				else
+					m_ControllerData.Euler.v[2] -= 0.01;
 				m_KeyDown = true;
+
 			}
 			if (VKD(VK_DOWN))
 			{
-				m_ControllerData.Euler.v[2] += 0.01;
-				m_pDriverHost->TrackedDeviceButtonPressed(m_unObjectId, k_EButton_DPad_Down, 0);
-				Sleep(10);
-				m_pDriverHost->TrackedDeviceButtonUnpressed(m_unObjectId, k_EButton_DPad_Down, 0);
+				if (VKD(VK_LSHIFT) && m_Role == TrackedControllerRole_LeftHand)
+					SendButton(k_EButton_DPad_Down);
+				else
+					m_ControllerData.Euler.v[2] += 0.01;
 				m_KeyDown = true;
 			}
 			if (VKD(VK_LEFT))
 			{
-				m_ControllerData.Euler.v[0] += 0.01;
-				m_pDriverHost->TrackedDeviceButtonPressed(m_unObjectId, k_EButton_DPad_Left, 0);
-				Sleep(10);
-				m_pDriverHost->TrackedDeviceButtonUnpressed(m_unObjectId, k_EButton_DPad_Left, 0);
+				if (VKD(VK_LSHIFT) && m_Role == TrackedControllerRole_LeftHand)
+					SendButton(k_EButton_DPad_Left);
+				else
+					m_ControllerData.Euler.v[0] += 0.01;
 				m_KeyDown = true;
 			}
 			if (VKD(VK_RIGHT))
 			{
-				m_ControllerData.Euler.v[0] -= 0.01;
-				m_pDriverHost->TrackedDeviceButtonPressed(m_unObjectId, k_EButton_DPad_Right, 0);
-				Sleep(10);
-				m_pDriverHost->TrackedDeviceButtonUnpressed(m_unObjectId, k_EButton_DPad_Right, 0);
+				if (VKD(VK_LSHIFT) && m_Role == TrackedControllerRole_LeftHand)
+					SendButton(k_EButton_DPad_Right);
+				else
+					m_ControllerData.Euler.v[0] -= 0.01;
 				m_KeyDown = true;
+
 			}
 			if (VKD(VK_DIVIDE) && m_Role == TrackedControllerRole_LeftHand)
 			{
 				//system button
-				m_pDriverHost->TrackedDeviceButtonPressed(m_unObjectId, k_EButton_System, 0);
-				Sleep(1);
-				m_pDriverHost->TrackedDeviceButtonUnpressed(m_unObjectId, k_EButton_System, 0);
+				SendButton(k_EButton_System);
 				m_KeyDown = true;
 			}
-			if (VKD(VK_MULTIPLY) && m_Role == TrackedControllerRole_RightHand)
+			if (VKD(VK_MULTIPLY) && m_Role == TrackedControllerRole_LeftHand)
 			{
 				//app button
-				m_pDriverHost->TrackedDeviceButtonPressed(m_unObjectId, k_EButton_ApplicationMenu, 0);
-				Sleep(1);
-				m_pDriverHost->TrackedDeviceButtonUnpressed(m_unObjectId, k_EButton_ApplicationMenu, 0);
+				SendButton(k_EButton_ApplicationMenu);
 				m_KeyDown = true;
 			}
-			if (VKD(VK_RETURN) && m_Role == TrackedControllerRole_RightHand)
+			if (VKD(VK_RETURN) && m_Role == TrackedControllerRole_LeftHand)
 			{
-				m_ControllerData.State.ulButtonPressed = ButtonMaskFromId(k_EButton_Axis1);
-				m_ControllerData.State.rAxis[1].x = 1.0;
-				m_pDriverHost->TrackedDeviceButtonPressed(m_unObjectId, k_EButton_SteamVR_Trigger, 0);
-				Sleep(10);
-				m_ControllerData.State.ulButtonPressed = 0;
-				m_ControllerData.State.rAxis[1].x = 0.0;
-				m_pDriverHost->TrackedDeviceButtonUnpressed(m_unObjectId, k_EButton_SteamVR_Trigger, 0);
+				if (VKD(VK_LSHIFT))
+				{					
+					for (auto i = 0; i < 10; i++)
+					{
+						m_ControllerData.State.rAxis[1].x = 0.1f * (i + 1);
+						m_pDriverHost->TrackedDeviceAxisUpdated(m_unObjectId, 1, m_ControllerData.State.rAxis[1]);
+					}
+					for (auto i = 10; i > 0; i--)
+					{
+						m_ControllerData.State.rAxis[1].x = 0.1f * i;
+						m_pDriverHost->TrackedDeviceAxisUpdated(m_unObjectId, 1, m_ControllerData.State.rAxis[1]);
+					}
+				}
+				else
+					SendButton(k_EButton_A);
+
 				m_KeyDown = true;
 
 			}
@@ -335,7 +360,7 @@ void CTrackedController::RunFrame(DWORD currTick)
 }
 
 void CTrackedController::PoseUpdate(USBData *pData, HmdVector3d_t *pCenterEuler, HmdVector3d_t *pRelativePos)
-{	
+{
 	memcpy(m_ControllerData.Pose.vecPosition, pRelativePos, sizeof(HmdVector3d_t)); //geçici
 
 	switch (m_Role)
@@ -363,7 +388,7 @@ void CTrackedController::PoseUpdate(USBData *pData, HmdVector3d_t *pCenterEuler,
 		euler.v[0] = euler.v[0] + pCenterEuler->v[0];
 		euler.v[1] = euler.v[1] + pCenterEuler->v[1];
 		euler.v[2] = euler.v[2] + pCenterEuler->v[2];
-		m_ControllerData.Pose.qRotation = Quaternion::FromEuler(euler).UnitQuaternion();		
+		m_ControllerData.Pose.qRotation = Quaternion::FromEuler(euler).UnitQuaternion();
 		memcpy(m_ControllerData.Pose.vecPosition, pRelativePos, sizeof(HmdVector3d_t));
 
 		switch (m_Role)

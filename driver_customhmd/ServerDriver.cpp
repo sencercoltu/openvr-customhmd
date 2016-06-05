@@ -4,7 +4,7 @@
 #include <process.h>
 
 EVRInitError CServerDriver::Init(IDriverLog * pDriverLog, IServerDriverHost * pDriverHost, const char * pchUserDriverConfigDir, const char * pchDriverInstallDir)
-{	
+{		
 	m_CurrTick = m_LastTick = GetTickCount();
 
 	m_pLog = new CDriverLog(pDriverLog);
@@ -26,8 +26,8 @@ EVRInitError CServerDriver::Init(IDriverLog * pDriverLog, IServerDriverHost * pD
 	}
 	
 	m_TrackedDevices.push_back(new CTrackedHMD("HMD", this));
-	m_TrackedDevices.push_back(new CTrackedController(TrackedControllerRole_LeftHand, "LEFT CONTROLLER", this));
 	m_TrackedDevices.push_back(new CTrackedController(TrackedControllerRole_RightHand, "RIGHT CONTROLLER", this));
+	m_TrackedDevices.push_back(new CTrackedController(TrackedControllerRole_LeftHand, "LEFT CONTROLLER", this));
 
 	m_hThread = nullptr;
 	m_IsRunning = false;
@@ -110,7 +110,7 @@ void CServerDriver::Run()
 
 	while (m_IsRunning)
 	{
-
+		//pOverlayManager->HandleEvents();
 		if (!pHandle)
 		{
 			OpenUSB(&pHandle);
@@ -154,6 +154,7 @@ void CServerDriver::Run()
 
 	CloseUSB(&pHandle);
 	hid_exit();	
+
 }
 
 uint32_t CServerDriver::GetTrackedDeviceCount()

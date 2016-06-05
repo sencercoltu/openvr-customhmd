@@ -40,6 +40,9 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 	m_HMDData.Pose.qRotation = Quaternion(1, 0, 0, 0);
 	m_HMDData.Pose.qWorldFromDriverRotation = Quaternion(1, 0, 0, 0);
 	m_HMDData.Pose.qDriverFromHeadRotation = Quaternion(1, 0, 0, 0);
+	m_HMDData.Pose.vecDriverFromHeadTranslation[2] = -2;
+	m_HMDData.Pose.vecDriverFromHeadTranslation[2] = -0.05;
+	m_HMDData.Pose.poseTimeOffset = -0.032f;
 
 	if (m_pSettings)
 	{
@@ -670,6 +673,7 @@ bool CTrackedHMD::StartVideoStream()
 		}
 		ReleaseMutex(m_HMDData.Camera.hLock);
 		setCaptureProperty(m_HMDData.Camera.Index, CAPTURE_EXPOSURE, 0.5f, 0);
+		
 	}
 	return m_HMDData.Camera.IsActive;
 }
@@ -940,6 +944,12 @@ void CTrackedHMD::OnCameraFrameUpdate(char *pFrame, int width, int height, int s
 		{
 			DWORD currTick = GetTickCount();
 			auto diff = currTick - m_HMDData.Camera.LastFrameTime;
+			if (diff <= 0)
+			{
+				//prevent null div
+				diff = 1;
+				currTick = m_HMDData.Camera.LastFrameTime + 1;
+			}
 			//_LOG("Camera callback %d, %d after %d ms.", m_HMDData.Camera.ActiveStreamFrame.m_nFrameSequence, m_HMDData.Camera.CallbackCount, diff);
 
 			m_HMDData.Camera.ActiveStreamFrame.m_flFrameElapsedTime = (currTick - m_HMDData.Camera.StartTime) / 1000.0;
@@ -965,6 +975,8 @@ void CTrackedHMD::OnCameraFrameUpdate(char *pFrame, int width, int height, int s
 			//memcpy(m_HMDData.Camera.ActiveStreamFrame.m_pImageData, m_HMDData.Camera.CaptureFrame.mTargetBuf, m_HMDData.Camera.ActiveStreamFrame.m_nImageDataSize);
 			if (*pMediaFormat == MFVideoFormat_YUY2)
 				YUY2toNV12((uint8_t *)m_HMDData.Camera.CaptureFrame.mTargetBuf, (uint8_t *)m_HMDData.Camera.ActiveStreamFrame.m_pImageData, FRAME_WIDTH, FRAME_HEIGHT, stride, FRAME_WIDTH);
+			else if (*pMediaFormat == MFVideoFormat_RGB24)
+				RGB24toNV12((uint8_t *)m_HMDData.Camera.CaptureFrame.mTargetBuf, (uint8_t *)m_HMDData.Camera.ActiveStreamFrame.m_pImageData, FRAME_WIDTH, FRAME_HEIGHT, stride, FRAME_WIDTH);			
 
 			memcpy(m_HMDData.Camera.pCallbackStreamFrame + m_HMDData.Camera.ActiveStreamFrame.m_nBufferIndex, &m_HMDData.Camera.ActiveStreamFrame, sizeof(CameraVideoStreamFrame_t));
 			memcpy(((char *)m_HMDData.Camera.pCallbackStreamFrame) + sizeof(CameraVideoStreamFrame_t), m_HMDData.Camera.ActiveStreamFrame.m_pImageData, FRAME_DATA_SIZE_NV12);
@@ -1074,7 +1086,7 @@ void CTrackedHMD::YUY2toNV12(uint8_t *inputBuffer, uint8_t *outputBuffer, int wi
 	//YUY2 4:2:2 YUYV : 2 pixel = 4 byte
 
 	uint8_t *Y_H, *Y_L, *U, *V, *I_H, *I_L;
-	auto out_ysize = width * height;
+	auto out_ysize = outStride * height;
 	auto inPadding = inStride + (inStride - (width << 1));
 	auto outPadding = outStride + (outStride - width);
 
@@ -1082,7 +1094,7 @@ void CTrackedHMD::YUY2toNV12(uint8_t *inputBuffer, uint8_t *outputBuffer, int wi
 	I_L = I_H + inStride;
 
 	Y_H = outputBuffer;
-	Y_L = Y_H + width;
+	Y_L = Y_H + outStride;
 
 	U = Y_H + out_ysize;
 	V = U + 1;
@@ -1100,6 +1112,79 @@ void CTrackedHMD::YUY2toNV12(uint8_t *inputBuffer, uint8_t *outputBuffer, int wi
 		}
 		I_H += inPadding;
 		I_L += inPadding;
+		Y_H += outPadding;
+		Y_L += outPadding;
+	}
+}
+
+
+void CTrackedHMD::RGB24toNV12(uint8_t *inputBuffer, uint8_t *outputBuffer, int width, int height, int inStride, int outStride)
+{
+	//rgb24 is upside down?
+
+	uint8_t *Y_H, *Y_L, *U, *V, *I_H, *I_L;
+	uint8_t R, G, B;
+	int16_t xU, xV;
+	auto out_ysize = outStride * height;
+	auto inPadding = (width * 3) + (2 * inStride);
+	auto outPadding = outStride + (outStride - width);
+
+
+
+	I_H = inputBuffer + (inStride * (height - 2));
+	I_L = I_H + inStride;
+
+	Y_H = outputBuffer;
+	Y_L = Y_H + outStride;
+
+	U = Y_H + out_ysize;
+	V = U + 1;
+
+	for (auto h = 0; h < height >> 1; h++) //we're processing 2 line at once
+	{
+		for (auto w = 0; w < width >> 1; w++) //we process 6 bytes
+		{
+			B = *I_H; I_H++;
+			G = *I_H; I_H++;
+			R = *I_H; I_H++;
+			
+			*Y_H = (uint8_t)((R * 66 + G * 129 + B * 25 + 128) >> 8) + 16; Y_H++;
+			
+			xU = ((R * -38 - G * 74 + B * 112 + 128) >> 8) + 128;
+			xV = ((R * 112 - G * 94 - B * 18 + 128) >> 8) + 128;
+			
+			B = *I_H; I_H++;
+			G = *I_H; I_H++;
+			R = *I_H; I_H++;
+
+			*Y_H = (uint8_t)((R * 66 + G * 129 + B * 25 + 128) >> 8) + 16; Y_H++;
+
+			xU += ((R * -38 - G * 74 + B * 112 + 128) >> 8) + 128;
+			xV += ((R * 112 - G * 94 - B * 18 + 128) >> 8) + 128;
+
+			B = *I_L; I_L++;
+			G = *I_L; I_L++;
+			R = *I_L; I_L++;
+			
+			*Y_L = (uint8_t)((R * 66 + G * 129 + B * 25 + 128) >> 8) + 16; Y_L++;
+			
+			xU += ((R * -38 - G * 74 + B * 112 + 128) >> 8) + 128;
+			xV += ((R * 112 - G * 94 - B * 18 + 128) >> 8) + 128;
+
+			B = *I_L; I_L++;
+			G = *I_L; I_L++;
+			R = *I_L; I_L++;
+
+			*Y_L = (uint8_t)((R * 66 + G * 129 + B * 25 + 128) >> 8) + 16; Y_L++;
+
+			xU += ((R * -38 - G * 74 + B * 112 + 128) >> 8) + 128;
+			xV += ((R * 112 - G * 94 - B * 18 + 128) >> 8) + 128;
+
+			*U = (uint8_t)(xU / 4); U += 2;
+			*V = (uint8_t)(xV / 4); V += 2;
+		}
+		I_H -= inPadding;
+		I_L -= inPadding;
 		Y_H += outPadding;
 		Y_L += outPadding;
 	}

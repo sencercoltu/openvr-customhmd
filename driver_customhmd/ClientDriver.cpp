@@ -1,6 +1,7 @@
 #include "ClientDriver.h"
 #include "hidapi.h"
 
+
 EVRInitError CClientDriver::Init(IDriverLog * pDriverLog, IClientDriverHost * pDriverHost, const char * pchUserDriverConfigDir, const char * pchDriverInstallDir)
 {
 	m_pLog = new CDriverLog(pDriverLog);
