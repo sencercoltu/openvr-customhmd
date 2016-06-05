@@ -2,6 +2,8 @@
 
 #include "TrackedDevice.h"
 
+
+
 class CTrackedController : 
 	public CTrackedDevice,
 	public IVRControllerComponent
@@ -15,7 +17,10 @@ private:
 		CTrackedController *pController;
 		int Duration;		
 	};
-	void SendButton(EVRButtonId k_EButton);
+
+	typedef void (vr::IServerDriverHost::*ButtonUpdate)(uint32_t unWhichDevice, vr::EVRButtonId eButtonId, double eventTimeOffset);
+
+	void SendButtonUpdates(ButtonUpdate ButtonEvent, uint64_t ulMask);
 public:
 	CTrackedController(ETrackedControllerRole role, std::string displayName, CServerDriver *pServer);
 	~CTrackedController();

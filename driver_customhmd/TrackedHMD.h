@@ -84,7 +84,7 @@ private:
 	void YUY2toNV12(uint8_t *inputBuffer, uint8_t *outputBuffer, int width, int height, int inStride, int outStride);
 	void RGB24toNV12(uint8_t *inputBuffer, uint8_t *outputBuffer, int width, int height, int inStride, int outStride);
 	static void OnCameraFrameUpdateCallback(char *pFrame, int width, int height, int stride, GUID *pMediaFormat, void *pUserData);
-	void OnCameraFrameUpdate(char *pFrame, int width, int height, int stride, GUID *pMediaFormat);
+	void OnCameraFrameUpdate(char *pFrame, int width, int height, int stride, GUID *pMediaFormat);	
 };
 
 #endif // TrackedHMD_H

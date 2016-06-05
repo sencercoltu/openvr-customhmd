@@ -4,7 +4,8 @@
 #include <process.h>
 
 EVRInitError CServerDriver::Init(IDriverLog * pDriverLog, IServerDriverHost * pDriverHost, const char * pchUserDriverConfigDir, const char * pchDriverInstallDir)
-{		
+{	
+	timeBeginPeriod(1);
 	m_CurrTick = m_LastTick = GetTickCount();
 
 	m_pLog = new CDriverLog(pDriverLog);
@@ -63,6 +64,7 @@ void CServerDriver::Cleanup()
 	m_DriverInstallDir.clear();
 	delete m_pLog;
 	m_pLog = nullptr;
+	timeEndPeriod(1);
 }
 
 unsigned int WINAPI CServerDriver::ProcessThread(void *p)
