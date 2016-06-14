@@ -400,6 +400,7 @@ std::string CTrackedHMD::GetStringProperty(ETrackedDeviceProperty prop, ETracked
 	return "";
 }
 
+/*
 void CTrackedHMD::CreateSwapTextureSet(uint32_t unPid, uint32_t unFormat, uint32_t unWidth, uint32_t unHeight, void *(*pSharedTextureHandles)[3])
 {
 	_LOG(__FUNCTION__" id: %d, fmt: %d, w: %d, h: %d", unPid, unFormat, unWidth, unHeight);
@@ -429,6 +430,8 @@ void CTrackedHMD::Present(void *hSyncTexture)
 {
 	_LOG(__FUNCTION__);
 }
+
+*/
 
 void CTrackedHMD::PowerOff()
 {
@@ -896,7 +899,7 @@ bool CTrackedHMD::InitCamera()
 				m_HMDData.Camera.ActiveStreamFrame.m_StandingTrackedDevicePose.bDeviceIsConnected = true;
 				m_HMDData.Camera.ActiveStreamFrame.m_StandingTrackedDevicePose.bPoseIsValid = true;
 				m_HMDData.Camera.ActiveStreamFrame.m_StandingTrackedDevicePose.eTrackingResult = TrackingResult_Running_OK;
-				m_HMDData.Camera.ActiveStreamFrame.m_pImageData = (int *)malloc(m_HMDData.Camera.CaptureFrame.mHeight * m_HMDData.Camera.CaptureFrame.mWidth * sizeof(int));
+				m_HMDData.Camera.ActiveStreamFrame.m_pImageData = (uint64_t)malloc(m_HMDData.Camera.CaptureFrame.mHeight * m_HMDData.Camera.CaptureFrame.mWidth * sizeof(int));
 				Quaternion::HmdMatrix_SetIdentity(&m_HMDData.Camera.ActiveStreamFrame.m_StandingTrackedDevicePose.mDeviceToAbsoluteTracking);
 
 				ReleaseMutex(m_HMDData.Camera.hLock);
@@ -924,7 +927,7 @@ void CTrackedHMD::DeinitCamera()
 		free(m_HMDData.Camera.CaptureFrame.mTargetBuf);
 
 	if (m_HMDData.Camera.ActiveStreamFrame.m_pImageData)
-		free(m_HMDData.Camera.ActiveStreamFrame.m_pImageData);
+		free((void *) m_HMDData.Camera.ActiveStreamFrame.m_pImageData);
 
 	ZeroMemory(&m_HMDData.Camera, sizeof(m_HMDData.Camera));
 	m_HMDData.Camera.Index = -1;
@@ -979,7 +982,7 @@ void CTrackedHMD::OnCameraFrameUpdate(char *pFrame, int width, int height, int s
 				RGB24toNV12((uint8_t *)m_HMDData.Camera.CaptureFrame.mTargetBuf, (uint8_t *)m_HMDData.Camera.ActiveStreamFrame.m_pImageData, FRAME_WIDTH, FRAME_HEIGHT, stride, FRAME_WIDTH);			
 
 			memcpy(m_HMDData.Camera.pCallbackStreamFrame + m_HMDData.Camera.ActiveStreamFrame.m_nBufferIndex, &m_HMDData.Camera.ActiveStreamFrame, sizeof(CameraVideoStreamFrame_t));
-			memcpy(((char *)m_HMDData.Camera.pCallbackStreamFrame) + sizeof(CameraVideoStreamFrame_t), m_HMDData.Camera.ActiveStreamFrame.m_pImageData, FRAME_DATA_SIZE_NV12);
+			memcpy(((char *)m_HMDData.Camera.pCallbackStreamFrame) + sizeof(CameraVideoStreamFrame_t), (void *)m_HMDData.Camera.ActiveStreamFrame.m_pImageData, FRAME_DATA_SIZE_NV12);
 
 			/*
 			char fn[MAX_PATH];

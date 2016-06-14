@@ -20,13 +20,13 @@ CTrackedController::CTrackedController(ETrackedControllerRole role, std::string 
 	{
 	case ETrackedControllerRole::TrackedControllerRole_LeftHand:
 		m_ControllerData.hPoseLock = CreateMutex(NULL, FALSE, L"LeftPoseLock");
-		m_ControllerData.Pose.vecPosition[0] = -0.2;
+		m_ControllerData.Pose.vecPosition[0] = 0.2;
 		m_ControllerData.Pose.vecPosition[1] = -0.2;
 		m_ControllerData.Pose.vecPosition[2] = -0.5;
 		break;
 	case ETrackedControllerRole::TrackedControllerRole_RightHand:
 		m_ControllerData.hPoseLock = CreateMutex(NULL, FALSE, L"RightPoseLock");
-		m_ControllerData.Pose.vecPosition[0] = 0.2;
+		m_ControllerData.Pose.vecPosition[0] = -0.2;
 		m_ControllerData.Pose.vecPosition[1] = -0.2;
 		m_ControllerData.Pose.vecPosition[2] = -0.5;
 		break;
@@ -69,7 +69,7 @@ void CTrackedController::PowerOff()
 	_LOG(__FUNCTION__);
 }
 
-void * CTrackedController::GetComponent(const char * pchComponentNameAndVersion)
+void *CTrackedController::GetComponent(const char * pchComponentNameAndVersion)
 {
 	_LOG(__FUNCTION__);
 	if (!_stricmp(pchComponentNameAndVersion, IVRControllerComponent_Version))
@@ -406,12 +406,12 @@ void CTrackedController::PoseUpdate(USBData *pData, HmdVector3d_t *pCenterEuler,
 	switch (m_Role)
 	{
 	case ETrackedControllerRole::TrackedControllerRole_LeftHand:
-		m_ControllerData.Pose.vecPosition[0] += -0.2;
+		m_ControllerData.Pose.vecPosition[0] += 0.2;
 		m_ControllerData.Pose.vecPosition[1] += -0.2;
 		m_ControllerData.Pose.vecPosition[2] += -0.5;
 		break;
 	case ETrackedControllerRole::TrackedControllerRole_RightHand:
-		m_ControllerData.Pose.vecPosition[0] += 0.2;
+		m_ControllerData.Pose.vecPosition[0] += -0.2;
 		m_ControllerData.Pose.vecPosition[1] += -0.2;
 		m_ControllerData.Pose.vecPosition[2] += -0.5;
 		break;
@@ -434,12 +434,12 @@ void CTrackedController::PoseUpdate(USBData *pData, HmdVector3d_t *pCenterEuler,
 		switch (m_Role)
 		{
 		case ETrackedControllerRole::TrackedControllerRole_LeftHand:
-			m_ControllerData.Pose.vecPosition[0] += -0.2;
+			m_ControllerData.Pose.vecPosition[0] += 0.2;
 			m_ControllerData.Pose.vecPosition[1] += -0.2;
 			m_ControllerData.Pose.vecPosition[2] += -0.5;
 			break;
 		case ETrackedControllerRole::TrackedControllerRole_RightHand:
-			m_ControllerData.Pose.vecPosition[0] += 0.2;
+			m_ControllerData.Pose.vecPosition[0] += -0.2;
 			m_ControllerData.Pose.vecPosition[1] += -0.2;
 			m_ControllerData.Pose.vecPosition[2] += -0.5;
 			break;

@@ -29,14 +29,16 @@ public:
 	void GetProjectionRaw(EVREye eEye, float * pfLeft, float * pfRight, float * pfTop, float * pfBottom) override;
 	DistortionCoordinates_t ComputeDistortion(EVREye eEye, float fU, float fV) override;
 	DriverPose_t GetPose() override;
-	
+	void PowerOff() override;
+
+	/*
 	void CreateSwapTextureSet(uint32_t unPid, uint32_t unFormat, uint32_t unWidth, uint32_t unHeight, void *(*pSharedTextureHandles)[3]) override;
 	void DestroySwapTextureSet(void *pSharedTextureHandle) override;
 	void DestroyAllSwapTextureSets(uint32_t unPid) override;
 	void GetNextSwapTextureSetIndex(void *pSharedTextureHandles[2], uint32_t(*pIndices)[2]) override;
 	void SubmitLayer(void *pSharedTextureHandles[2], const vr::VRTextureBounds_t(&bounds)[2], const vr::HmdMatrix34_t *pPose) override;
 	void Present(void *hSyncTexture) override;
-	void PowerOff() override;	
+	*/
 
 	// Inherited via IVRCameraComponent
 	bool HasCamera() override;
