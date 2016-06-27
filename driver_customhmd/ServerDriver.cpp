@@ -79,7 +79,7 @@ unsigned int WINAPI CServerDriver::ProcessThread(void *p)
 void CServerDriver::OpenUSB(hid_device **ppHandle)
 {
 	CloseUSB(ppHandle);
-	hid_device *handle = hid_open(0x104d, 0x1974, nullptr);
+	hid_device *handle = hid_open(0x1974, 0x0001, nullptr);
 	if (!handle)
 		return;
 	*ppHandle = handle;
@@ -103,7 +103,7 @@ void CServerDriver::Run()
 	
 	long count = 0;
 
-	unsigned char buf[65] = { 0 };
+	unsigned char buf[33] = { 0 };
 
 	USBData *pUSBData = (USBData *)buf;
 

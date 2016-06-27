@@ -1,7 +1,7 @@
 #include <mfapi.h>
 #include "videobufferlock.h"
 
-VideoBufferLock::VideoBufferLock(IMFMediaBuffer *aBuffer) : m2DBuffer(NULL), mLocked(FALSE)
+VideoBufferLock::VideoBufferLock(IMFMediaBuffer *aBuffer) : m2DBuffer(nullptr), mLocked(FALSE)
 {
 	mBuffer = aBuffer;
 	mBuffer->AddRef();
@@ -36,9 +36,9 @@ HRESULT VideoBufferLock::LockBuffer(
 	else
 	{
 		// Use non-2D version.
-		BYTE *data = NULL;
+		BYTE *data = nullptr;
 
-		hr = mBuffer->Lock(&data, NULL, NULL);
+		hr = mBuffer->Lock(&data, nullptr, nullptr);
 		if (SUCCEEDED(hr))
 		{
 			*aStride = aDefaultStride;

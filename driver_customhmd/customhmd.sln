@@ -1,0 +1,46 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25123.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "driver_customhmd", "driver_customhmd.vcxproj", "{4F4255E6-7222-4D5B-B792-E7919E0CF896}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "monitor_customhmd", "..\monitor_customhmd\monitor_customhmd.csproj", "{66F6FB34-6CF6-4EC8-8B80-F7753F239E38}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4F4255E6-7222-4D5B-B792-E7919E0CF896}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{4F4255E6-7222-4D5B-B792-E7919E0CF896}.Debug|x64.ActiveCfg = Debug|x64
+		{4F4255E6-7222-4D5B-B792-E7919E0CF896}.Debug|x64.Build.0 = Debug|x64
+		{4F4255E6-7222-4D5B-B792-E7919E0CF896}.Debug|x86.ActiveCfg = Debug|Win32
+		{4F4255E6-7222-4D5B-B792-E7919E0CF896}.Debug|x86.Build.0 = Debug|Win32
+		{4F4255E6-7222-4D5B-B792-E7919E0CF896}.Release|Any CPU.ActiveCfg = Release|Win32
+		{4F4255E6-7222-4D5B-B792-E7919E0CF896}.Release|x64.ActiveCfg = Release|x64
+		{4F4255E6-7222-4D5B-B792-E7919E0CF896}.Release|x64.Build.0 = Release|x64
+		{4F4255E6-7222-4D5B-B792-E7919E0CF896}.Release|x86.ActiveCfg = Release|Win32
+		{4F4255E6-7222-4D5B-B792-E7919E0CF896}.Release|x86.Build.0 = Release|Win32
+		{66F6FB34-6CF6-4EC8-8B80-F7753F239E38}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{66F6FB34-6CF6-4EC8-8B80-F7753F239E38}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{66F6FB34-6CF6-4EC8-8B80-F7753F239E38}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{66F6FB34-6CF6-4EC8-8B80-F7753F239E38}.Debug|x64.Build.0 = Debug|Any CPU
+		{66F6FB34-6CF6-4EC8-8B80-F7753F239E38}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{66F6FB34-6CF6-4EC8-8B80-F7753F239E38}.Debug|x86.Build.0 = Debug|Any CPU
+		{66F6FB34-6CF6-4EC8-8B80-F7753F239E38}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{66F6FB34-6CF6-4EC8-8B80-F7753F239E38}.Release|Any CPU.Build.0 = Release|Any CPU
+		{66F6FB34-6CF6-4EC8-8B80-F7753F239E38}.Release|x64.ActiveCfg = Release|Any CPU
+		{66F6FB34-6CF6-4EC8-8B80-F7753F239E38}.Release|x64.Build.0 = Release|Any CPU
+		{66F6FB34-6CF6-4EC8-8B80-F7753F239E38}.Release|x86.ActiveCfg = Release|Any CPU
+		{66F6FB34-6CF6-4EC8-8B80-F7753F239E38}.Release|x86.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

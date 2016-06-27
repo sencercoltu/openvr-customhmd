@@ -11,7 +11,7 @@
 #include <locale>
 #include <codecvt>
 #include <HighLevelMonitorConfigurationAPI.h>
-#include "escapi/escapi.h"
+#include "escapi/capturedevice.h"
 
 #define _LOG(f, ...) m_pLog->Log(f, __VA_ARGS__)
 
@@ -20,10 +20,12 @@
 
 #define VKD(a) ((GetAsyncKeyState(a) & 0x8000))
 
+using namespace vr;
+
 struct CDriverLog
 {
 public:
-	CDriverLog(vr::IDriverLog *pLogger)
+	CDriverLog(IDriverLog *pLogger)
 	{
 		_logger = pLogger;
 	}
@@ -52,45 +54,109 @@ public:
 		_logger->Log(szMessage);
 	}
 private:
-	vr::IDriverLog *_logger; 
+	IDriverLog *_logger; 
 };
 
 #pragma pack(push)
 #pragma pack(1)
-struct USBData
+
+struct USBPositionData
 {
-	uint8_t Source; //hmd = 0, left controller = 1, right controller = 2
-	float Rotation[4];
-	float Position[3];
-	float Analog[5];
-	uint8_t Digital[5];
+	float x;
+	float y;
+	float z;
 };
+
+struct USBRotationData
+{
+	float w;
+	float x;
+	float y;
+	float z;
+};
+
+#define CUSTOM_HID_EPOUT_SIZE 32
+#define CUSTOM_HID_EPIN_SIZE 32
+
+#define HMD_SOURCE 0x00
+#define LEFTCTL_SOURCE 0x01
+#define RIGHTCTL_SOURCE 0x02
+
+#define ROTPOS_DATA 0x10
+#define TRIGGER_DATA 0x20
+
+#define HMD_ROTPOSDATA (HMD_SOURCE | ROTPOS_DATA)
+
+struct USBDataHeader
+{
+	uint8_t Type; //source & data
+	uint8_t Sequence; //source & data
+};
+
+struct USBRotPosData
+{
+	USBDataHeader Header;
+	USBRotationData Rotation;
+	USBPositionData Position;
+};
+
+struct USBAxisData
+{
+	float x;
+	float y;
+};
+
+struct USBTriggerData
+{
+	USBDataHeader Header;
+	uint16_t Digital;
+	USBAxisData Analog[2];
+};
+
+union USBData
+{
+	USBRotPosData RotPos;
+	USBTriggerData Trigger;
+};
+
+struct USBOutputPacket
+{
+	USBData Data;
+	uint8_t Reserved[CUSTOM_HID_EPOUT_SIZE - sizeof(USBData)];
+};
+
 #pragma pack(pop)
 
 struct TrackerData
 {
 	HANDLE hPoseLock;
 	bool PoseUpdated;
-	vr::DriverPose_t Pose;
+	DriverPose_t Pose;
 };
 
 struct CameraData 
 {
 	char Model[128];
-	HANDLE hLock;
-	int Index;
-	bool IsActive;
-	//HANDLE hThread;
-	LONG Stride;
+	HANDLE hLock;			
 	GUID MediaFormat;
-	SimpleCapParams CaptureFrame;
-	vr::ECameraVideoStreamFormat StreamFormat;
-	vr::CameraVideoStreamFrame_t ActiveStreamFrame;
-	vr::CameraVideoStreamFrame_t *pCallbackStreamFrame;
-	vr::ICameraVideoSinkCallback *pfCallback;	
+	CCaptureDevice::CaptureOptions Options;
+	CCaptureDevice *pCaptureDevice;
+	ECameraVideoStreamFormat StreamFormat;
+	CameraVideoStreamFrame_t SetupFrame;
+	CameraVideoStreamFrame_t *pFrameBuffer;	
+	ICameraVideoSinkCallback *pfCallback;	
 	DWORD CallbackCount;
 	DWORD StartTime;
 	DWORD LastFrameTime;
+	void Destroy()
+	{
+		CloseHandle(hLock);
+		if (pCaptureDevice)
+			pCaptureDevice->Release();
+		Options.Destroy();
+		ZeroMemory(this, sizeof(*this));
+	}
+
 };
 
 struct HMDData : TrackerData
@@ -110,22 +176,21 @@ struct HMDData : TrackerData
 	CDriverLog *Logger;
 	float IPDValue;
 	USBData LastState;
-	CameraData Camera;
 };
 
 struct ControllerData : TrackerData
 {
 	WCHAR DisplayName[CCHDEVICENAME];
 	WCHAR Model[128];	
-	vr::VRControllerState_t State;
-	vr::HmdVector3d_t Euler;
+	VRControllerState_t State;
+	HmdVector3d_t Euler;
 	USBData LastState;
 };
 
 
 BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData);
 
-class CDummyLog : public vr::IDriverLog
+class CDummyLog : public IDriverLog
 {
 public:
 	void Log(const char *pchLogMessage) override;

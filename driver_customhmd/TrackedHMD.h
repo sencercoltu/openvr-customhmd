@@ -10,7 +10,9 @@ class CTrackedHMD :
 	public IVRDisplayComponent , public IVRCameraComponent
 {
 private:	
-	HMDData m_HMDData;			
+	HMDData m_HMDData;		
+	CameraData m_Camera;
+
 	//unsigned int static WINAPI CameraThread(void *p);
 	//void RunCamera();
 
@@ -36,57 +38,54 @@ public:
 	void DestroySwapTextureSet(void *pSharedTextureHandle) override;
 	void DestroyAllSwapTextureSets(uint32_t unPid) override;
 	void GetNextSwapTextureSetIndex(void *pSharedTextureHandles[2], uint32_t(*pIndices)[2]) override;
-	void SubmitLayer(void *pSharedTextureHandles[2], const vr::VRTextureBounds_t(&bounds)[2], const vr::HmdMatrix34_t *pPose) override;
+	void SubmitLayer(void *pSharedTextureHandles[2], const VRTextureBounds_t(&bounds)[2], const HmdMatrix34_t *pPose) override;
 	void Present(void *hSyncTexture) override;
 	*/
 
 	// Inherited via IVRCameraComponent
 	bool HasCamera() override;
 	bool GetCameraFirmwareDescription(char *pBuffer, uint32_t nBufferLen) override;
-	bool GetCameraFrameDimensions(vr::ECameraVideoStreamFormat nVideoStreamFormat, uint32_t *pWidth, uint32_t *pHeight) override;
+	bool GetCameraFrameDimensions(ECameraVideoStreamFormat nVideoStreamFormat, uint32_t *pWidth, uint32_t *pHeight) override;
 	bool GetCameraFrameBufferingRequirements(int *pDefaultFrameQueueSize, uint32_t *pFrameBufferDataSize) override;
 	bool SetCameraFrameBuffering(int nFrameBufferCount, void **ppFrameBuffers, uint32_t nFrameBufferDataSize) override;
-	bool SetCameraVideoStreamFormat(vr::ECameraVideoStreamFormat nVideoStreamFormat) override;
-	vr::ECameraVideoStreamFormat GetCameraVideoStreamFormat() override;
+	bool SetCameraVideoStreamFormat(ECameraVideoStreamFormat nVideoStreamFormat) override;
+	ECameraVideoStreamFormat GetCameraVideoStreamFormat() override;
 	bool StartVideoStream() override;
 	void StopVideoStream() override;
 	bool IsVideoStreamActive() override;
 	float GetVideoStreamElapsedTime() override;
-	const vr::CameraVideoStreamFrame_t *GetVideoStreamFrame() override;
-	void ReleaseVideoStreamFrame(const vr::CameraVideoStreamFrame_t *pFrameImage) override;
+	const CameraVideoStreamFrame_t *GetVideoStreamFrame() override;
+	void ReleaseVideoStreamFrame(const CameraVideoStreamFrame_t *pFrameImage) override;
 	bool SetAutoExposure(bool bEnable) override;
 	bool PauseVideoStream() override;
 	bool ResumeVideoStream() override;
 	bool IsVideoStreamPaused() override;
 	bool GetCameraDistortion(float flInputU, float flInputV, float *pflOutputU, float *pflOutputV) override;
-	bool GetCameraProjection(float flWidthPixels, float flHeightPixels, float flZNear, float flZFar, vr::HmdMatrix44_t *pProjection) override;
+	bool GetCameraProjection(float flWidthPixels, float flHeightPixels, float flZNear, float flZFar, HmdMatrix44_t *pProjection) override;
 	bool GetRecommendedCameraUndistortion(uint32_t *pUndistortionWidthPixels, uint32_t *pUndistortionHeightPixels) override;
 	bool SetCameraUndistortion(uint32_t nUndistortionWidthPixels, uint32_t nUndistortionHeightPixels) override;
 	bool GetCameraFirmwareVersion(uint64_t *pFirmwareVersion) override;
 	bool SetFrameRate(int nISPFrameRate, int nSensorFrameRate) override;
-	bool SetCameraVideoSinkCallback(vr::ICameraVideoSinkCallback *pCameraVideoSinkCallback) override;
-	bool GetCameraCompatibilityMode(vr::ECameraCompatibilityMode *pCameraCompatibilityMode) override;
-	bool SetCameraCompatibilityMode(vr::ECameraCompatibilityMode nCameraCompatibilityMode) override;
-	bool GetCameraFrameBounds(vr::EVRTrackedCameraFrameType eFrameType, uint32_t *pLeft, uint32_t *pTop, uint32_t *pWidth, uint32_t *pHeight) override;
-	bool GetCameraIntrinsics(vr::EVRTrackedCameraFrameType eFrameType, HmdVector2_t *pFocalLength, HmdVector2_t *pCenter) override;
+	bool SetCameraVideoSinkCallback(ICameraVideoSinkCallback *pCameraVideoSinkCallback) override;
+	bool GetCameraCompatibilityMode(ECameraCompatibilityMode *pCameraCompatibilityMode) override;
+	bool SetCameraCompatibilityMode(ECameraCompatibilityMode nCameraCompatibilityMode) override;
+	bool GetCameraFrameBounds(EVRTrackedCameraFrameType eFrameType, uint32_t *pLeft, uint32_t *pTop, uint32_t *pWidth, uint32_t *pHeight) override;
+	bool GetCameraIntrinsics(EVRTrackedCameraFrameType eFrameType, HmdVector2_t *pFocalLength, HmdVector2_t *pCenter) override;
 
 
 protected:
-	std::string GetStringProperty(vr::ETrackedDeviceProperty prop, vr::ETrackedPropertyError *pError) override;
-	bool GetBoolProperty(vr::ETrackedDeviceProperty prop, vr::ETrackedPropertyError *pError) override;
+	std::string GetStringProperty(ETrackedDeviceProperty prop, ETrackedPropertyError *pError) override;
+	bool GetBoolProperty(ETrackedDeviceProperty prop, ETrackedPropertyError *pError) override;
 	float GetFloatProperty(ETrackedDeviceProperty prop, ETrackedPropertyError * pError) override;
 	int32_t GetInt32Property(ETrackedDeviceProperty prop, ETrackedPropertyError * pError) override;
 	uint64_t GetUint64Property(ETrackedDeviceProperty prop, ETrackedPropertyError * pError) override;
 	void PoseUpdate(USBData *pData, HmdVector3d_t *pCenterEuler, HmdVector3d_t *pRelativePos) override;
 	void RunFrame(DWORD currTick) override;
 
-private:	
-	bool InitCamera();
-	void DeinitCamera();
-	void YUY2toNV12(uint8_t *inputBuffer, uint8_t *outputBuffer, int width, int height, int inStride, int outStride);
-	void RGB24toNV12(uint8_t *inputBuffer, uint8_t *outputBuffer, int width, int height, int inStride, int outStride);
-	static void OnCameraFrameUpdateCallback(char *pFrame, int width, int height, int stride, GUID *pMediaFormat, void *pUserData);
-	void OnCameraFrameUpdate(char *pFrame, int width, int height, int stride, GUID *pMediaFormat);	
+private:		
+	void SetupCamera();
+	static void CameraFrameUpdateCallback(CCaptureDevice *pCaptureDevice, void *pUserData);
+	void OnCameraFrameUpdate();	
 };
 
 #endif // TrackedHMD_H

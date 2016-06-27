@@ -401,30 +401,12 @@ void CTrackedController::SendButtonUpdates(ButtonUpdate ButtonEvent, uint64_t ul
 
 void CTrackedController::PoseUpdate(USBData *pData, HmdVector3d_t *pCenterEuler, HmdVector3d_t *pRelativePos)
 {
-	memcpy(m_ControllerData.Pose.vecPosition, pRelativePos, sizeof(HmdVector3d_t)); //geçici
-
-	switch (m_Role)
-	{
-	case ETrackedControllerRole::TrackedControllerRole_LeftHand:
-		m_ControllerData.Pose.vecPosition[0] += 0.2;
-		m_ControllerData.Pose.vecPosition[1] += -0.2;
-		m_ControllerData.Pose.vecPosition[2] += -0.5;
-		break;
-	case ETrackedControllerRole::TrackedControllerRole_RightHand:
-		m_ControllerData.Pose.vecPosition[0] += -0.2;
-		m_ControllerData.Pose.vecPosition[1] += -0.2;
-		m_ControllerData.Pose.vecPosition[2] += -0.5;
-		break;
-	}
-
-	m_ControllerData.PoseUpdated = true;
-
-	if (pData->Source != m_Role)
+	if ((pData->RotPos.Header.Type & (m_Role | ROTPOS_DATA)) != (m_Role | ROTPOS_DATA))
 		return;
 	if (WAIT_OBJECT_0 == WaitForSingleObject(m_ControllerData.hPoseLock, INFINITE))
 	{
 		m_ControllerData.LastState = *pData;
-		auto euler = Quaternion(m_ControllerData.LastState.Rotation).ToEuler();
+		auto euler = Quaternion((float *)&m_ControllerData.LastState.RotPos.Rotation).ToEuler();
 		euler.v[0] = euler.v[0] + pCenterEuler->v[0];
 		euler.v[1] = euler.v[1] + pCenterEuler->v[1];
 		euler.v[2] = euler.v[2] + pCenterEuler->v[2];

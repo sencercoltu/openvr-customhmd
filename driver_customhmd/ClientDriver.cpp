@@ -9,8 +9,8 @@ EVRInitError CClientDriver::Init(IDriverLog * pDriverLog, IClientDriverHost * pD
 	m_pDriverHost = pDriverHost;
 	m_UserDriverConfigDir = pchUserDriverConfigDir;
 	m_DriverInstallDir = pchDriverInstallDir;
-	m_pSettings = m_pDriverHost->GetSettings(vr::IVRSettings_Version);
-	return vr::VRInitError_None;
+	m_pSettings = m_pDriverHost->GetSettings(IVRSettings_Version);
+	return VRInitError_None;
 }
 
 void CClientDriver::Cleanup()
@@ -27,7 +27,7 @@ bool CClientDriver::BIsHmdPresent(const char * pchUserConfigDir)
 	//return false;
 	auto ret = false;
 	hid_init();
-	hid_device *handle = hid_open(0x104d, 0x1974, NULL);
+	hid_device *handle = hid_open(0x1974, 0x0001, NULL);
 	if (handle)
 	{
 		ret = true;;
@@ -40,13 +40,13 @@ bool CClientDriver::BIsHmdPresent(const char * pchUserConfigDir)
 EVRInitError CClientDriver::SetDisplayId(const char * pchDisplayId)
 {
 	_LOG(__FUNCTION__" %s", pchDisplayId);
-	return vr::VRInitError_None;
+	return VRInitError_None;
 }
 
 HiddenAreaMesh_t CClientDriver::GetHiddenAreaMesh(EVREye eEye)
 {
 	_LOG(__FUNCTION__" Eye: %d", eEye);
-	vr::HiddenAreaMesh_t hidden_area_mesh;
+	HiddenAreaMesh_t hidden_area_mesh;
 	hidden_area_mesh.pVertexData = nullptr;
 	hidden_area_mesh.unTriangleCount = 0;
 	return hidden_area_mesh;

@@ -152,10 +152,7 @@
   <ItemGroup>
     <ClCompile Include="ClientDriver.cpp" />
     <ClCompile Include="driver_customhmd.cpp" />
-    <ClCompile Include="escapi\capture.cpp" />
-    <ClCompile Include="escapi\conversion.cpp" />
-    <ClCompile Include="escapi\escapi.cpp" />
-    <ClCompile Include="escapi\interface.cpp" />
+    <ClCompile Include="escapi\capturedevice.cpp" />
     <ClCompile Include="escapi\videobufferlock.cpp" />
     <ClCompile Include="hid.c" />
     <ClCompile Include="Quaternion.cpp" />
@@ -168,11 +165,7 @@
     <ClInclude Include="..\..\OpenVR\headers\openvr_driver.h" />
     <ClInclude Include="ClientDriver.h" />
     <ClInclude Include="Common.h" />
-    <ClInclude Include="escapi\capture.h" />
-    <ClInclude Include="escapi\choosedeviceparam.h" />
-    <ClInclude Include="escapi\conversion.h" />
-    <ClInclude Include="escapi\escapi.h" />
-    <ClInclude Include="escapi\scopedrelease.h" />
+    <ClInclude Include="escapi\capturedevice.h" />
     <ClInclude Include="escapi\videobufferlock.h" />
     <ClInclude Include="hidapi.h" />
     <ClInclude Include="Quaternion.h" />
