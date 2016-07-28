@@ -1,13 +1,14 @@
 #ifndef TrackedHMD_H
 #define TrackedHMD_H
 
-#include "TrackedDevice.h"
+#include "TrackedDevice.h" 
 
 using namespace vr;
 
 class CTrackedHMD : 
 	public CTrackedDevice,
-	public IVRDisplayComponent , public IVRCameraComponent
+	public IVRDisplayComponent, 
+	public IVRCameraComponent
 {
 private:	
 	HMDData m_HMDData;		
@@ -43,8 +44,8 @@ public:
 	*/
 
 	// Inherited via IVRCameraComponent
-	bool HasCamera() override;
-	bool GetCameraFirmwareDescription(char *pBuffer, uint32_t nBufferLen) override;
+	//bool HasCamera() override;
+	//bool GetCameraFirmwareDescription(char *pBuffer, uint32_t nBufferLen) override;
 	bool GetCameraFrameDimensions(ECameraVideoStreamFormat nVideoStreamFormat, uint32_t *pWidth, uint32_t *pHeight) override;
 	bool GetCameraFrameBufferingRequirements(int *pDefaultFrameQueueSize, uint32_t *pFrameBufferDataSize) override;
 	bool SetCameraFrameBuffering(int nFrameBufferCount, void **ppFrameBuffers, uint32_t nFrameBufferDataSize) override;
@@ -52,19 +53,21 @@ public:
 	ECameraVideoStreamFormat GetCameraVideoStreamFormat() override;
 	bool StartVideoStream() override;
 	void StopVideoStream() override;
-	bool IsVideoStreamActive() override;
-	float GetVideoStreamElapsedTime() override;
+	//bool IsVideoStreamActive() override;
+	//float GetVideoStreamElapsedTime() override;
 	const CameraVideoStreamFrame_t *GetVideoStreamFrame() override;
 	void ReleaseVideoStreamFrame(const CameraVideoStreamFrame_t *pFrameImage) override;
 	bool SetAutoExposure(bool bEnable) override;
 	bool PauseVideoStream() override;
 	bool ResumeVideoStream() override;
-	bool IsVideoStreamPaused() override;
+	bool IsVideoStreamActive(bool *pbPaused, float *pflElapsedTime) override;
+	//bool IsVideoStreamPaused() override;
 	bool GetCameraDistortion(float flInputU, float flInputV, float *pflOutputU, float *pflOutputV) override;
-	bool GetCameraProjection(float flWidthPixels, float flHeightPixels, float flZNear, float flZFar, HmdMatrix44_t *pProjection) override;
-	bool GetRecommendedCameraUndistortion(uint32_t *pUndistortionWidthPixels, uint32_t *pUndistortionHeightPixels) override;
-	bool SetCameraUndistortion(uint32_t nUndistortionWidthPixels, uint32_t nUndistortionHeightPixels) override;
-	bool GetCameraFirmwareVersion(uint64_t *pFirmwareVersion) override;
+	bool GetCameraProjection(vr::EVRTrackedCameraFrameType eFrameType, float flZNear, float flZFar, vr::HmdMatrix44_t *pProjection) override;
+	//bool GetCameraProjection(float flWidthPixels, float flHeightPixels, float flZNear, float flZFar, HmdMatrix44_t *pProjection) override;
+	//bool GetRecommendedCameraUndistortion(uint32_t *pUndistortionWidthPixels, uint32_t *pUndistortionHeightPixels) override;
+	//bool SetCameraUndistortion(uint32_t nUndistortionWidthPixels, uint32_t nUndistortionHeightPixels) override;
+	//bool GetCameraFirmwareVersion(uint64_t *pFirmwareVersion) override;
 	bool SetFrameRate(int nISPFrameRate, int nSensorFrameRate) override;
 	bool SetCameraVideoSinkCallback(ICameraVideoSinkCallback *pCameraVideoSinkCallback) override;
 	bool GetCameraCompatibilityMode(ECameraCompatibilityMode *pCameraCompatibilityMode) override;

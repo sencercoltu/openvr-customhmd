@@ -91,6 +91,7 @@ struct USBDataHeader
 {
 	uint8_t Type; //source & data
 	uint8_t Sequence; //source & data
+	uint8_t Crc8; //simple crc, only for rf, ignored on usb
 };
 
 struct USBRotPosData
@@ -142,7 +143,7 @@ struct CameraData
 	CCaptureDevice::CaptureOptions Options;
 	CCaptureDevice *pCaptureDevice;
 	ECameraVideoStreamFormat StreamFormat;
-	CameraVideoStreamFrame_t SetupFrame;
+	CameraVideoStreamFrame_t SetupFrame; 
 	CameraVideoStreamFrame_t *pFrameBuffer;	
 	ICameraVideoSinkCallback *pfCallback;	
 	DWORD CallbackCount;
@@ -150,9 +151,17 @@ struct CameraData
 	DWORD LastFrameTime;
 	void Destroy()
 	{
-		CloseHandle(hLock);
 		if (pCaptureDevice)
+		{
 			pCaptureDevice->Release();
+			pCaptureDevice = nullptr;
+		}
+
+		if (hLock != nullptr)
+		{
+			CloseHandle(hLock); 
+			hLock = nullptr;
+		}
 		Options.Destroy();
 		ZeroMemory(this, sizeof(*this));
 	}

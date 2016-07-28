@@ -24,6 +24,30 @@ namespace monitor_customhmd
         {
             var err = EVRInitError.Driver_Failed;
             _vrSystem = OpenVR.Init(ref err, EVRApplicationType.VRApplication_Background);
+            OpenVR.GetGenericInterface(OpenVR.IVRCompositor_Version, ref err);
+            OpenVR.GetGenericInterface(OpenVR.IVROverlay_Version, ref err);
+        }
+
+        ulong ulMainHandle, ulThumbHandle;
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            var overlay = OpenVR.Overlay;
+
+            if (ulMainHandle != 0)
+                overlay.DestroyOverlay(ulMainHandle);
+            var err = overlay.CreateDashboardOverlay("TEST", "sencer", ref ulMainHandle, ref ulThumbHandle);
+            err = overlay.SetOverlayFromFile(ulMainHandle, @"D:\Programs\Steam\steamapps\common\SteamVR\drivers\customhmd\bin\hl3.jpg");
+            err = overlay.SetOverlayWidthInMeters(ulMainHandle, 2.5f);
+            err = overlay.SetOverlayInputMethod(ulMainHandle, VROverlayInputMethod.Mouse);
+            err = overlay.ShowOverlay(ulMainHandle);
+        }
+
+        private void MonitorForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (ulMainHandle != 0)
+                OpenVR.Overlay.DestroyOverlay(ulMainHandle);
+            OpenVR.Shutdown();
         }
     }
 }

@@ -11,7 +11,7 @@
 #pragma comment(lib, "strmiids.lib")
 
 // Video Processor
-DEFINE_GUID(CLSID_VideoProcessorMFT, 0x88753b26, 0x5b24, 0x49bd, 0xb2, 0xe7, 0xc, 0x44, 0x5c, 0x78, 0xc9, 0x82);
+//DEFINE_GUID(CLSID_VideoProcessorMFT, 0x88753b26, 0x5b24, 0x49bd, 0xb2, 0xe7, 0xc, 0x44, 0x5c, 0x78, 0xc9, 0x82);
 
 CCaptureDevice::ConverterDef ConverterFunctions[] = 
 {	
@@ -228,13 +228,13 @@ bool CCaptureDevice::Stop()
 {
 	if (m_Status == Stopped)
 		return false;	
+	EnterCriticalSection(&m_CritSec);
 	if (m_pDevice) m_pDevice->ShutdownObject();	
 	if (m_pReader) m_pReader->Release(); m_pReader = nullptr;
 	if (m_pSource) m_pSource->Release(); m_pSource = nullptr;
 	//if (m_pMFT) m_pMFT->Release(); m_pMFT = nullptr;
 	//if (m_pSampleOut) m_pSampleOut->Release(); m_pSampleOut = nullptr;
-	//if (m_pMediabuffer) m_pMediabuffer->Release(); m_pMediabuffer = nullptr;	
-	EnterCriticalSection(&m_CritSec);
+	//if (m_pMediabuffer) m_pMediabuffer->Release(); m_pMediabuffer = nullptr;		
 	m_Status = Stopped;
 	LeaveCriticalSection(&m_CritSec);
 	return true;

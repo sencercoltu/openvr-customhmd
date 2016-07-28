@@ -2,8 +2,11 @@
 #include "hidapi.h"
 
 
-EVRInitError CClientDriver::Init(IDriverLog * pDriverLog, IClientDriverHost * pDriverHost, const char * pchUserDriverConfigDir, const char * pchDriverInstallDir)
+//EVRInitError CClientDriver::Init(IDriverLog * pDriverLog, IClientDriverHost * pDriverHost, const char * pchUserDriverConfigDir, const char * pchDriverInstallDir)
+EVRInitError CClientDriver::Init(EClientDriverMode eDriverMode, IDriverLog *pDriverLog, vr::IClientDriverHost *pDriverHost, const char *pchUserDriverConfigDir, const char *pchDriverInstallDir)
 {
+	if (eDriverMode == EClientDriverMode::ClientDriverMode_Watchdog)
+		return VRInitError_Init_NotAvailableToWatchdogApps;
 	m_pLog = new CDriverLog(pDriverLog);
 	_LOG(__FUNCTION__" Conf: %s  Driver: %s", pchUserDriverConfigDir, pchDriverInstallDir);
 	m_pDriverHost = pDriverHost;

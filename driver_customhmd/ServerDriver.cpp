@@ -16,6 +16,8 @@ EVRInitError CServerDriver::Init(IDriverLog * pDriverLog, IServerDriverHost * pD
 	m_UserDriverConfigDir = pchUserDriverConfigDir;
 	m_DriverInstallDir = pchDriverInstallDir;
 
+	m_HMDAdded = m_RightCtlAdded = m_LeftCtlAdded = false;
+
 	m_pSettings = pDriverHost ? pDriverHost->GetSettings(IVRSettings_Version) : nullptr;
 	m_Align = { 0 };
 	m_Relative = { 0 };
@@ -26,9 +28,10 @@ EVRInitError CServerDriver::Init(IDriverLog * pDriverLog, IServerDriverHost * pD
 		m_Align.v[2] = m_pSettings->GetFloat("driver_customhmd", "eoZ", 0.0f);		
 	}
 	
-	m_TrackedDevices.push_back(new CTrackedHMD("HMD", this));
-	m_TrackedDevices.push_back(new CTrackedController(TrackedControllerRole_RightHand, "RIGHT CONTROLLER", this));
-	m_TrackedDevices.push_back(new CTrackedController(TrackedControllerRole_LeftHand, "LEFT CONTROLLER", this));
+	m_TrackedDevices.push_back(new CTrackedHMD("HMD", this)); //only add hmd
+
+	//m_TrackedDevices.push_back(new CTrackedController(TrackedControllerRole_RightHand, "RIGHT CONTROLLER", this));
+	//m_TrackedDevices.push_back(new CTrackedController(TrackedControllerRole_LeftHand, "LEFT CONTROLLER", this));
 
 	m_hThread = nullptr;
 	m_IsRunning = false;
@@ -126,12 +129,38 @@ void CServerDriver::Run()
 		}
 		else
 		{
-			res = hid_read_timeout(pHandle, buf, sizeof(buf), 10);
+			res = hid_read_timeout(pHandle, buf, sizeof(buf), 10); 
 			if (res > 0)
 			{
-				lastTick = GetTickCount();				
-				for (auto iter = m_TrackedDevices.begin(); iter != m_TrackedDevices.end(); iter++)
-					(*iter)->PoseUpdate(pUSBData, &m_Align, &m_Relative);
+				lastTick = GetTickCount();	
+				auto crcTemp = pUSBData->RotPos.Header.Crc8;
+				pUSBData->RotPos.Header.Crc8 = 0;
+				uint8_t* data = (uint8_t*)pUSBData;
+				uint8_t crc = 0;
+				for (int i = 0; i<sizeof(USBData); i++)
+					crc ^= data[i];
+				if (crc == crcTemp)
+				{
+					switch (pUSBData->RotPos.Header.Type & 0x0F)
+					{
+					case LEFTCTL_SOURCE:
+						if (!m_LeftCtlAdded)
+						{
+							m_LeftCtlAdded = true;
+							m_TrackedDevices.push_back(new CTrackedController(TrackedControllerRole_LeftHand, "LEFT CONTROLLER", this));
+						}
+						break;
+					case RIGHTCTL_SOURCE:
+						if (!m_RightCtlAdded)
+						{
+							m_RightCtlAdded = true;
+							m_TrackedDevices.push_back(new CTrackedController(TrackedControllerRole_RightHand, "RIGHT CONTROLLER", this));
+						}
+						break;
+					}
+					for (auto iter = m_TrackedDevices.begin(); iter != m_TrackedDevices.end(); iter++)
+						(*iter)->PoseUpdate(pUSBData, &m_Align, &m_Relative);
+				}
 			}
 			else if (res < 0)
 			{

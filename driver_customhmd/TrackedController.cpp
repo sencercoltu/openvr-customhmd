@@ -125,6 +125,9 @@ int32_t CTrackedController::GetInt32Property(ETrackedDeviceProperty prop, ETrack
 {
 	switch (prop)
 	{
+	case Prop_ControllerRoleHint_Int32:
+		SET_ERROR(TrackedProp_Success); 
+		return m_Role;		
 	case Prop_DeviceClass_Int32:
 		SET_ERROR(TrackedProp_Success);
 		return TrackedDeviceClass_Controller;
@@ -146,7 +149,7 @@ int32_t CTrackedController::GetInt32Property(ETrackedDeviceProperty prop, ETrack
 
 uint64_t CTrackedController::GetUint64Property(ETrackedDeviceProperty prop, ETrackedPropertyError * pError)
 {
-	switch (prop) {
+	switch (prop) {	
 	case Prop_SupportedButtons_Uint64:
 		SET_ERROR(TrackedProp_Success);
 		return
@@ -178,10 +181,10 @@ uint64_t CTrackedController::GetUint64Property(ETrackedDeviceProperty prop, ETra
 		return 1461100729;
 	case Prop_VRCVersion_Uint64:
 		SET_ERROR(TrackedProp_Success);
-		return 1458917656;
+		return 1465809477;
 	case Prop_RadioVersion_Uint64:
 		SET_ERROR(TrackedProp_Success);
-		return 1456805318;
+		return 1466630404;
 	}
 
 	SET_ERROR(TrackedProp_NotYetAvailable);
@@ -401,9 +404,9 @@ void CTrackedController::SendButtonUpdates(ButtonUpdate ButtonEvent, uint64_t ul
 
 void CTrackedController::PoseUpdate(USBData *pData, HmdVector3d_t *pCenterEuler, HmdVector3d_t *pRelativePos)
 {
-	if ((pData->RotPos.Header.Type & (m_Role | ROTPOS_DATA)) != (m_Role | ROTPOS_DATA))
+	if (pData->RotPos.Header.Type != (m_Role | ROTPOS_DATA))
 		return;
-	if (WAIT_OBJECT_0 == WaitForSingleObject(m_ControllerData.hPoseLock, INFINITE))
+	if (WAIT_OBJECT_0 == WaitForSingleObject(m_ControllerData.hPoseLock, INFINITE)) 
 	{
 		m_ControllerData.LastState = *pData;
 		auto euler = Quaternion((float *)&m_ControllerData.LastState.RotPos.Rotation).ToEuler();

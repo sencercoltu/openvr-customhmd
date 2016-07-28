@@ -9,7 +9,8 @@ class CClientDriver :
 	public IClientTrackedDeviceProvider
 {
 public:
-	virtual EVRInitError Init(IDriverLog * pDriverLog, IClientDriverHost * pDriverHost, const char * pchUserDriverConfigDir, const char * pchDriverInstallDir) override;
+	virtual EVRInitError Init(EClientDriverMode eDriverMode, IDriverLog *pDriverLog, vr::IClientDriverHost *pDriverHost, const char *pchUserDriverConfigDir, const char *pchDriverInstallDir) override;
+	//virtual EVRInitError Init(IDriverLog * pDriverLog, IClientDriverHost * pDriverHost, const char * pchUserDriverConfigDir, const char * pchDriverInstallDir) override;
 	virtual void Cleanup() override;
 	virtual bool BIsHmdPresent(const char * pchUserConfigDir) override;
 	virtual EVRInitError SetDisplayId(const char * pchDisplayId) override;
