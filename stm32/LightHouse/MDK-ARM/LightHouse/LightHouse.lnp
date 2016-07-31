@@ -1,0 +1,25 @@
+--cpu Cortex-M3
+"lighthouse\system_stm32f1xx.o"
+"lighthouse\startup_stm32f103xb.o"
+"lighthouse\stm32f1xx_it.o"
+"lighthouse\stm32f1xx_hal_msp.o"
+"lighthouse\main.o"
+"lighthouse\led.o"
+"lighthouse\stm32f1xx_hal_gpio.o"
+"lighthouse\stm32f1xx_hal_dma.o"
+"lighthouse\stm32f1xx_hal_tim.o"
+"lighthouse\stm32f1xx_hal_rcc_ex.o"
+"lighthouse\stm32f1xx_hal_pwr.o"
+"lighthouse\stm32f1xx_hal_tim_ex.o"
+"lighthouse\stm32f1xx_hal.o"
+"lighthouse\stm32f1xx_hal_rcc.o"
+"lighthouse\stm32f1xx_hal_flash.o"
+"lighthouse\stm32f1xx_hal_flash_ex.o"
+"lighthouse\stm32f1xx_hal_cortex.o"
+"lighthouse\stm32f1xx_hal_gpio_ex.o"
+"lighthouse\stm32f1xx_hal_spi.o"
+"lighthouse\stm32f1xx_hal_spi_ex.o"
+--library_type=microlib --strict --scatter "LightHouse\LightHouse.sct"
+--diag_suppress=L6329 --summary_stderr --info summarysizes --map --xref --callgraph --symbols
+--info sizes --info totals --info unused --info veneers
+--list "LightHouse.map" -o LightHouse\LightHouse.axf

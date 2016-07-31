@@ -12,6 +12,7 @@
 #include <codecvt>
 #include <HighLevelMonitorConfigurationAPI.h>
 #include "escapi/capturedevice.h"
+#include "..\stm32\Common\usb.h"
 
 #define _LOG(f, ...) m_pLog->Log(f, __VA_ARGS__)
 
@@ -56,77 +57,77 @@ public:
 private:
 	IDriverLog *_logger; 
 };
-
-#pragma pack(push)
-#pragma pack(1)
-
-struct USBPositionData
-{
-	float x;
-	float y;
-	float z;
-};
-
-struct USBRotationData
-{
-	float w;
-	float x;
-	float y;
-	float z;
-};
-
-#define CUSTOM_HID_EPOUT_SIZE 32
-#define CUSTOM_HID_EPIN_SIZE 32
-
-#define HMD_SOURCE 0x00
-#define LEFTCTL_SOURCE 0x01
-#define RIGHTCTL_SOURCE 0x02
-
-#define ROTPOS_DATA 0x10
-#define TRIGGER_DATA 0x20
-
-#define HMD_ROTPOSDATA (HMD_SOURCE | ROTPOS_DATA)
-
-struct USBDataHeader
-{
-	uint8_t Type; //source & data
-	uint8_t Sequence; //source & data
-	uint8_t Crc8; //simple crc, only for rf, ignored on usb
-};
-
-struct USBRotPosData
-{
-	USBDataHeader Header;
-	USBRotationData Rotation;
-	USBPositionData Position;
-};
-
-struct USBAxisData
-{
-	float x;
-	float y;
-};
-
-struct USBTriggerData
-{
-	USBDataHeader Header;
-	uint16_t Digital;
-	USBAxisData Analog[2];
-};
-
-union USBData
-{
-	USBRotPosData RotPos;
-	USBTriggerData Trigger;
-};
-
-struct USBOutputPacket
-{
-	USBData Data;
-	uint8_t Reserved[CUSTOM_HID_EPOUT_SIZE - sizeof(USBData)];
-};
-
-#pragma pack(pop)
+//
+//#pragma pack(push)
+//#pragma pack(1)
+//
+//struct USBPositionData
+//{
+//	float x;
+//	float y;
+//	float z;
+//};
+//
+//struct USBRotationData
+//{
+//	float w;
+//	float x;
+//	float y;
+//	float z;
+//};
+//
+//#define CUSTOM_HID_EPOUT_SIZE 32
+//#define CUSTOM_HID_EPIN_SIZE 32
+//
+//#define HMD_SOURCE 0x00
+//#define LEFTCTL_SOURCE 0x01
+//#define RIGHTCTL_SOURCE 0x02
+//
+//#define ROTPOS_DATA 0x10
+//#define TRIGGER_DATA 0x20
+//
+//#define HMD_ROTPOSDATA (HMD_SOURCE | ROTPOS_DATA)
+//
+//struct USBDataHeader
+//{
+//	uint8_t Type; //source & data
+//	uint8_t Sequence; //source & data
+//	uint8_t Crc8; //simple crc, only for rf, ignored on usb
+//};
+//
+//struct USBRotPosData
+//{
+//	USBDataHeader Header;
+//	USBRotationData Rotation;
+//	USBPositionData Position;
+//};
+//
+//struct USBAxisData
+//{
+//	float x;
+//	float y;
+//};
+//
+//struct USBTriggerData
+//{
+//	USBDataHeader Header;
+//	uint16_t Digital;
+//	USBAxisData Analog[2];
+//};
+//
+//union USBData
+//{
+//	USBRotPosData RotPos;
+//	USBTriggerData Trigger;
+//};
+//
+//struct USBOutputPacket
+//{
+//	USBData Data;
+//	uint8_t Reserved[CUSTOM_HID_EPOUT_SIZE - sizeof(USBData)];
+//};
+//
+//#pragma pack(pop)
 
 struct TrackerData
 {
@@ -184,7 +185,7 @@ struct HMDData : TrackerData
 	float SuperSample;
 	CDriverLog *Logger;
 	float IPDValue;
-	USBData LastState;
+	USBDataCache LastState;
 };
 
 struct ControllerData : TrackerData
@@ -193,7 +194,7 @@ struct ControllerData : TrackerData
 	WCHAR Model[128];	
 	VRControllerState_t State;
 	HmdVector3d_t Euler;
-	USBData LastState;
+	USBDataCache LastState;
 };
 
 

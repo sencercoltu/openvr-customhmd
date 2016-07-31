@@ -43,10 +43,16 @@
 
 #define LED_Pin GPIO_PIN_13
 #define LED_GPIO_Port GPIOC
-#define SPI1_RF_NSS_Pin GPIO_PIN_6
-#define SPI1_RF_NSS_GPIO_Port GPIOB
-#define SPI1_RF_CE_Pin GPIO_PIN_7
-#define SPI1_RF_CE_GPIO_Port GPIOB
+#define SPI_SCK_Pin GPIO_PIN_5
+#define SPI_SCK_GPIO_Port GPIOA
+#define SPI_MISO_Pin GPIO_PIN_6
+#define SPI_MISO_GPIO_Port GPIOA
+#define SPI_MOSI_Pin GPIO_PIN_7
+#define SPI_MOSI_GPIO_Port GPIOA
+#define SPI_RF_NSS_Pin GPIO_PIN_6
+#define SPI_RF_NSS_GPIO_Port GPIOB
+#define SPI_RF_CE_Pin GPIO_PIN_7
+#define SPI_RF_CE_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */

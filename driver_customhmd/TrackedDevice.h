@@ -37,7 +37,7 @@ protected:
 	virtual int32_t GetInt32Property(ETrackedDeviceProperty prop, ETrackedPropertyError * pError) = 0;
 	virtual uint64_t GetUint64Property(ETrackedDeviceProperty prop, ETrackedPropertyError * pError) = 0;
 
-	virtual void PoseUpdate(USBData *pData, HmdVector3d_t *pCenterEuler, HmdVector3d_t *pRelativePos) = 0;
+	virtual void PoseUpdate(USBPacket *pPacket, HmdVector3d_t *pCenterEuler, HmdVector3d_t *pRelativePos) = 0;
 protected:	
 	IVRSettings *m_pSettings;
 	CDriverLog *m_pLog;

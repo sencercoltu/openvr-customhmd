@@ -496,12 +496,12 @@ ARM Macro Assembler    Page 8
               00000000 
 Command Line: --debug --xref --diag_suppress=9931 --cpu=Cortex-M3 --apcs=interw
 ork --depend=trackeddevice\startup_stm32f103xb.d -otrackeddevice\startup_stm32f
-103xb.o -ID:\Data\Projects\STM32\SteamVR\TrackedDevice\MDK-ARM\RTE -ID:\Program
-s\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include -ID:
-\Programs\STMicroelectronics\Keil\ARM\CMSIS\Include --predefine="__EVAL SETA 1"
- --predefine="__MICROLIB SETA 1" --predefine="__UVISION_VERSION SETA 520" --pre
-define="_RTE_ SETA 1" --predefine="STM32F10X_MD SETA 1" --list=startup_stm32f10
-3xb.lst startup_stm32f103xb.s
+103xb.o -ID:\Projects\Windows\SteamVR\stm32\TrackedDevice\MDK-ARM\RTE -ID:\Prog
+rams\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include -
+ID:\Programs\STMicroelectronics\Keil\ARM\CMSIS\Include --predefine="__EVAL SETA
+ 1" --predefine="__MICROLIB SETA 1" --predefine="__UVISION_VERSION SETA 520" --
+predefine="_RTE_ SETA 1" --predefine="STM32F10X_MD SETA 1" --list=startup_stm32
+f103xb.lst startup_stm32f103xb.s
 
 
 

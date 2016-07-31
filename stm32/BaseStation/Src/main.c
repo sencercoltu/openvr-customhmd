@@ -42,17 +42,29 @@
 //#include "..\\..\\Common\\se8r01.h"
 #include "..\\..\\Common\\usb.h"
 #include "..\\..\\Common\\nrf24l01.h"
+#include <stdlib.h>
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
 SPI_HandleTypeDef hspi1;
 
+struct CommChannel
+{
+	uint8_t address[5];
+	uint8_t remainingTransmits;
+	uint32_t lastReceive;
+	uint32_t nextTransmit;
+	USBPacket lastCommand;
+};
+
+struct CommChannel Channels[5] = {0};
+
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 int32_t blinkDelay = 1000;
-USBOutputPacket USBBypassPacket = {0};
-//USBOutputPacket USBDataPacket = {0};
-//volatile uint8_t rfReady = 1;
+USBPacket USBBypassPacket = {0};
+extern uint8_t USB_RX_Buffer[CUSTOM_HID_EPIN_SIZE];
+USBPacket *pUSBCommandPacket = (USBPacket *) USB_RX_Buffer;
 uint8_t rfStatus = 0;
 
 #if CUSTOM_HID_EPOUT_SIZE != 32
@@ -76,9 +88,9 @@ static void MX_SPI1_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
+RF_InitTypeDef RF_InitStruct = {0};
 unsigned char BaseStation_NRF24L01_Init (void)
-{
-	RF_InitTypeDef RF_InitStruct = {0};
+{	
 	RF_InitStruct.RF_Power_State=RF_Power_On;
 	RF_InitStruct.RF_Config=RF_Config_IRQ_RX_Off|RF_Config_IRQ_TX_Off|RF_Confing_IRQ_Max_Rt_Off;
 	RF_InitStruct.RF_CRC_Mode=RF_CRC8_On;
@@ -174,34 +186,94 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 	bool readyToReceive = false;
+	bool readyToSend = false;
+	
+//	USBPacket commandPackets[10] = {0}; //command buffer
+//	uint8_t commandPacketIndex = 0;
+//	uint8_t transmitPacketIndex = 0;
+//	int8_t transmitCount = 0;
+//	uint32_t nextTransmit = 0;
+	uint32_t now;
+	
+	srand(HAL_GetTick());
+	for (uint8_t idx=0; idx<5; idx++)
+	{
+		memcpy(Channels[idx].address, RF_InitStruct.RF_RX_Adress_Pipe0, 5); //address of hmd
+		Channels[idx].address[4] += idx;						
+	}
+	
 	while (1)
 	{
+		now = HAL_GetTick();
 		Blink(blinkDelay);
 		blinkDelay = 1000;
+
+		if (((pUSBCommandPacket->Header.Type & 0xF0) == COMMAND_DATA) && (pUSBCommandPacket->Command.Command != CMD_NONE))
+		{		
+			uint8_t channelIndex = pUSBCommandPacket->Header.Type & 0x0F; 			
+			CommChannel *pChannel = &Channels[channelIndex];
+			
+			//only send if active more than 1 sec
+			if (now - pChannel->lastReceive <= 1000)
+			{			
+				//got packet from usb, forward to trackeddevice
+				memcpy(&pChannel->lastCommand, pUSBCommandPacket, sizeof(USBPacket));			
+				//send same packet a few times
+				pChannel->remainingTransmits = 2;			
+				pChannel->nextTransmit = now;
+			}
+			memset(pUSBCommandPacket, 0, sizeof(USBPacket)); //clear incoming
+		}
 		
 		if (!readyToReceive)
 		{
 			rfStatus = RF_FifoStatus(&hspi1);
 			readyToReceive = (rfStatus & RF_RX_FIFO_EMPTY_Bit) == 0x00; //if not empty 
+			readyToSend = ((rfStatus & RF_TX_FIFO_EMPTY_Bit) == RF_TX_FIFO_EMPTY_Bit); //if empty 
 		}
-		
 				
 		while (readyToReceive)
 		{			
-			readyToReceive = RF_ReceivePayload(&hspi1, (uint8_t*)&USBBypassPacket, sizeof(USBBypassPacket)) == 0; //int cleared in function if fifo empty	
-			uint8_t crcTemp = USBBypassPacket.Data.RotPos.Header.Crc8;
-			USBBypassPacket.Data.RotPos.Header.Crc8 = 0;			
+			readyToReceive = RF_ReceivePayload(&hspi1, (uint8_t*)&USBBypassPacket, sizeof(USBPacket)) == 0; //int cleared in function if fifo empty	
+			uint8_t crcTemp = USBBypassPacket.Header.Crc8;
+			USBBypassPacket.Header.Crc8 = 0;			
 			uint8_t* data = (uint8_t*)&USBBypassPacket;
 			uint8_t crc = 0;
 			for (int i=0; i<sizeof(USBBypassPacket); i++)
 				crc ^= data[i];
 			if (crc == crcTemp)
 			{
+				uint8_t channelIndex = USBBypassPacket.Header.Type & 0x0F; 
+				Channels[channelIndex].lastReceive = now;
 				blinkDelay = 100;
-				USBBypassPacket.Data.RotPos.Header.Crc8 = crc;
+				USBBypassPacket.Header.Crc8 = crc;
 				USBD_CUSTOM_HID_SendReport_FS((uint8_t*)&USBBypassPacket, sizeof(USBBypassPacket)); //forward incoming					
 			}
 		}
+
+		if (readyToSend)
+		{			
+			for (uint8_t idx=0; idx<5; idx++)
+			{
+				CommChannel *pChannel = &Channels[idx];
+				if (pChannel->remainingTransmits > 0 && now > pChannel->nextTransmit)
+				{
+					pChannel->nextTransmit = HAL_GetTick() + (rand() % 10); //max 10 ms for retransmit
+					//switch to tx mode and send command to device			
+					RF_TransmitMode(&hspi1, pChannel->address);
+					RF_SendPayload(&hspi1, (uint8_t *)&pChannel->lastCommand, sizeof(USBPacket));
+					do { rfStatus = RF_FifoStatus(&hspi1); } while ((rfStatus & RF_TX_FIFO_EMPTY_Bit) != RF_TX_FIFO_EMPTY_Bit); //wait for send complete
+					pChannel->remainingTransmits--;
+					if (!pChannel->remainingTransmits)					
+						memset(&pChannel->lastCommand, 0, sizeof(USBPacket));					
+				}
+			}
+			//back to rx mode
+			RF_ReceiveMode(&hspi1, RF_InitStruct.RF_TX_Adress);
+			readyToSend = false;			
+		}
+		
+
 	}
   /* USER CODE END WHILE */
 
@@ -301,10 +373,10 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(SPI1_RF_NSS_GPIO_Port, SPI1_RF_NSS_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(SPI_RF_NSS_GPIO_Port, SPI_RF_NSS_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(SPI1_RF_CE_GPIO_Port, SPI1_RF_CE_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(SPI_RF_CE_GPIO_Port, SPI_RF_CE_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : LED_Pin */
   GPIO_InitStruct.Pin = LED_Pin;
@@ -312,8 +384,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(LED_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : SPI1_RF_NSS_Pin SPI1_RF_CE_Pin */
-  GPIO_InitStruct.Pin = SPI1_RF_NSS_Pin|SPI1_RF_CE_Pin;
+  /*Configure GPIO pins : SPI_RF_NSS_Pin SPI_RF_CE_Pin */
+  GPIO_InitStruct.Pin = SPI_RF_NSS_Pin|SPI_RF_CE_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);

@@ -3,6 +3,7 @@
 
 #include "Common.h"	
 #include "hidapi.h"
+#include <deque>
 
 using namespace vr;
 class CTrackedDevice;
@@ -25,6 +26,7 @@ public:
 	CDriverLog *m_pLog;
 	IServerDriverHost *m_pDriverHost;
 	void AlignHMD(HmdVector3d_t *pAlign);
+	void SendUSBCommand(USBPacket &command);
 private:	
 	std::string m_UserDriverConfigDir;
 	std::string m_DriverInstallDir;
@@ -39,7 +41,7 @@ private:
 	void CloseUSB(hid_device **ppHandle);
 	DWORD m_LastTick, m_CurrTick;
 	bool m_HMDAdded, m_RightCtlAdded, m_LeftCtlAdded;
-	
+	std::deque<USBPacket> m_CommandQueue;
 };
 
 #endif // ServerDriver_H

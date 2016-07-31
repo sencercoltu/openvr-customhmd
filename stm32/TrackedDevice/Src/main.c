@@ -56,8 +56,9 @@ SPI_HandleTypeDef hspi2;
 int8_t ctlSource = LEFTCTL_SOURCE;
 SensorData tSensorData = {0};
 int32_t blinkDelay = 1000;
-//USBOutputPacket USBBypassPacket = {0};
-USBOutputPacket USBDataPacket = {0};
+USBPacket USBDataPacket = {0};
+extern uint8_t USB_RX_Buffer[CUSTOM_HID_EPIN_SIZE];
+USBPacket *pUSBCommandPacket = (USBPacket *) USB_RX_Buffer;
 //volatile uint8_t rfReady = 1;
 uint8_t rfStatus = 0;
 bool sensorStatus = false;
@@ -135,6 +136,11 @@ void HAL_MicroDelay(uint64_t delay)
 }
 
 volatile uint32_t ADC_Values[9] = {0};
+volatile uint32_t ADC_Averages[9] = {0};
+uint64_t lastUpdate = 0; 
+uint64_t now = 0;        
+uint32_t nextSend = 0; 
+
 
 /* USER CODE END 0 */
 
@@ -142,10 +148,6 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-	uint64_t lastUpdate = 0; 
-	uint64_t Now = 0;        
-	uint64_t nextSend = 0; 
-	
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -164,32 +166,34 @@ int main(void)
   MX_ADC1_Init();
 
   /* USER CODE BEGIN 2 */
+	
 	LedOff();	 
-	BlinkRease(50);
+	HAL_GPIO_WritePin(CTL_VIBRATE_GPIO_Port, CTL_VIBRATE_Pin, GPIO_PIN_SET); 
+	BlinkRease(30);
+	HAL_GPIO_WritePin(CTL_VIBRATE_GPIO_Port, CTL_VIBRATE_Pin, GPIO_PIN_RESET);
 	
 	sensorStatus = initSensors();		
 	if (!sensorStatus)
 		Error_Handler();
 	LedOff();		
+	
 	rfStatus = TrackedDevice_NRF24L01_Init();	
 	if (rfStatus == 0x00 || rfStatus == 0xff)
 		Error_Handler();
 	LedOff();	
-
+	
 	if( HAL_ADC_Start(&hadc1) != HAL_OK)  
 		Error_Handler();
 	if (HAL_ADC_Start_DMA(&hadc1, (uint32_t*)&ADC_Values[1], 7) != HAL_OK)  
 		Error_Handler();
 	//HAL_Delay(1000);
 
-
-	
 	ctlSource = 0;
 	ctlSource = (GPIO_PIN_SET == HAL_GPIO_ReadPin(CTL_MODE1_GPIO_Port, CTL_MODE1_Pin)?1:0); 
 	ctlSource += (GPIO_PIN_SET == HAL_GPIO_ReadPin(CTL_MODE2_GPIO_Port, CTL_MODE2_Pin)?2:0); 	
 	srand(ctlSource);
 	
-	int extraDelay = ctlSource>1? 50:10;
+	int extraDelay = ctlSource>1? 25:5;
 	
 	bool hasNewData = false;
 
@@ -206,8 +210,23 @@ int main(void)
   /* USER CODE BEGIN WHILE */
 	bool readyToSend = true;
 	Quaternion quat;
+	RF_ReceiveMode(&hspi2, NULL); //default to receive mode			
+	uint32_t lastCommandSequence = 0;
+	uint32_t vibrationStopTime = 0;
 	while (true)
 	{
+		
+		for (int i=1; i<8; i++)
+		{
+			ADC_Averages[i] = ((float)ADC_Averages[i] * 0.9) + ((float)ADC_Values[i] * 0.1);
+		}
+		
+		if (ADC_Values[4] > 0x100)
+		{
+			ADC_Values[4] = ADC_Values[4];
+		}
+		
+		
 		Blink(blinkDelay);
 		blinkDelay = 1000;
 
@@ -218,82 +237,76 @@ int main(void)
 			hasNewData |= readMagData(tSensorData.Mag);
 		}
 		
-		Now = HAL_GetMicros();				
-		tSensorData.TimeElapsed = ((Now - lastUpdate) / 1000000.0f); // set integration time by time elapsed since last filter update				
+		now = HAL_GetMicros();				
+		tSensorData.TimeElapsed = ((now - lastUpdate) / 1000000.0f); // set integration time by time elapsed since last filter update				
 		if (hasNewData) // && tSensorData.TimeElapsed >= 0.001f)
 		{
 			//blinkDelay = 500;
 			hasNewData = false;			
-			lastUpdate = Now;	
+			lastUpdate = now;	
 			quat = fuse.Fuse(&tSensorData);
 		}
-		
-		if (Now < nextSend) 
-		{
-			HAL_Delay(1);
-			continue;
-		}
-		
+
 		if (!readyToSend)
 		{
 			rfStatus = RF_FifoStatus(&hspi2);			
 			readyToSend = (rfStatus & RF_TX_FIFO_FULL_Bit) == 0x00; //if not full
 		}
 		
-		if (readyToSend)
+		if (readyToSend && HAL_GetTick() >= nextSend)
 		{
 			readyToSend = false;
+			//send update
+			RF_TransmitMode(&hspi2, NULL); //switch to tx mode
 			blinkDelay = 100;
-			RF_ClearTxInt(&hspi2);			
-
 			//send continiout pos and rot data
-			USBDataPacket.Data.RotPos.Header.Type = ctlSource | ROTPOS_DATA;
-			USBDataPacket.Data.RotPos.Header.Sequence++;
-			USBDataPacket.Data.RotPos.Header.Crc8 = 0;
-			USBDataPacket.Data.RotPos.Rotation.w = quat.w;
-			USBDataPacket.Data.RotPos.Rotation.x = quat.x;
-			USBDataPacket.Data.RotPos.Rotation.y = quat.y;
-			USBDataPacket.Data.RotPos.Rotation.z = quat.z;			
+			USBDataPacket.Header.Type = ctlSource | ROTATION_DATA;
+			USBDataPacket.Header.Sequence++;
+			USBDataPacket.Header.Crc8 = 0;
+			USBDataPacket.Rotation.w = quat.w;
+			USBDataPacket.Rotation.x = quat.x;
+			USBDataPacket.Rotation.y = quat.y;
+			USBDataPacket.Rotation.z = quat.z;			
 			uint8_t* data = (uint8_t*)&USBDataPacket;
 			uint8_t crc = 0;
 			for (int i=0; i<sizeof(USBDataPacket); i++)
 				crc ^= data[i];
-			USBDataPacket.Data.RotPos.Header.Crc8 = crc;
-			
+			USBDataPacket.Header.Crc8 = crc;
 			RF_SendPayload(&hspi2, data, sizeof(USBDataPacket));
-			nextSend = Now + (extraDelay + (rand() % 10) * 1000);
+			do { rfStatus = RF_FifoStatus(&hspi2); } while ((rfStatus & RF_TX_FIFO_EMPTY_Bit) != RF_TX_FIFO_EMPTY_Bit); //wait for send complete
+			nextSend = HAL_GetTick() + (extraDelay + (rand() % 10));
+			RF_ReceiveMode(&hspi2, NULL); //back to rx mode
+		}
+		else
+		{
+			//receive command
+			rfStatus = RF_FifoStatus(&hspi2);
+			if ((rfStatus & RF_RX_FIFO_EMPTY_Bit) == 0x00) //if not empty
+			{
+				//has fifo, receive
+				RF_ReceivePayload(&hspi2, (uint8_t*)pUSBCommandPacket, sizeof(USBPacket));
+									
+				if ((pUSBCommandPacket->Header.Type & ctlSource) == ctlSource)
+				{
+					if (lastCommandSequence != pUSBCommandPacket->Header.Sequence) //discard duplicates
+					{
+						lastCommandSequence = pUSBCommandPacket->Header.Sequence; 
+						if (pUSBCommandPacket->Command.Command == CMD_VIBRATE)
+						{
+							vibrationStopTime = HAL_GetTick() + pUSBCommandPacket->Command.Data.Vibration.Duration;
+							HAL_GPIO_WritePin(CTL_VIBRATE_GPIO_Port, CTL_VIBRATE_Pin, GPIO_PIN_SET);							
+						}
+					}
+				}
+				pUSBCommandPacket->Header.Type = 0xff;
+			}			
+		}
+		if (vibrationStopTime && HAL_GetTick() > vibrationStopTime)			
+		{
+			HAL_GPIO_WritePin(CTL_VIBRATE_GPIO_Port, CTL_VIBRATE_Pin, GPIO_PIN_RESET);
+			vibrationStopTime = 0;
 		}
 		
-//		if (!rfReady)
-//			rfReady = HAL_GPIO_ReadPin(SPI1_RF_INT_GPIO_Port, SPI1_RF_INT_Pin) == GPIO_PIN_RESET;
-//		if (rfStatus && rfReady)
-//		{
-//			blinkDelay = 50;
-//			rfReady = false;					
-//			if (SE8R01_OPERATE_MODE == SE8R01_RFMode_Receive)
-//			{				
-//				//block receiver
-//				//HAL_GPIO_WritePin(SPI1_CE_GPIO_Port, SPI1_CE_Pin, GPIO_PIN_RESET); //chip enable for se8r01
-//				//read packets until empty
-//				
-//				status = SE8R01_ReadStatus();
-//				if ((status & iSTATUS_RX_EMPTY) != iSTATUS_RX_EMPTY)
-//				{
-//					if (SE8R01_ReadPayload((uint8_t*)&USBBypassPacket))
-//						USBD_CUSTOM_HID_SendReport_FS((uint8_t*)&USBBypassPacket, sizeof(USBBypassPacket)); //forward incoming					
-//				}				
-//				else
-//					blinkDelay = 1000;
-//				//HAL_GPIO_WritePin(SPI1_CE_GPIO_Port, SPI1_CE_Pin, GPIO_PIN_SET); //chip enable for se8r01				
-//			}
-//			else if (SE8R01_OPERATE_MODE == SE8R01_RFMode_Transmit)
-//			{
-//				if (!SE8R01_WritePayload((uint8_t*)&USBDataPacket, true))
-//					blinkDelay = 1000;
-//			}					
-//			//SE8R01_FlushBuffers();
-//			SE8R01_ClearInterrupts();				
-//		}		
 	}
   /* USER CODE END WHILE */
 
@@ -372,7 +385,7 @@ static void MX_ADC1_Init(void)
     */
   sConfig.Channel = ADC_CHANNEL_1;
   sConfig.Rank = 1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_28CYCLES_5;
+  sConfig.SamplingTime = ADC_SAMPLETIME_239CYCLES_5;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -514,10 +527,10 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, CTL_VIBRATE_Pin|SPI_RF_CE_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, CTL_VIBRATE_Pin|SPI_RF_NSS_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(SPI_RF_NSS_GPIO_Port, SPI_RF_NSS_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(SPI_RF_CE_GPIO_Port, SPI_RF_CE_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : LED_Pin */
   GPIO_InitStruct.Pin = LED_Pin;
@@ -531,14 +544,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : CTL_VIBRATE_Pin */
-  GPIO_InitStruct.Pin = CTL_VIBRATE_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(CTL_VIBRATE_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : SPI_RF_NSS_Pin SPI_RF_CE_Pin */
-  GPIO_InitStruct.Pin = SPI_RF_NSS_Pin|SPI_RF_CE_Pin;
+  /*Configure GPIO pins : CTL_VIBRATE_Pin SPI_RF_NSS_Pin SPI_RF_CE_Pin */
+  GPIO_InitStruct.Pin = CTL_VIBRATE_Pin|SPI_RF_NSS_Pin|SPI_RF_CE_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);

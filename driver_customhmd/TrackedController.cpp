@@ -217,6 +217,20 @@ VRControllerState_t CTrackedController::GetControllerState()
 bool CTrackedController::TriggerHapticPulse(uint32_t unAxisId, uint16_t usPulseDurationMicroseconds)
 {
 	_LOG(__FUNCTION__" axId: %d, dur: %d", unAxisId, usPulseDurationMicroseconds);
+	USBPacket packet = { 0 };
+	packet.Header.Type = m_Role | COMMAND_DATA;
+	packet.Header.Crc8 = 0;
+	packet.Header.Sequence = (uint16_t) GetTickCount(); //put timestamp as sequence
+	packet.Command.Command = CMD_VIBRATE;
+	packet.Command.Data.Vibration.Axis = unAxisId;
+	packet.Command.Data.Vibration.Duration = usPulseDurationMicroseconds;
+	
+	uint8_t* data = (uint8_t*)&packet;
+	uint8_t crc = 0;
+	for (int i = 0; i<sizeof(USBPacket); i++)
+		crc ^= data[i];
+	packet.Header.Crc8 = crc;
+	m_pServer->SendUSBCommand(packet);
 	return true;
 }
 
@@ -402,35 +416,56 @@ void CTrackedController::SendButtonUpdates(ButtonUpdate ButtonEvent, uint64_t ul
 	}
 }
 
-void CTrackedController::PoseUpdate(USBData *pData, HmdVector3d_t *pCenterEuler, HmdVector3d_t *pRelativePos)
+void CTrackedController::PoseUpdate(USBPacket *pPacket, HmdVector3d_t *pCenterEuler, HmdVector3d_t *pRelativePos)
 {
-	if (pData->RotPos.Header.Type != (m_Role | ROTPOS_DATA))
+	if ((pPacket->Header.Type & 0x0F ) != m_Role)
 		return;
+
 	if (WAIT_OBJECT_0 == WaitForSingleObject(m_ControllerData.hPoseLock, INFINITE)) 
 	{
-		m_ControllerData.LastState = *pData;
-		auto euler = Quaternion((float *)&m_ControllerData.LastState.RotPos.Rotation).ToEuler();
-		euler.v[0] = euler.v[0] + pCenterEuler->v[0];
-		euler.v[1] = euler.v[1] + pCenterEuler->v[1];
-		euler.v[2] = euler.v[2] + pCenterEuler->v[2];
-		m_ControllerData.Pose.qRotation = Quaternion::FromEuler(euler).UnitQuaternion();
-		memcpy(m_ControllerData.Pose.vecPosition, pRelativePos, sizeof(HmdVector3d_t));
-
-		switch (m_Role)
+		switch (pPacket->Header.Type & 0xF0)
 		{
-		case ETrackedControllerRole::TrackedControllerRole_LeftHand:
-			m_ControllerData.Pose.vecPosition[0] += 0.2;
-			m_ControllerData.Pose.vecPosition[1] += -0.2;
-			m_ControllerData.Pose.vecPosition[2] += -0.5;
+		case ROTATION_DATA:
+		{
+			m_ControllerData.LastState.Rotation = pPacket->Rotation;
+			auto euler = Quaternion((float *)&m_ControllerData.LastState.Rotation).ToEuler();
+			euler.v[0] = euler.v[0] + pCenterEuler->v[0];
+			euler.v[1] = euler.v[1] + pCenterEuler->v[1];
+			euler.v[2] = euler.v[2] + pCenterEuler->v[2];
+			m_ControllerData.Pose.qRotation = Quaternion::FromEuler(euler).UnitQuaternion();
+			memcpy(m_ControllerData.Pose.vecPosition, pRelativePos, sizeof(HmdVector3d_t));
+
+			switch (m_Role)
+			{
+			case ETrackedControllerRole::TrackedControllerRole_LeftHand:
+				m_ControllerData.Pose.vecPosition[0] += 0.2;
+				m_ControllerData.Pose.vecPosition[1] += -0.2;
+				m_ControllerData.Pose.vecPosition[2] += -0.5;
+				break;
+			case ETrackedControllerRole::TrackedControllerRole_RightHand:
+				m_ControllerData.Pose.vecPosition[0] += -0.2;
+				m_ControllerData.Pose.vecPosition[1] += -0.2;
+				m_ControllerData.Pose.vecPosition[2] += -0.5;
+				break;
+			}
+
+			m_ControllerData.PoseUpdated = true;
+		}
+		break;
+		case POSITION_DATA:
+		{
+			m_ControllerData.LastState.Position = pPacket->Position;
+		}
+		break;
+		case COMMAND_DATA:
 			break;
-		case ETrackedControllerRole::TrackedControllerRole_RightHand:
-			m_ControllerData.Pose.vecPosition[0] += -0.2;
-			m_ControllerData.Pose.vecPosition[1] += -0.2;
-			m_ControllerData.Pose.vecPosition[2] += -0.5;
-			break;
+		case TRIGGER_DATA:
+		{
+			m_ControllerData.LastState.Trigger = pPacket->Trigger;
+		}
+		break;
 		}
 
-		m_ControllerData.PoseUpdated = true;
 		ReleaseMutex(m_ControllerData.hPoseLock);
 	}
 }

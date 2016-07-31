@@ -97,6 +97,11 @@ void CServerDriver::CloseUSB(hid_device **ppHandle)
 	*ppHandle = nullptr;
 }
 
+void CServerDriver::SendUSBCommand(USBPacket &command)
+{
+	m_CommandQueue.push_back(command);
+}
+
 void CServerDriver::Run()
 {	
 	int pos = 0;
@@ -108,7 +113,7 @@ void CServerDriver::Run()
 
 	unsigned char buf[33] = { 0 };
 
-	USBData *pUSBData = (USBData *)buf;
+	USBPacket *pUSBPacket = (USBPacket *)buf;
 
 	hid_device *pHandle = nullptr;
 	DWORD lastTick = GetTickCount();
@@ -129,19 +134,28 @@ void CServerDriver::Run()
 		}
 		else
 		{
+			if (m_CommandQueue.size() > 0)
+			{	
+				buf[0] = 0x00;
+				*((USBPacket*)(buf + 1)) = m_CommandQueue.front();;
+				m_CommandQueue.pop_front();				
+				res = hid_write(pHandle, buf, sizeof(buf));
+			}
+
+
 			res = hid_read_timeout(pHandle, buf, sizeof(buf), 10); 
 			if (res > 0)
 			{
 				lastTick = GetTickCount();	
-				auto crcTemp = pUSBData->RotPos.Header.Crc8;
-				pUSBData->RotPos.Header.Crc8 = 0;
-				uint8_t* data = (uint8_t*)pUSBData;
+				auto crcTemp = pUSBPacket->Header.Crc8;
+				pUSBPacket->Header.Crc8 = 0;
+				uint8_t* data = (uint8_t*)pUSBPacket;
 				uint8_t crc = 0;
-				for (int i = 0; i<sizeof(USBData); i++)
+				for (int i = 0; i<sizeof(USBPacket); i++)
 					crc ^= data[i];
 				if (crc == crcTemp)
 				{
-					switch (pUSBData->RotPos.Header.Type & 0x0F)
+					switch (pUSBPacket->Header.Type & 0x0F)
 					{
 					case LEFTCTL_SOURCE:
 						if (!m_LeftCtlAdded)
@@ -159,7 +173,7 @@ void CServerDriver::Run()
 						break;
 					}
 					for (auto iter = m_TrackedDevices.begin(); iter != m_TrackedDevices.end(); iter++)
-						(*iter)->PoseUpdate(pUSBData, &m_Align, &m_Relative);
+						(*iter)->PoseUpdate(pUSBPacket, &m_Align, &m_Relative);
 				}
 			}
 			else if (res < 0)

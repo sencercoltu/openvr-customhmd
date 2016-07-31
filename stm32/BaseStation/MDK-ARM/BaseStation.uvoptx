@@ -202,27 +202,32 @@
         <Ww>
           <count>0</count>
           <WinNumber>1</WinNumber>
-          <ItemText>status</ItemText>
+          <ItemText>pUSBCommandPacket</ItemText>
         </Ww>
         <Ww>
           <count>1</count>
           <WinNumber>1</WinNumber>
-          <ItemText>pTxData</ItemText>
+          <ItemText>USB_RX_Buffer</ItemText>
         </Ww>
         <Ww>
           <count>2</count>
           <WinNumber>1</WinNumber>
-          <ItemText>pRxData</ItemText>
+          <ItemText>address</ItemText>
         </Ww>
         <Ww>
           <count>3</count>
           <WinNumber>1</WinNumber>
-          <ItemText>hspi-&gt;pTxBuffPtr</ItemText>
+          <ItemText>transmitPacket</ItemText>
         </Ww>
         <Ww>
           <count>4</count>
           <WinNumber>1</WinNumber>
-          <ItemText>hspi-&gt;pRxBuffPtr</ItemText>
+          <ItemText>channelIndex</ItemText>
+        </Ww>
+        <Ww>
+          <count>5</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>Channels</ItemText>
         </Ww>
       </WatchWindow1>
       <Tracepoint>
