@@ -209,6 +209,11 @@
           <WinNumber>1</WinNumber>
           <ItemText>ADC_Averages</ItemText>
         </Ww>
+        <Ww>
+          <count>2</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>ADC_Cache</ItemText>
+        </Ww>
       </WatchWindow1>
       <Tracepoint>
         <THDelay>0</THDelay>

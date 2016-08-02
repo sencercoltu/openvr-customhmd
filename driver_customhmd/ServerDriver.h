@@ -42,6 +42,7 @@ private:
 	DWORD m_LastTick, m_CurrTick;
 	bool m_HMDAdded, m_RightCtlAdded, m_LeftCtlAdded;
 	std::deque<USBPacket> m_CommandQueue;
+	void ScanSyncReceived(uint64_t syncTime);
 };
 
 #endif // ServerDriver_H

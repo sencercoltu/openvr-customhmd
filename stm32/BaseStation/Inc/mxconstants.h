@@ -49,6 +49,8 @@
 #define SPI_MISO_GPIO_Port GPIOA
 #define SPI_MOSI_Pin GPIO_PIN_7
 #define SPI_MOSI_GPIO_Port GPIOA
+#define IR_SYNC_Pin GPIO_PIN_12
+#define IR_SYNC_GPIO_Port GPIOB
 #define SPI_RF_NSS_Pin GPIO_PIN_6
 #define SPI_RF_NSS_GPIO_Port GPIOB
 #define SPI_RF_CE_Pin GPIO_PIN_7

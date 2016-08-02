@@ -48,6 +48,9 @@
 /* Private variables ---------------------------------------------------------*/
 SPI_HandleTypeDef hspi1;
 
+/* USER CODE BEGIN PV */
+/* Private variables ---------------------------------------------------------*/
+
 struct CommChannel
 {
 	uint8_t address[5];
@@ -59,8 +62,6 @@ struct CommChannel
 
 struct CommChannel Channels[5] = {0};
 
-/* USER CODE BEGIN PV */
-/* Private variables ---------------------------------------------------------*/
 int32_t blinkDelay = 1000;
 USBPacket USBBypassPacket = {0};
 extern uint8_t USB_RX_Buffer[CUSTOM_HID_EPIN_SIZE];
@@ -147,6 +148,18 @@ void HAL_MicroDelay(uint64_t delay)
 	}
 }
 
+
+USBPacket SyncPacket = {0};
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+	if (GPIO_Pin == IR_SYNC_Pin)
+	{
+		SyncPacket.Command.Data.Sync.SyncTime = HAL_GetMicros();
+		SetPacketCrc(&SyncPacket);
+		USBD_CUSTOM_HID_SendReport_FS((uint8_t*)&SyncPacket, sizeof(USBPacket)); //forward incoming					
+		LedToggle();
+	}
+}
 /* USER CODE END 0 */
 
 int main(void)
@@ -157,6 +170,14 @@ int main(void)
 	uint8_t *usbDesc = USBD_CUSTOM_HID.GetFSConfigDescriptor(&usbDescLen);
 	usbDesc[33] = usbDesc[40] = 1;	//1 ms poll interval
 
+	
+	SyncPacket.Header.Type = BASESTATION_SOURCE | COMMAND_DATA;
+	SyncPacket.Header.Sequence = 1;
+	SyncPacket.Header.Crc8 = 0;
+	SyncPacket.Command.Command = CMD_SYNC;
+	SyncPacket.Command.Data.Sync.SyncTime = HAL_GetMicros();
+	
+	
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -187,12 +208,6 @@ int main(void)
   /* USER CODE BEGIN WHILE */
 	bool readyToReceive = false;
 	bool readyToSend = false;
-	
-//	USBPacket commandPackets[10] = {0}; //command buffer
-//	uint8_t commandPacketIndex = 0;
-//	uint8_t transmitPacketIndex = 0;
-//	int8_t transmitCount = 0;
-//	uint32_t nextTransmit = 0;
 	uint32_t now;
 	
 	srand(HAL_GetTick());
@@ -235,19 +250,12 @@ int main(void)
 		while (readyToReceive)
 		{			
 			readyToReceive = RF_ReceivePayload(&hspi1, (uint8_t*)&USBBypassPacket, sizeof(USBPacket)) == 0; //int cleared in function if fifo empty	
-			uint8_t crcTemp = USBBypassPacket.Header.Crc8;
-			USBBypassPacket.Header.Crc8 = 0;			
-			uint8_t* data = (uint8_t*)&USBBypassPacket;
-			uint8_t crc = 0;
-			for (int i=0; i<sizeof(USBBypassPacket); i++)
-				crc ^= data[i];
-			if (crc == crcTemp)
+			if (CheckPacketCrc(&USBBypassPacket))
 			{
 				uint8_t channelIndex = USBBypassPacket.Header.Type & 0x0F; 
 				Channels[channelIndex].lastReceive = now;
 				blinkDelay = 100;
-				USBBypassPacket.Header.Crc8 = crc;
-				USBD_CUSTOM_HID_SendReport_FS((uint8_t*)&USBBypassPacket, sizeof(USBBypassPacket)); //forward incoming					
+				USBD_CUSTOM_HID_SendReport_FS((uint8_t*)&USBBypassPacket, sizeof(USBPacket)); //forward incoming					
 			}
 		}
 
@@ -339,7 +347,7 @@ static void MX_SPI1_Init(void)
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_8;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -384,11 +392,21 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(LED_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : IR_SYNC_Pin */
+  GPIO_InitStruct.Pin = IR_SYNC_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(IR_SYNC_GPIO_Port, &GPIO_InitStruct);
+
   /*Configure GPIO pins : SPI_RF_NSS_Pin SPI_RF_CE_Pin */
   GPIO_InitStruct.Pin = SPI_RF_NSS_Pin|SPI_RF_CE_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
 }
 

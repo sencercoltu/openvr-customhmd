@@ -1,5 +1,10 @@
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+	
 #ifndef CUSTOM_HID_EPIN_SIZE
 #define CUSTOM_HID_EPIN_SIZE 32
 #endif //CUSTOM_HID_EPIN_SIZE
@@ -18,6 +23,7 @@
 #define HMD_SOURCE 0x00
 #define LEFTCTL_SOURCE 0x01
 #define RIGHTCTL_SOURCE 0x02
+#define BASESTATION_SOURCE 0x03
 
 #define ROTATION_DATA 0x10
 #define POSITION_DATA 0x20
@@ -27,7 +33,10 @@
 #define CMD_NONE 		0x00
 #define CMD_VIBRATE		0x01
 #define CMD_CALIBRATE	0x02
+#define CMD_SYNC	0x03
 
+#define BUTTON_1 0x01
+#define BUTTON_2 0x02
 
 struct USBDataHeader
 {
@@ -39,7 +48,7 @@ struct USBDataHeader
 struct USBPositionData
 {
 	struct USBDataHeader Header;
-	uint16_t X1;
+	uint16_t X1; //elapsed time since sync1 & 2
 	uint16_t Y1;
 	uint16_t X2;
 	uint16_t Y2;
@@ -47,6 +56,11 @@ struct USBPositionData
 	uint16_t Y3;
 	uint16_t X4;
 	uint16_t Y4;
+};
+
+struct USBSyncData
+{	
+	uint64_t SyncTime;
 };
 
 struct USBRotationData
@@ -79,12 +93,13 @@ struct USBVibrationData
 union CommandData
 {
 	struct USBVibrationData Vibration;
+	struct USBSyncData Sync;
 };
 
 struct USBCommandData
 {	
 	uint8_t Command;
-	union CommandData Data;
+	union CommandData Data;	
 };
 
 
@@ -93,10 +108,10 @@ union USBData
 	struct USBPositionData Position;
 	struct USBRotationData Rotation;
 	struct USBTriggerData Trigger;
-	struct USBCommandData Command;
+	struct USBCommandData Command;	
 };
 
-struct USBDataCache
+struct USBDataCache //used at ps side/server only
 {
 	struct USBPositionData Position;
 	struct USBRotationData Rotation;
@@ -118,4 +133,13 @@ struct USBPacket
 	uint8_t Reserved[CUSTOM_HID_EPOUT_SIZE - (sizeof(union USBData) + sizeof(struct USBDataHeader))];
 };
 
+void SetPacketCrc(struct USBPacket *pPacket);
+uint8_t GetPacketCrc(struct USBPacket *pPacket);
+uint8_t CheckPacketCrc(struct USBPacket *pPacket);
+
 #pragma pack(pop)
+
+#ifdef __cplusplus
+}
+#endif
+

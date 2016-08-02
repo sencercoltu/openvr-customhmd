@@ -102,6 +102,11 @@ void CServerDriver::SendUSBCommand(USBPacket &command)
 	m_CommandQueue.push_back(command);
 }
 
+void CServerDriver::ScanSyncReceived(uint64_t syncTime)
+{
+	_LOG(__FUNCTION__" sync @ %I64u" , syncTime);
+}
+
 void CServerDriver::Run()
 {	
 	int pos = 0;
@@ -113,7 +118,7 @@ void CServerDriver::Run()
 
 	unsigned char buf[33] = { 0 };
 
-	USBPacket *pUSBPacket = (USBPacket *)buf;
+	struct USBPacket *pUSBPacket = (struct USBPacket *)buf;
 
 	hid_device *pHandle = nullptr;
 	DWORD lastTick = GetTickCount();
@@ -147,16 +152,22 @@ void CServerDriver::Run()
 			if (res > 0)
 			{
 				lastTick = GetTickCount();	
-				auto crcTemp = pUSBPacket->Header.Crc8;
-				pUSBPacket->Header.Crc8 = 0;
-				uint8_t* data = (uint8_t*)pUSBPacket;
-				uint8_t crc = 0;
-				for (int i = 0; i<sizeof(USBPacket); i++)
-					crc ^= data[i];
-				if (crc == crcTemp)
+
+				//auto crcTemp = pUSBPacket->Header.Crc8;
+				//pUSBPacket->Header.Crc8 = 0;
+				//uint8_t* data = (uint8_t*)pUSBPacket;
+				//uint8_t crc = 0;
+				//for (int i = 0; i<sizeof(USBPacket); i++)
+				//	crc ^= data[i];
+				//if (crc == crcTemp)
+				if (CheckPacketCrc(pUSBPacket))
 				{
 					switch (pUSBPacket->Header.Type & 0x0F)
 					{
+					case BASESTATION_SOURCE:
+						if ((pUSBPacket->Header.Type & COMMAND_DATA) == COMMAND_DATA)
+							ScanSyncReceived(pUSBPacket->Command.Data.Sync.SyncTime);
+						break;							
 					case LEFTCTL_SOURCE:
 						if (!m_LeftCtlAdded)
 						{

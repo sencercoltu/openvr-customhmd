@@ -496,12 +496,12 @@ ARM Macro Assembler    Page 8
               00000000 
 Command Line: --debug --xref --diag_suppress=9931 --cpu=Cortex-M3 --apcs=interw
 ork --depend=basestation\startup_stm32f103xb.d -obasestation\startup_stm32f103x
-b.o -ID:\Projects\STM32\SteamVR\BaseStation\MDK-ARM\RTE -ID:\Programs\STMicroel
-ectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include -ID:\Programs\STMic
-roelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include --predefine
-="__EVAL SETA 1" --predefine="__MICROLIB SETA 1" --predefine="__UVISION_VERSION
- SETA 520" --predefine="_RTE_ SETA 1" --predefine="STM32F10X_MD SETA 1" --list=
-startup_stm32f103xb.lst startup_stm32f103xb.s
+b.o -ID:\Projects\Windows\SteamVR\stm32\BaseStation\MDK-ARM\RTE -ID:\Programs\S
+TMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include -ID:\Progra
+ms\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include --p
+redefine="__EVAL SETA 1" --predefine="__MICROLIB SETA 1" --predefine="__UVISION
+_VERSION SETA 520" --predefine="_RTE_ SETA 1" --predefine="STM32F10X_MD SETA 1"
+ --list=startup_stm32f103xb.lst startup_stm32f103xb.s
 
 
 

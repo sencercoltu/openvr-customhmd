@@ -29,6 +29,7 @@ trackeddevice\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h
 trackeddevice\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h
 trackeddevice\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h
 trackeddevice\main.o: D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\Bin\..\include\stdlib.h
+trackeddevice\main.o: D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\Bin\..\include\string.h
 trackeddevice\main.o: ../Src/..\\..\\Common\\led.h
 trackeddevice\main.o: ../Src/..\\..\\Common\\SensorFusion.h
 trackeddevice\main.o: D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\Bin\..\include\math.h

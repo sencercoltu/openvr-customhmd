@@ -35,6 +35,8 @@
 
 /* USER CODE BEGIN Includes */
 #include <stdlib.h>
+#include <string.h> //for memcpy and memcmp
+
 #include "..\\..\\Common\\led.h"
 #include "..\\..\\Common\\SensorFusion.h"
 #include "..\\..\\Common\\gy8x.h"
@@ -84,6 +86,7 @@ static void MX_DMA_Init(void);
 static void MX_I2C2_Init(void);
 static void MX_SPI2_Init(void);
 static void MX_ADC1_Init(void);
+static void MX_NVIC_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
@@ -135,8 +138,60 @@ void HAL_MicroDelay(uint64_t delay)
 	}
 }
 
-volatile uint32_t ADC_Values[9] = {0};
-volatile uint32_t ADC_Averages[9] = {0};
+volatile uint16_t DigitalValues = 0;
+uint16_t DigitalCache = 0;
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+	switch(GPIO_Pin)
+	{
+		case IR_SENS_1_Pin:
+			break;
+		case IR_SENS_2_Pin:
+			break;
+		case IR_SENS_3_Pin:
+			break;
+		case IR_SENS_4_Pin:
+			break;
+		case CTL_B_1__IR_SENS_5_Pin:
+			if (ctlSource == HMD_SOURCE)
+			{
+				//ir trigger for HMD
+			}
+			else
+			{
+				//button for controller
+				if (HAL_GPIO_ReadPin(CTL_B_1__IR_SENS_5_GPIO_Port, CTL_B_1__IR_SENS_5_Pin) == GPIO_PIN_SET)
+					DigitalValues |= BUTTON_1;
+				else
+					DigitalValues &= ~BUTTON_1;
+				
+			}
+			break;
+		case CTL_B_2__IR_SENS_6_Pin:
+			if (ctlSource == HMD_SOURCE)
+			{
+				//ir trigger for HMD
+			}
+			else
+			{
+				//button for controller
+				if (HAL_GPIO_ReadPin(CTL_B_2__IR_SENS_6_GPIO_Port, CTL_B_2__IR_SENS_6_Pin) == GPIO_PIN_SET)
+					DigitalValues |= BUTTON_2;
+				else
+					DigitalValues &= ~BUTTON_2;
+			}
+			break;
+	}
+}
+
+volatile uint32_t ADC_Values[3] = {0};
+
+uint32_t ADC_Averages[3] = {0};
+uint32_t ADC_Offsets[3] = {0};
+uint32_t ADC_Cache[3] = {0};
+
+
 uint64_t lastUpdate = 0; 
 uint64_t now = 0;        
 uint32_t nextSend = 0; 
@@ -165,6 +220,9 @@ int main(void)
   MX_SPI2_Init();
   MX_ADC1_Init();
 
+  /* Initialize interrupts */
+  MX_NVIC_Init();
+
   /* USER CODE BEGIN 2 */
 	
 	LedOff();	 
@@ -182,9 +240,11 @@ int main(void)
 		Error_Handler();
 	LedOff();	
 	
+	
+	//start background adc conversion
 	if( HAL_ADC_Start(&hadc1) != HAL_OK)  
 		Error_Handler();
-	if (HAL_ADC_Start_DMA(&hadc1, (uint32_t*)&ADC_Values[1], 7) != HAL_OK)  
+	if (HAL_ADC_Start_DMA(&hadc1, (uint32_t*)ADC_Values, 3) != HAL_OK)  
 		Error_Handler();
 	//HAL_Delay(1000);
 
@@ -195,13 +255,23 @@ int main(void)
 	
 	int extraDelay = ctlSource>1? 25:5;
 	
-	bool hasNewData = false;
+	bool hasRotationData = false;
+	bool hasPositionData = false;
+	bool hasTriggerData = false;
 
 	CSensorFusion fuse(aRes, gRes, mRes);
 	
 	if (ctlSource == RIGHTCTL_SOURCE || ctlSource == LEFTCTL_SOURCE)
 	{
-		
+		//calculate analog averages
+		for (int c=0; c<100; c++)
+		{
+			HAL_Delay(1);
+			for (int i=0; i<3; i++)
+				ADC_Averages[i] = ((float)ADC_Averages[i] * 0.9) + ((float)ADC_Values[i] * 0.1);
+		}
+		for (int i=0; i<3; i++)
+			ADC_Offsets[i] = ADC_Averages[i];		
 	}
 	
   /* USER CODE END 2 */
@@ -212,37 +282,42 @@ int main(void)
 	Quaternion quat;
 	RF_ReceiveMode(&hspi2, NULL); //default to receive mode			
 	uint32_t lastCommandSequence = 0;
-	uint32_t vibrationStopTime = 0;
+	uint32_t vibrationStopTime = 0;	
+	DigitalValues = DigitalCache = 0;
+	
 	while (true)
-	{
-		
-		for (int i=1; i<8; i++)
-		{
+	{		
+		for (int i=0; i<3; i++)
 			ADC_Averages[i] = ((float)ADC_Averages[i] * 0.9) + ((float)ADC_Values[i] * 0.1);
+
+		if (memcmp((void*)ADC_Cache, (void*)ADC_Averages, sizeof(ADC_Averages)))
+		{
+			//send usb packet 			
+			memcpy((void*)ADC_Cache, (void*)ADC_Averages, sizeof(ADC_Averages));
+			hasTriggerData = true;
 		}
 		
-		if (ADC_Values[4] > 0x100)
+		if (DigitalCache != DigitalValues)
 		{
-			ADC_Values[4] = ADC_Values[4];
+			DigitalCache = DigitalValues;
+			hasTriggerData = true;
 		}
+			
 		
 		
 		Blink(blinkDelay);
 		blinkDelay = 1000;
+		
 
-		if (sensorStatus)
-		{
-			hasNewData = readAccelData(tSensorData.Accel);  // Read the x/y/z adc values			
-			hasNewData |= readGyroData(tSensorData.Gyro); 
-			hasNewData |= readMagData(tSensorData.Mag);
-		}
+		hasRotationData |= readAccelData(tSensorData.Accel);  // Read the x/y/z adc values			
+		hasRotationData |= readGyroData(tSensorData.Gyro); 
+		hasRotationData |= readMagData(tSensorData.Mag);
 		
 		now = HAL_GetMicros();				
 		tSensorData.TimeElapsed = ((now - lastUpdate) / 1000000.0f); // set integration time by time elapsed since last filter update				
-		if (hasNewData) // && tSensorData.TimeElapsed >= 0.001f)
+		
+		if (hasRotationData) // fuse as much as possible
 		{
-			//blinkDelay = 500;
-			hasNewData = false;			
 			lastUpdate = now;	
 			quat = fuse.Fuse(&tSensorData);
 		}
@@ -259,21 +334,46 @@ int main(void)
 			//send update
 			RF_TransmitMode(&hspi2, NULL); //switch to tx mode
 			blinkDelay = 100;
-			//send continiout pos and rot data
-			USBDataPacket.Header.Type = ctlSource | ROTATION_DATA;
-			USBDataPacket.Header.Sequence++;
-			USBDataPacket.Header.Crc8 = 0;
-			USBDataPacket.Rotation.w = quat.w;
-			USBDataPacket.Rotation.x = quat.x;
-			USBDataPacket.Rotation.y = quat.y;
-			USBDataPacket.Rotation.z = quat.z;			
-			uint8_t* data = (uint8_t*)&USBDataPacket;
-			uint8_t crc = 0;
-			for (int i=0; i<sizeof(USBDataPacket); i++)
-				crc ^= data[i];
-			USBDataPacket.Header.Crc8 = crc;
-			RF_SendPayload(&hspi2, data, sizeof(USBDataPacket));
-			do { rfStatus = RF_FifoStatus(&hspi2); } while ((rfStatus & RF_TX_FIFO_EMPTY_Bit) != RF_TX_FIFO_EMPTY_Bit); //wait for send complete
+			if (hasRotationData)
+			{
+				hasRotationData = false;
+				//send rot data
+				USBDataPacket.Header.Type = ctlSource | ROTATION_DATA;
+				USBDataPacket.Header.Sequence++;
+				USBDataPacket.Header.Crc8 = 0;
+				USBDataPacket.Rotation.w = quat.w;
+				USBDataPacket.Rotation.x = quat.x;
+				USBDataPacket.Rotation.y = quat.y;
+				USBDataPacket.Rotation.z = quat.z;	
+				SetPacketCrc(&USBDataPacket);
+				RF_SendPayload(&hspi2, (uint8_t*)&USBDataPacket, sizeof(USBPacket));
+				do { rfStatus = RF_FifoStatus(&hspi2); } while ((rfStatus & RF_TX_FIFO_EMPTY_Bit) != RF_TX_FIFO_EMPTY_Bit); //wait for send complete
+			}
+			
+			if (hasPositionData)
+			{
+			}
+			
+			if (hasTriggerData)
+			{
+				hasTriggerData = false;
+				//send trigger data
+				USBDataPacket.Header.Type = ctlSource | TRIGGER_DATA;
+				USBDataPacket.Header.Sequence++;
+				USBDataPacket.Header.Crc8 = 0;
+				USBDataPacket.Trigger.Analog[0].x = ((float)ADC_Averages[0] - (float)ADC_Offsets[0]) / 2048.0; //trigger
+				USBDataPacket.Trigger.Analog[0].y = 0;				
+				USBDataPacket.Trigger.Analog[1].x = ((float)ADC_Averages[1] - (float)ADC_Offsets[1]) / 2048.0; //trigger
+				USBDataPacket.Trigger.Analog[1].y = ((float)ADC_Averages[1] - (float)ADC_Offsets[1]) / 2048.0; //trigger
+				USBDataPacket.Trigger.Digital = DigitalCache;
+				
+				USBDataPacket.Rotation.x = quat.x;
+				USBDataPacket.Rotation.y = quat.y;
+				USBDataPacket.Rotation.z = quat.z;	
+				SetPacketCrc(&USBDataPacket);
+				RF_SendPayload(&hspi2, (uint8_t*)&USBDataPacket, sizeof(USBPacket));
+				do { rfStatus = RF_FifoStatus(&hspi2); } while ((rfStatus & RF_TX_FIFO_EMPTY_Bit) != RF_TX_FIFO_EMPTY_Bit); //wait for send complete
+			}
 			nextSend = HAL_GetTick() + (extraDelay + (rand() % 10));
 			RF_ReceiveMode(&hspi2, NULL); //back to rx mode
 		}
@@ -361,6 +461,24 @@ void SystemClock_Config(void)
   HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
 }
 
+/** NVIC Configuration
+*/
+static void MX_NVIC_Init(void)
+{
+  /* EXTI0_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI0_IRQn);
+  /* EXTI1_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(EXTI1_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+  /* EXTI4_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(EXTI4_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI4_IRQn);
+  /* EXTI9_5_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
+}
+
 /* ADC1 init function */
 static void MX_ADC1_Init(void)
 {
@@ -375,7 +493,7 @@ static void MX_ADC1_Init(void)
   hadc1.Init.DiscontinuousConvMode = DISABLE;
   hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-  hadc1.Init.NbrOfConversion = 7;
+  hadc1.Init.NbrOfConversion = 3;
   if (HAL_ADC_Init(&hadc1) != HAL_OK)
   {
     Error_Handler();
@@ -385,7 +503,7 @@ static void MX_ADC1_Init(void)
     */
   sConfig.Channel = ADC_CHANNEL_1;
   sConfig.Rank = 1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_239CYCLES_5;
+  sConfig.SamplingTime = ADC_SAMPLETIME_55CYCLES_5;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -404,42 +522,6 @@ static void MX_ADC1_Init(void)
     */
   sConfig.Channel = ADC_CHANNEL_3;
   sConfig.Rank = 3;
-  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-    /**Configure Regular Channel 
-    */
-  sConfig.Channel = ADC_CHANNEL_4;
-  sConfig.Rank = 4;
-  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-    /**Configure Regular Channel 
-    */
-  sConfig.Channel = ADC_CHANNEL_5;
-  sConfig.Rank = 5;
-  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-    /**Configure Regular Channel 
-    */
-  sConfig.Channel = ADC_CHANNEL_6;
-  sConfig.Rank = 6;
-  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-    /**Configure Regular Channel 
-    */
-  sConfig.Channel = ADC_CHANNEL_7;
-  sConfig.Rank = 7;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -538,16 +620,34 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(LED_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : CTL_BTN1_Pin CTL_BTN2_Pin CTL_MODE2_Pin CTL_MODE1_Pin */
-  GPIO_InitStruct.Pin = CTL_BTN1_Pin|CTL_BTN2_Pin|CTL_MODE2_Pin|CTL_MODE1_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  /*Configure GPIO pins : IR_SENS_1_Pin IR_SENS_2_Pin IR_SENS_3_Pin IR_SENS_4_Pin */
+  GPIO_InitStruct.Pin = IR_SENS_1_Pin|IR_SENS_2_Pin|IR_SENS_3_Pin|IR_SENS_4_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : CTL_B_1__IR_SENS_5_Pin CTL_B_2__IR_SENS_6_Pin */
+  GPIO_InitStruct.Pin = CTL_B_1__IR_SENS_5_Pin|CTL_B_2__IR_SENS_6_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : CTL_VIBRATE_Pin SPI_RF_NSS_Pin SPI_RF_CE_Pin */
-  GPIO_InitStruct.Pin = CTL_VIBRATE_Pin|SPI_RF_NSS_Pin|SPI_RF_CE_Pin;
+  /*Configure GPIO pin : CTL_VIBRATE_Pin */
+  GPIO_InitStruct.Pin = CTL_VIBRATE_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;
+  HAL_GPIO_Init(CTL_VIBRATE_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : SPI_RF_NSS_Pin SPI_RF_CE_Pin */
+  GPIO_InitStruct.Pin = SPI_RF_NSS_Pin|SPI_RF_CE_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : CTL_MODE2_Pin CTL_MODE1_Pin */
+  GPIO_InitStruct.Pin = CTL_MODE2_Pin|CTL_MODE1_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
 }

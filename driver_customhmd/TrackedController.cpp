@@ -425,6 +425,54 @@ void CTrackedController::PoseUpdate(USBPacket *pPacket, HmdVector3d_t *pCenterEu
 	{
 		switch (pPacket->Header.Type & 0xF0)
 		{
+		case TRIGGER_DATA:
+			{
+				VRControllerState_t newState = m_ControllerData.State;
+				newState.ulButtonPressed = newState.ulButtonTouched = 0;
+
+				if ((pPacket->Trigger.Digital & BUTTON_1) == BUTTON_1)
+					newState.ulButtonPressed |= vr::ButtonMaskFromId(k_EButton_System);
+				if ((pPacket->Trigger.Digital & BUTTON_2) == BUTTON_2)
+					newState.ulButtonPressed |= vr::ButtonMaskFromId(k_EButton_ApplicationMenu);
+
+				if (pPacket->Trigger.Analog[0].x > 0)
+				{
+					newState.ulButtonTouched |= vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger);
+					newState.ulButtonPressed |= vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger);
+					newState.rAxis[1].x = pPacket->Trigger.Analog[0].x;
+				}
+				else
+				{
+					newState.ulButtonPressed &= ~vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger);
+					newState.ulButtonTouched &= ~vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger);
+					newState.rAxis[1].x = pPacket->Trigger.Analog[0].x;
+				}
+
+				newState.ulButtonTouched |= vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad);
+				newState.ulButtonPressed |= vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad);
+				newState.rAxis[0].x = pPacket->Trigger.Analog[1].x;
+				newState.rAxis[0].y = pPacket->Trigger.Analog[1].y;
+
+
+				newState.unPacketNum = m_ControllerData.State.unPacketNum + 1;
+				newState.ulButtonTouched |= newState.ulButtonPressed;
+
+				uint64_t ulChangedTouched = newState.ulButtonTouched ^ m_ControllerData.State.ulButtonTouched;
+				uint64_t ulChangedPressed = newState.ulButtonPressed ^ m_ControllerData.State.ulButtonPressed;
+
+				SendButtonUpdates(&vr::IServerDriverHost::TrackedDeviceButtonTouched, ulChangedTouched & newState.ulButtonTouched);
+				SendButtonUpdates(&vr::IServerDriverHost::TrackedDeviceButtonPressed, ulChangedPressed & newState.ulButtonPressed);
+				SendButtonUpdates(&vr::IServerDriverHost::TrackedDeviceButtonUnpressed, ulChangedPressed & ~newState.ulButtonPressed);
+				SendButtonUpdates(&vr::IServerDriverHost::TrackedDeviceButtonUntouched, ulChangedTouched & ~newState.ulButtonTouched);
+
+				if (newState.rAxis[1].x != m_ControllerData.State.rAxis[1].x)
+					m_pDriverHost->TrackedDeviceAxisUpdated(m_unObjectId, 1, newState.rAxis[1]);
+
+				m_ControllerData.State = newState;
+
+				m_ControllerData.LastState.Trigger = pPacket->Trigger;
+			}
+			break;
 		case ROTATION_DATA:
 		{
 			m_ControllerData.LastState.Rotation = pPacket->Rotation;
@@ -459,11 +507,6 @@ void CTrackedController::PoseUpdate(USBPacket *pPacket, HmdVector3d_t *pCenterEu
 		break;
 		case COMMAND_DATA:
 			break;
-		case TRIGGER_DATA:
-		{
-			m_ControllerData.LastState.Trigger = pPacket->Trigger;
-		}
-		break;
 		}
 
 		ReleaseMutex(m_ControllerData.hPoseLock);

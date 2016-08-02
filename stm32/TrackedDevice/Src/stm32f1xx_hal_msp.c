@@ -95,14 +95,9 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
     /**ADC1 GPIO Configuration    
     PA1     ------> ADC1_IN1
     PA2     ------> ADC1_IN2
-    PA3     ------> ADC1_IN3
-    PA4     ------> ADC1_IN4
-    PA5     ------> ADC1_IN5
-    PA6     ------> ADC1_IN6
-    PA7     ------> ADC1_IN7 
+    PA3     ------> ADC1_IN3 
     */
-    GPIO_InitStruct.Pin = CTL_TRIGGER_Pin|CTL_AX_Pin|CTL_AY_Pin|IR_SENSE1_Pin 
-                          |IR_SENSE2_Pin|IR_SENSE3_Pin|IR_SENSE4_Pin;
+    GPIO_InitStruct.Pin = CTL_TRIGGER_Pin|CTL_AX_Pin|CTL_AY_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
@@ -115,7 +110,7 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
     hdma_adc1.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
     hdma_adc1.Init.MemDataAlignment = DMA_MDATAALIGN_WORD;
     hdma_adc1.Init.Mode = DMA_CIRCULAR;
-    hdma_adc1.Init.Priority = DMA_PRIORITY_HIGH;
+    hdma_adc1.Init.Priority = DMA_PRIORITY_LOW;
     if (HAL_DMA_Init(&hdma_adc1) != HAL_OK)
     {
       Error_Handler();
@@ -144,14 +139,9 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* hadc)
     /**ADC1 GPIO Configuration    
     PA1     ------> ADC1_IN1
     PA2     ------> ADC1_IN2
-    PA3     ------> ADC1_IN3
-    PA4     ------> ADC1_IN4
-    PA5     ------> ADC1_IN5
-    PA6     ------> ADC1_IN6
-    PA7     ------> ADC1_IN7 
+    PA3     ------> ADC1_IN3 
     */
-    HAL_GPIO_DeInit(GPIOA, CTL_TRIGGER_Pin|CTL_AX_Pin|CTL_AY_Pin|IR_SENSE1_Pin 
-                          |IR_SENSE2_Pin|IR_SENSE3_Pin|IR_SENSE4_Pin);
+    HAL_GPIO_DeInit(GPIOA, CTL_TRIGGER_Pin|CTL_AX_Pin|CTL_AY_Pin);
 
     /* Peripheral DMA DeInit*/
     HAL_DMA_DeInit(hadc->DMA_Handle);
