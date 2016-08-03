@@ -83,10 +83,9 @@ void SystemClock_Config(void);
 void Error_Handler(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
-static void MX_I2C2_Init(void);
-static void MX_SPI2_Init(void);
 static void MX_ADC1_Init(void);
-static void MX_NVIC_Init(void);
+static void MX_SPI2_Init(void);
+static void MX_I2C2_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
@@ -145,42 +144,41 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 	switch(GPIO_Pin)
 	{
-		case IR_SENS_1_Pin:
+		case IR_SENS0_Pin:
 			break;
-		case IR_SENS_2_Pin:
+		case IR_SENS1_Pin:
 			break;
-		case IR_SENS_3_Pin:
+		case IR_SENS2_Pin:
 			break;
-		case IR_SENS_4_Pin:
+		case IR_SENS3_Pin:
 			break;
-		case CTL_B_1__IR_SENS_5_Pin:
-			if (ctlSource == HMD_SOURCE)
-			{
-				//ir trigger for HMD
-			}
+		case IR_SENS4_Pin:
+			break;
+		case IR_SENS5_Pin:
+			break;
+		case CTL_BTN0_Pin:
+			if (HAL_GPIO_ReadPin(CTL_BTN0_GPIO_Port, CTL_BTN0_Pin) == GPIO_PIN_SET)
+				DigitalValues |= BUTTON_0;
 			else
-			{
-				//button for controller
-				if (HAL_GPIO_ReadPin(CTL_B_1__IR_SENS_5_GPIO_Port, CTL_B_1__IR_SENS_5_Pin) == GPIO_PIN_SET)
-					DigitalValues |= BUTTON_1;
-				else
-					DigitalValues &= ~BUTTON_1;
-				
-			}
+				DigitalValues &= ~BUTTON_0;
 			break;
-		case CTL_B_2__IR_SENS_6_Pin:
-			if (ctlSource == HMD_SOURCE)
-			{
-				//ir trigger for HMD
-			}
+		case CTL_BTN1_Pin:
+			if (HAL_GPIO_ReadPin(CTL_BTN1_GPIO_Port, CTL_BTN1_Pin) == GPIO_PIN_SET)
+				DigitalValues |= BUTTON_1;
 			else
-			{
-				//button for controller
-				if (HAL_GPIO_ReadPin(CTL_B_2__IR_SENS_6_GPIO_Port, CTL_B_2__IR_SENS_6_Pin) == GPIO_PIN_SET)
-					DigitalValues |= BUTTON_2;
-				else
-					DigitalValues &= ~BUTTON_2;
-			}
+				DigitalValues &= ~BUTTON_1;
+			break;
+		case CTL_BTN2_Pin:
+			if (HAL_GPIO_ReadPin(CTL_BTN2_GPIO_Port, CTL_BTN2_Pin) == GPIO_PIN_SET)
+				DigitalValues |= BUTTON_2;
+			else
+				DigitalValues &= ~BUTTON_2;
+			break;
+		case CTL_BTN3_Pin:
+			if (HAL_GPIO_ReadPin(CTL_BTN3_GPIO_Port, CTL_BTN3_Pin) == GPIO_PIN_SET)
+				DigitalValues |= BUTTON_3;
+			else
+				DigitalValues &= ~BUTTON_3;
 			break;
 	}
 }
@@ -216,12 +214,9 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
-  MX_I2C2_Init();
-  MX_SPI2_Init();
   MX_ADC1_Init();
-
-  /* Initialize interrupts */
-  MX_NVIC_Init();
+  MX_SPI2_Init();
+  MX_I2C2_Init();
 
   /* USER CODE BEGIN 2 */
 	
@@ -229,7 +224,7 @@ int main(void)
 	HAL_GPIO_WritePin(CTL_VIBRATE_GPIO_Port, CTL_VIBRATE_Pin, GPIO_PIN_SET); 
 	BlinkRease(30);
 	HAL_GPIO_WritePin(CTL_VIBRATE_GPIO_Port, CTL_VIBRATE_Pin, GPIO_PIN_RESET);
-	
+
 	sensorStatus = initSensors();		
 	if (!sensorStatus)
 		Error_Handler();
@@ -461,24 +456,6 @@ void SystemClock_Config(void)
   HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
 }
 
-/** NVIC Configuration
-*/
-static void MX_NVIC_Init(void)
-{
-  /* EXTI0_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(EXTI0_IRQn);
-  /* EXTI1_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(EXTI1_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(EXTI1_IRQn);
-  /* EXTI4_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(EXTI4_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(EXTI4_IRQn);
-  /* EXTI9_5_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
-}
-
 /* ADC1 init function */
 static void MX_ADC1_Init(void)
 {
@@ -593,6 +570,8 @@ static void MX_DMA_Init(void)
         * Output
         * EVENT_OUT
         * EXTI
+        * Free pins are configured automatically as Analog (this feature is enabled through 
+        * the Code Generation settings)
 */
 static void MX_GPIO_Init(void)
 {
@@ -620,16 +599,27 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(LED_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : IR_SENS_1_Pin IR_SENS_2_Pin IR_SENS_3_Pin IR_SENS_4_Pin */
-  GPIO_InitStruct.Pin = IR_SENS_1_Pin|IR_SENS_2_Pin|IR_SENS_3_Pin|IR_SENS_4_Pin;
+  /*Configure GPIO pins : PC14 PC15 */
+  GPIO_InitStruct.Pin = GPIO_PIN_14|GPIO_PIN_15;
+  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PA0 PA14 PA15 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_14|GPIO_PIN_15;
+  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : CTL_BTN0_Pin CTL_BTN1_Pin CTL_BTN2_Pin CTL_BTN3_Pin */
+  GPIO_InitStruct.Pin = CTL_BTN0_Pin|CTL_BTN1_Pin|CTL_BTN2_Pin|CTL_BTN3_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : CTL_B_1__IR_SENS_5_Pin CTL_B_2__IR_SENS_6_Pin */
-  GPIO_InitStruct.Pin = CTL_B_1__IR_SENS_5_Pin|CTL_B_2__IR_SENS_6_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
-  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  /*Configure GPIO pins : PB0 PB1 PB2 PB3 
+                           PB4 PB5 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3 
+                          |GPIO_PIN_4|GPIO_PIN_5;
+  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pin : CTL_VIBRATE_Pin */
@@ -637,6 +627,14 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;
   HAL_GPIO_Init(CTL_VIBRATE_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : IR_SENS0_Pin IR_SENS1_Pin IR_SENS2_Pin IR_SENS3_Pin 
+                           IR_SENS4_Pin IR_SENS5_Pin */
+  GPIO_InitStruct.Pin = IR_SENS0_Pin|IR_SENS1_Pin|IR_SENS2_Pin|IR_SENS3_Pin 
+                          |IR_SENS4_Pin|IR_SENS5_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : SPI_RF_NSS_Pin SPI_RF_CE_Pin */
   GPIO_InitStruct.Pin = SPI_RF_NSS_Pin|SPI_RF_CE_Pin;
@@ -649,6 +647,16 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI4_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI4_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
 }
 

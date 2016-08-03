@@ -35,8 +35,10 @@ extern "C" {
 #define CMD_CALIBRATE	0x02
 #define CMD_SYNC	0x03
 
-#define BUTTON_1 0x01
-#define BUTTON_2 0x02
+#define BUTTON_0 0x01
+#define BUTTON_1 0x02
+#define BUTTON_2 0x04
+#define BUTTON_3 0x08
 
 struct USBDataHeader
 {
