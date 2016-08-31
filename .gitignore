@@ -32,3 +32,5 @@ driver_customhmd/*.opendb
 driver_customhmd/*.filters
 *.ipch
 *.VC.db
+*.tmp
+*.temp
