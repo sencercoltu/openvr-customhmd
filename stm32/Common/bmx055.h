@@ -236,3 +236,6 @@ bool readBMX055DataMag(int16_t *destination);
 float getBMX055resAccel();
 float getBMX055resGyro();
 float getBMX055resMag();
+int16_t compensate_BMX055_X(int16_t mag_data_x, uint16_t data_r);
+int16_t compensate_BMX055_Y(int16_t mag_data_y, uint16_t data_r);
+int16_t compensate_BMX055_Z(int16_t mag_data_z, uint16_t data_r);

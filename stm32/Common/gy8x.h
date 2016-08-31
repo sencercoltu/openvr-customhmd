@@ -33,6 +33,9 @@ bool readAccelData(int16_t *destination)
 		SmoothSensorData(temp, destination, aRes);
 	}
 #endif
+	//destination[0] = 0;
+	//destination[1] = 0;
+	//destination[2] = 1;
 	return ret;
 }
 
@@ -55,6 +58,10 @@ bool readGyroData(int16_t *destination)
 		SmoothSensorData(temp, destination, gRes);
 	}
 #endif
+	
+	//destination[0] = 0;
+	//destination[1] = 0;
+	//destination[2] = 0;
 	return ret;
 }
 
@@ -107,6 +114,11 @@ bool readMagData(int16_t *destination)
 		SmoothSensorData(temp, destination, gRes);
 	}
 #endif
+	
+	//destination[0] = 0;
+	//destination[1] = 1;
+	//destination[2] = 0;
+
 	return ret;
 }
 

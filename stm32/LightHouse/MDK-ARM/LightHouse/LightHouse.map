@@ -1,4 +1,4 @@
-Component: ARM Compiler 5.06 update 2 (build 183) Tool: armlink [4d35b7]
+Component: ARM Compiler 5.06 update 3 (build 300) Tool: armlink [4d35c9]
 
 ==============================================================================
 
@@ -1793,21 +1793,21 @@ Image component sizes
 
       Code (inc. data)   RO Data    RW Data    ZI Data      Debug   Object Name
 
-       616         54          0          0        148       3924   main.o
-        36          8        236          0       1024        764   startup_stm32f103xb.o
-       120         16          0          4          0       3586   stm32f1xx_hal.o
-       228         14          0          0          0      27373   stm32f1xx_hal_cortex.o
-       480         42          0          0          0       4156   stm32f1xx_hal_gpio.o
-       304         42          0          0          0       2605   stm32f1xx_hal_msp.o
-      1946         68          0          0          0       4698   stm32f1xx_hal_rcc.o
-       136          4          0          1          0       1362   stm32f1xx_hal_spi_ex.o
-      1244         46          0          0          0      12449   stm32f1xx_hal_tim.o
-       146          0          0          0          0       2024   stm32f1xx_hal_tim_ex.o
-        34          0          0          0          0       3364   stm32f1xx_it.o
-        72         16         16          4          0     449039   system_stm32f1xx.o
+       616         54          0          0        148       3860   main.o
+        36          8        236          0       1024        756   startup_stm32f103xb.o
+       120         16          0          4          0       3530   stm32f1xx_hal.o
+       228         14          0          0          0      27301   stm32f1xx_hal_cortex.o
+       480         42          0          0          0       4116   stm32f1xx_hal_gpio.o
+       304         42          0          0          0       2565   stm32f1xx_hal_msp.o
+      1946         68          0          0          0       4658   stm32f1xx_hal_rcc.o
+       136          4          0          1          0       1338   stm32f1xx_hal_spi_ex.o
+      1244         46          0          0          0      12317   stm32f1xx_hal_tim.o
+       146          0          0          0          0       2000   stm32f1xx_hal_tim_ex.o
+        34          0          0          0          0       3300   stm32f1xx_it.o
+        72         16         16          4          0     448943   system_stm32f1xx.o
 
     ----------------------------------------------------------------------
-      5378        310        284         12       1172     515344   Object Totals
+      5378        310        284         12       1172     514684   Object Totals
          0          0         32          0          0          0   (incl. Generated)
         16          0          0          3          0          0   (incl. Padding)
 
@@ -1846,8 +1846,8 @@ Image component sizes
 
       Code (inc. data)   RO Data    RW Data    ZI Data      Debug   
 
-      5464        326        284         12       1172     512808   Grand Totals
-      5464        326        284         12       1172     512808   ELF Image Totals
+      5464        326        284         12       1172     512148   Grand Totals
+      5464        326        284         12       1172     512148   ELF Image Totals
       5464        326        284         12          0          0   ROM Totals
 
 ==============================================================================

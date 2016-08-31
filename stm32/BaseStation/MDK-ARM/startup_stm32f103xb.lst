@@ -500,7 +500,7 @@ b.o -ID:\Projects\Windows\SteamVR\stm32\BaseStation\MDK-ARM\RTE -ID:\Programs\S
 TMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include -ID:\Progra
 ms\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include --p
 redefine="__EVAL SETA 1" --predefine="__MICROLIB SETA 1" --predefine="__UVISION
-_VERSION SETA 520" --predefine="_RTE_ SETA 1" --predefine="STM32F10X_MD SETA 1"
+_VERSION SETA 521" --predefine="_RTE_ SETA 1" --predefine="STM32F10X_MD SETA 1"
  --list=startup_stm32f103xb.lst startup_stm32f103xb.s
 
 

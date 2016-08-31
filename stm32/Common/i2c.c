@@ -39,3 +39,16 @@ bool i2c_isDeviceReady(uint8_t addr)
 	return true;
 }
 
+uint8_t i2c_reset(void)									//	Return 0 when I2C is reset successfully
+{
+	uint8_t result = 0x00;
+	
+//	HAL_I2C
+//	I2C_scl_Write(I2C_I2C_SCL_LOW);						//	Prepare scl 0
+//	I2C_SET_I2C_SCL_HSIOM_SEL(I2C_HSIOM_GPIO_SEL);		//	Switch to GPIO
+//	HAL_Delay(10);										//	Keep low for 10ms
+//	result = (I2C_sda_Read() == 0);						//	Resetted when sda is high
+//	I2C_scl_Write(I2C_I2C_SCL_HIGH);					//	Release clock
+//	I2C_SET_I2C_SCL_HSIOM_SEL(I2C_HSIOM_I2C_SEL);		//	Switch to component
+	return result;
+}

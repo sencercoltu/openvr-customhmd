@@ -220,7 +220,7 @@ bool CTrackedController::TriggerHapticPulse(uint32_t unAxisId, uint16_t usPulseD
 	USBPacket packet = { 0 };
 	packet.Header.Type = m_Role | COMMAND_DATA;
 	packet.Header.Crc8 = 0;
-	packet.Header.Sequence = (uint16_t) GetTickCount(); //put timestamp as sequence
+	packet.Header.Sequence = (uint16_t) GetTickCount(); //put timestamp as sequence to hopefully prevent duplicates on target
 	packet.Command.Command = CMD_VIBRATE;
 	packet.Command.Data.Vibration.Axis = unAxisId;
 	packet.Command.Data.Vibration.Duration = usPulseDurationMicroseconds;
@@ -430,10 +430,14 @@ void CTrackedController::PoseUpdate(USBPacket *pPacket, HmdVector3d_t *pCenterEu
 				VRControllerState_t newState = m_ControllerData.State;
 				newState.ulButtonPressed = newState.ulButtonTouched = 0;
 
-				if ((pPacket->Trigger.Digital & BUTTON_1) == BUTTON_1)
+				if ((pPacket->Trigger.Digital & BUTTON_0) == BUTTON_0)
 					newState.ulButtonPressed |= vr::ButtonMaskFromId(k_EButton_System);
+				if ((pPacket->Trigger.Digital & BUTTON_1) == BUTTON_1)
+					newState.ulButtonPressed |= vr::ButtonMaskFromId(k_EButton_A);
 				if ((pPacket->Trigger.Digital & BUTTON_2) == BUTTON_2)
 					newState.ulButtonPressed |= vr::ButtonMaskFromId(k_EButton_ApplicationMenu);
+				if ((pPacket->Trigger.Digital & BUTTON_3) == BUTTON_3)
+					newState.ulButtonPressed |= vr::ButtonMaskFromId(k_EButton_Grip);
 
 				if (pPacket->Trigger.Analog[0].x > 0)
 				{
@@ -467,6 +471,8 @@ void CTrackedController::PoseUpdate(USBPacket *pPacket, HmdVector3d_t *pCenterEu
 
 				if (newState.rAxis[1].x != m_ControllerData.State.rAxis[1].x)
 					m_pDriverHost->TrackedDeviceAxisUpdated(m_unObjectId, 1, newState.rAxis[1]);
+				if (newState.rAxis[0].x != m_ControllerData.State.rAxis[0].x || newState.rAxis[0].y != m_ControllerData.State.rAxis[0].y)
+					m_pDriverHost->TrackedDeviceAxisUpdated(m_unObjectId, 0, newState.rAxis[0]);
 
 				m_ControllerData.State = newState;
 

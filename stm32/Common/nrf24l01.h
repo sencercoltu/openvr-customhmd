@@ -61,7 +61,7 @@ typedef struct
   unsigned char RF_Config;		  			//IRQ deffinition
   unsigned char RF_CRC_Mode;				//CRC mode
   unsigned char RF_Mode;		  			//TX or RX
-  unsigned char RF_Pipe_Auto_Ack;			//0x01 EN_AA Enhanced ShockBurst™ 
+  unsigned char RF_Pipe_Auto_Ack;			//0x01 EN_AA Enhanced ShockBurst
   unsigned char RF_Enable_Pipe;			//Enabling PIPEx
   unsigned char RF_Setup;					//3,4,5 bytes adress
   unsigned char RF_Channel;				//0...127 RF channel

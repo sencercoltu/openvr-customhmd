@@ -1,11 +1,11 @@
 #include "bmx055.h"
 
-uint8_t Gscale = GFS55_125DPS;       // set gyro full scale  
-uint8_t GODRBW = G55_100Hz32Hz;      // set gyro ODR and bandwidth 
+uint8_t Gscale = GFS55_500DPS;       // set gyro full scale  
+uint8_t GODRBW = G55_400Hz47Hz;      // set gyro ODR and bandwidth 
 uint8_t Ascale = AFS_2G;           // set accel full scale  
 uint8_t ACCBW  = 0x08 | ABW_500Hz;  // Choose bandwidth for accelerometer, need bit 3 = 1 to enable bandwidth choice in enum
 uint8_t Mmode  = highAccuracy;          // Choose magnetometer operation mode
-uint8_t MODR   = MODR_30Hz;        // set magnetometer data rate 
+uint8_t MODR   = MODR_20Hz;        // set magnetometer data rate 
 
 bool checkBMX055()
 {
@@ -61,25 +61,47 @@ signed char   dig_xy2;
 uint16_t      dig_xyz1;
 
 
+//void trimBMX055()  // get trim values for magnetometer sensitivity
+//{ 
+//	uint8_t res = 0;
+//	uint8_t rawData[2];  //placeholder for 2-byte trim data
+//	i2c_readRegister(BMX055_ACC_ADDRESS, BMM050_DIG_X1, &res);  dig_x1 = res;
+//	i2c_readRegister(BMX055_ACC_ADDRESS, BMM050_DIG_X2, &res); dig_x2 = res;
+//	i2c_readRegister(BMX055_ACC_ADDRESS, BMM050_DIG_Y1, &res); dig_y1 = res;
+//	i2c_readRegister(BMX055_ACC_ADDRESS, BMM050_DIG_Y2, &res); dig_y2 = res;
+//	i2c_readRegister(BMX055_ACC_ADDRESS, BMM050_DIG_XY1, &res); dig_xy1 = res;
+//	i2c_readRegister(BMX055_ACC_ADDRESS, BMM050_DIG_XY2, &res); dig_xy2 = res;
+//    i2c_readData(BMX055_MAG_ADDRESS, BMM050_DIG_Z1_LSB, rawData, 2);   
+//	dig_z1 = (uint16_t) (((uint16_t)rawData[1] << 8) | rawData[0]);  
+//    i2c_readData(BMX055_MAG_ADDRESS, BMM050_DIG_Z2_LSB, rawData, 2);   
+//	dig_z2 = (int16_t) (((int16_t)rawData[1] << 8) | rawData[0]);  
+//    i2c_readData(BMX055_MAG_ADDRESS, BMM050_DIG_Z3_LSB, rawData ,2);   
+//	dig_z3 = (int16_t) (((int16_t)rawData[1] << 8) | rawData[0]);  
+//    i2c_readData(BMX055_MAG_ADDRESS, BMM050_DIG_Z4_LSB, rawData, 2);   
+//	dig_z4 = (int16_t) (((int16_t)rawData[1] << 8) | rawData[0]);  
+//    i2c_readData(BMX055_MAG_ADDRESS, BMM050_DIG_XYZ1_LSB, rawData, 2);   
+//	dig_xyz1 = (uint16_t) (((uint16_t)rawData[1] << 8) | rawData[0]);  
+//}
+
 void trimBMX055()  // get trim values for magnetometer sensitivity
 { 
-	uint8_t res = 0;
 	uint8_t rawData[2];  //placeholder for 2-byte trim data
-	i2c_readRegister(BMX055_ACC_ADDRESS, BMM050_DIG_X1, &res);  dig_x1 = res;
-	i2c_readRegister(BMX055_ACC_ADDRESS, BMM050_DIG_X2, &res); dig_x2 = res;
-	i2c_readRegister(BMX055_ACC_ADDRESS, BMM050_DIG_Y1, &res); dig_y1 = res;
-	i2c_readRegister(BMX055_ACC_ADDRESS, BMM050_DIG_Y2, &res); dig_y2 = res;
-	i2c_readRegister(BMX055_ACC_ADDRESS, BMM050_DIG_XY1, &res); dig_xy1 = res;
-	i2c_readRegister(BMX055_ACC_ADDRESS, BMM050_DIG_XY2, &res); dig_xy2 = res;
-    i2c_readData(BMX055_MAG_ADDRESS, BMM050_DIG_Z1_LSB, rawData, 2);   
+	i2c_readRegister(BMX055_ACC_ADDRESS, BMM050_DIG_X1, (uint8_t *)&dig_x1);
+	i2c_readRegister(BMX055_ACC_ADDRESS, BMM050_DIG_X2, (uint8_t *)&dig_x2);
+	i2c_readRegister(BMX055_ACC_ADDRESS, BMM050_DIG_Y1, (uint8_t *)&dig_y1);
+	i2c_readRegister(BMX055_ACC_ADDRESS, BMM050_DIG_Y2, (uint8_t *)&dig_y2);
+	i2c_readRegister(BMX055_ACC_ADDRESS, BMM050_DIG_XY1, (uint8_t *)&dig_xy1);
+	i2c_readRegister(BMX055_ACC_ADDRESS, BMM050_DIG_XY2, (uint8_t *)&dig_xy2);
+	
+	i2c_readData(BMX055_MAG_ADDRESS, BMM050_DIG_Z1_LSB, rawData, 2);   
 	dig_z1 = (uint16_t) (((uint16_t)rawData[1] << 8) | rawData[0]);  
-    i2c_readData(BMX055_MAG_ADDRESS, BMM050_DIG_Z2_LSB, rawData, 2);   
+	i2c_readData(BMX055_MAG_ADDRESS, BMM050_DIG_Z2_LSB, rawData, 2);   
 	dig_z2 = (int16_t) (((int16_t)rawData[1] << 8) | rawData[0]);  
-    i2c_readData(BMX055_MAG_ADDRESS, BMM050_DIG_Z3_LSB, rawData ,2);   
+	i2c_readData(BMX055_MAG_ADDRESS, BMM050_DIG_Z3_LSB, rawData, 2);   
 	dig_z3 = (int16_t) (((int16_t)rawData[1] << 8) | rawData[0]);  
-    i2c_readData(BMX055_MAG_ADDRESS, BMM050_DIG_Z4_LSB, rawData, 2);   
+	i2c_readData(BMX055_MAG_ADDRESS, BMM050_DIG_Z4_LSB, rawData, 2);   
 	dig_z4 = (int16_t) (((int16_t)rawData[1] << 8) | rawData[0]);  
-    i2c_readData(BMX055_MAG_ADDRESS, BMM050_DIG_XYZ1_LSB, rawData, 2);   
+	i2c_readData(BMX055_MAG_ADDRESS, BMM050_DIG_XYZ1_LSB, rawData, 2);   
 	dig_xyz1 = (uint16_t) (((uint16_t)rawData[1] << 8) | rawData[0]);  
 }
 
@@ -114,8 +136,8 @@ void initBMX055()
 		
 	HAL_Delay(100); // Wait for all registers to reset 
 		
-	i2c_writeRegisterByte(BMX055_MAG_ADDRESS, BMX055_MAG_REP_XY, 0x17);  // 47 repetitions (oversampling)
-	i2c_writeRegisterByte(BMX055_MAG_ADDRESS, BMX055_MAG_REP_Z,  0x51);  // 83 repetitions (oversampling)
+	i2c_writeRegisterByte(BMX055_MAG_ADDRESS, BMX055_MAG_REP_XY, 47);  // 47 repetitions (oversampling)
+	i2c_writeRegisterByte(BMX055_MAG_ADDRESS, BMX055_MAG_REP_Z,  83);  // 83 repetitions (oversampling)
 
 	HAL_Delay(100); // Wait for all registers to reset 
 	
@@ -168,8 +190,8 @@ bool readBMX055DataAccel(int16_t *destination)
 {
 	uint8_t rawData[6];  // x/y/z accel register data stored here
 	i2c_readData(BMX055_ACC_ADDRESS, BMX055_ACC_D_X_LSB, rawData, 6);  // Read the six raw data registers into data array
-	destination[1] = -1 * ((int16_t)((rawData[1] << 8) | rawData[0]) / 8);  // Turn the MSB and LSB into a signed 12-bit value
-	destination[0] = ((int16_t)((rawData[3] << 8) | rawData[2]) / 8);  
+	destination[0] = ((int16_t)((rawData[1] << 8) | rawData[0]) / 8);  // Turn the MSB and LSB into a signed 12-bit value
+	destination[1] = ((int16_t)((rawData[3] << 8) | rawData[2]) / 8);  
 	destination[2] = ((int16_t)((rawData[5] << 8) | rawData[4]) / 8); 
 	return true;
 }
@@ -178,36 +200,166 @@ bool readBMX055DataGyro(int16_t *destination)
 {
 	uint8_t rawData[6];  // x/y/z gyro register data stored here
 	i2c_readData(BMX055_GYRO_ADDRESS, BMX055_GYRO_RATE_X_LSB, rawData, 6);  // Read the six raw data registers sequentially into data array
-	destination[1] = -1 * (int16_t) (((int16_t)rawData[1] << 8) | rawData[0]);   // Turn the MSB and LSB into a signed 16-bit value
-	destination[0] = (int16_t) (((int16_t)rawData[3] << 8) | rawData[2]);  
+	destination[0] = (int16_t) (((int16_t)rawData[1] << 8) | rawData[0]);   // Turn the MSB and LSB into a signed 16-bit value
+	destination[1] = (int16_t) (((int16_t)rawData[3] << 8) | rawData[2]);  
 	destination[2] = (int16_t) (((int16_t)rawData[5] << 8) | rawData[4]); 
 	return true;
 }
 
+
+
 bool readBMX055DataMag(int16_t *destination)
 {
-	int16_t mdata_x = 0, mdata_y = 0, mdata_z = 0, temp = 0;
+	int16_t mdata_x = 0, mdata_y = 0, mdata_z = 0; //, temp = 0;
 	uint16_t data_r = 0;
 	uint8_t rawData[8];  // x/y/z hall magnetic field data, and Hall resistance data
 	i2c_readData(BMX055_MAG_ADDRESS, BMX055_MAG_XOUT_LSB, rawData, 8);  // Read the eight raw data registers sequentially into data array
 	if(rawData[6] & 0x01) // Check if data ready status bit is set
-	{ 
-//		destination[0] = (int16_t) -1 * ((((int16_t)rawData[1] << 8) | rawData[0]) >> 3);  // 13-bit signed integer for x-axis field
-//		destination[1] = (int16_t) (((int16_t)rawData[3] << 8) | rawData[2]) >> 3;  // 13-bit signed integer for y-axis field
-//		destination[2] = (int16_t) (((int16_t)rawData[5] << 8) | rawData[4]) >> 1;  // 15-bit signed integer for z-axis field
-	
+	{
+		mdata_x = (int16_t) (((int16_t)rawData[1] << 8) | rawData[0]) >> 3;  // 13-bit signed integer for x-axis field
+		mdata_y = (int16_t) (((int16_t)rawData[3] << 8) | rawData[2]) >> 3;  // 13-bit signed integer for y-axis field
+		mdata_z = (int16_t) (((int16_t)rawData[5] << 8) | rawData[4]) >> 1;  // 15-bit signed integer for z-axis field	
+		
 		data_r = (uint16_t) (((uint16_t)rawData[7] << 8) | rawData[6]) >> 2;  // 14-bit unsigned integer for Hall resistance
 
-		// calculate temperature compensated 16-bit magnetic fields
-		temp = ((int16_t)(((uint16_t)((((int32_t)dig_xyz1) << 14)/(data_r != 0 ? data_r : dig_xyz1))) - ((uint16_t)0x4000)));
-		destination[1] = -1 * ((int16_t)((((int32_t)mdata_x) * ((((((((int32_t)dig_xy2) * ((((int32_t)temp) * ((int32_t)temp)) >> 7)) + (((int32_t)temp) * ((int32_t)(((int16_t)dig_xy1) << 7)))) >> 9) + ((int32_t)0x100000)) * ((int32_t)(((int16_t)dig_x2) + ((int16_t)0xA0)))) >> 12)) >> 13)) + (((int16_t)dig_x1) << 3);
-
-		temp = ((int16_t)(((uint16_t)((((int32_t)dig_xyz1) << 14)/(data_r != 0 ? data_r : dig_xyz1))) - ((uint16_t)0x4000)));
-		destination[0] = ((int16_t)((((int32_t)mdata_y) * ((((((((int32_t)dig_xy2) * ((((int32_t)temp) * ((int32_t)temp)) >> 7)) + (((int32_t)temp) * ((int32_t)(((int16_t)dig_xy1) << 7)))) >> 9) +((int32_t)0x100000)) * ((int32_t)(((int16_t)dig_y2) + ((int16_t)0xA0)))) >> 12)) >> 13)) + (((int16_t)dig_y1) << 3);
+		destination[0] = compensate_BMX055_X(mdata_x, data_r);
+		destination[1] = compensate_BMX055_Y(mdata_y, data_r);
+		destination[2] = compensate_BMX055_Z(mdata_z, data_r);
 		
-		destination[2] = (((((int32_t)(mdata_z - dig_z4)) << 15) - ((((int32_t)dig_z3) * ((int32_t)(((int16_t)data_r) - ((int16_t)dig_xyz1))))>>2))/(dig_z2 + ((int16_t)(((((int32_t)dig_z1) * ((((int16_t)data_r) << 1)))+(1<<15))>>16))));
+		
+//		// calculate temperature compensated 16-bit magnetic fields
+//		temp = ((int16_t)(((uint16_t)((((int32_t)dig_xyz1) << 14)/(data_r != 0 ? data_r : dig_xyz1))) - ((uint16_t)0x4000)));
+//		destination[0] = ((int16_t)((((int32_t)mdata_x) * ((((((((int32_t)dig_xy2) * ((((int32_t)temp) * ((int32_t)temp)) >> 7)) + (((int32_t)temp) * ((int32_t)(((int16_t)dig_xy1) << 7)))) >> 9) + ((int32_t)0x100000)) * ((int32_t)(((int16_t)dig_x2) + ((int16_t)0xA0)))) >> 12)) >> 13)) + (((int16_t)dig_x1) << 3);
+
+//		//temp = ((int16_t)(((uint16_t)((((int32_t)dig_xyz1) << 14)/(data_r != 0 ? data_r : dig_xyz1))) - ((uint16_t)0x4000)));
+//		destination[1] = ((int16_t)((((int32_t)mdata_y) * ((((((((int32_t)dig_xy2) * ((((int32_t)temp) * ((int32_t)temp)) >> 7)) + (((int32_t)temp) * ((int32_t)(((int16_t)dig_xy1) << 7)))) >> 9) +((int32_t)0x100000)) * ((int32_t)(((int16_t)dig_y2) + ((int16_t)0xA0)))) >> 12)) >> 13)) + (((int16_t)dig_y1) << 3);
+//		
+//		destination[2] = (((((int32_t)(mdata_z - dig_z4)) << 15) - ((((int32_t)dig_z3) * ((int32_t)(((int16_t)data_r) - ((int16_t)dig_xyz1))))>>2))/(dig_z2 + ((int16_t)(((((int32_t)dig_z1) * ((((int16_t)data_r) << 1)))+(1<<15))>>16))));
 		
 		return true;
 	}	
 	return false;
+}
+
+#define BMM050_INIT_VALUE 				(0)
+#define BMM050_FLIP_OVERFLOW_ADCVAL		(-4096)
+#define BMM050_HALL_OVERFLOW_ADCVAL		(-16384)
+#define BMM050_OVERFLOW_OUTPUT			(-32768)
+#define BMM050_NEGATIVE_SATURATION_Z    (-32767)
+#define BMM050_POSITIVE_SATURATION_Z    (32767)
+
+int16_t compensate_BMX055_X(int16_t mag_data_x, uint16_t data_r)
+{
+	int16_t inter_retval = BMM050_INIT_VALUE;
+	/* no overflow */
+	if (mag_data_x != BMM050_FLIP_OVERFLOW_ADCVAL) {
+		if ((data_r != BMM050_INIT_VALUE)
+		&& (dig_xyz1 != BMM050_INIT_VALUE)) {
+			inter_retval = ((int16_t)(((uint16_t)
+			((((int32_t)dig_xyz1) << 14)/
+			 (data_r != BMM050_INIT_VALUE ?
+			 data_r : dig_xyz1))) -
+			((uint16_t)0x4000)));
+		} else {
+			inter_retval = BMM050_OVERFLOW_OUTPUT;
+			return inter_retval;
+		}
+		inter_retval = ((int16_t)((((int32_t)mag_data_x) *
+				((((((((int32_t)dig_xy2) *
+				((((int32_t)inter_retval) *
+				((int32_t)inter_retval)) >>
+				7)) +
+			     (((int32_t)inter_retval) *
+			      ((int32_t)(((int16_t)dig_xy1)
+			      << 7))))
+				  >> 9) +
+			   ((int32_t)0x100000)) *
+			  ((int32_t)(((int16_t)dig_x2) +
+			  ((int16_t)0xA0)))) >>
+			  12))
+			  >> 13)) +
+			(((int16_t)dig_x1)
+			<< 3);
+	} else {
+		/* overflow */
+		inter_retval = BMM050_OVERFLOW_OUTPUT;
+	}
+	return inter_retval;
+}
+
+int16_t compensate_BMX055_Y(int16_t mag_data_y, uint16_t data_r)
+{
+	int16_t inter_retval = BMM050_INIT_VALUE;
+	 /* no overflow */
+	if (mag_data_y != BMM050_FLIP_OVERFLOW_ADCVAL) {
+		if ((data_r != BMM050_INIT_VALUE)
+		&& (dig_xyz1 != BMM050_INIT_VALUE)) {
+			inter_retval = ((int16_t)(((uint16_t)(((
+			(int32_t)dig_xyz1)
+			<< 14)/
+			(data_r != BMM050_INIT_VALUE ?
+			 data_r : dig_xyz1))) -
+			((uint16_t)0x4000)));
+		} else {
+			inter_retval = BMM050_OVERFLOW_OUTPUT;
+			return inter_retval;
+		}
+		inter_retval = ((int16_t)((((int32_t)mag_data_y) * ((((((((int32_t)
+			dig_xy2) * ((((int32_t) inter_retval) *
+			((int32_t)inter_retval)) >>
+			7))
+			+ (((int32_t)inter_retval) *
+			((int32_t)(((int16_t)dig_xy1) <<
+			7))))
+			>> 9) +
+			((int32_t)0x100000)) *
+			((int32_t)(((int16_t)dig_y2)
+			+ ((int16_t)0xA0))))
+			>> 12))
+			>> 13)) +
+			(((int16_t)dig_y1)
+			<< 3);
+	} else {
+		/* overflow */
+		inter_retval = BMM050_OVERFLOW_OUTPUT;
+	}
+	return inter_retval;
+}
+
+int16_t compensate_BMX055_Z(int16_t mag_data_z, uint16_t data_r)
+{
+	int32_t retval = BMM050_INIT_VALUE;
+
+	if ((mag_data_z != BMM050_HALL_OVERFLOW_ADCVAL)	/* no overflow */
+	   ) {
+		if ((dig_z2 != BMM050_INIT_VALUE)
+		&& (dig_z1 != BMM050_INIT_VALUE)
+		&& (data_r != BMM050_INIT_VALUE)
+		&& (dig_xyz1 != BMM050_INIT_VALUE)) {
+			retval = (((((int32_t)(mag_data_z - dig_z4))
+			<< 15) -
+			((((int32_t)dig_z3) * ((int32_t)(((int16_t)data_r) -
+			((int16_t) dig_xyz1))))
+			>> 2))/
+			(dig_z2 + ((int16_t)(((((int32_t)
+			dig_z1) * ((((int16_t)data_r)
+			<< 1)))+
+			(1 << 15))
+			>> 16))));
+		} else {
+			retval = BMM050_OVERFLOW_OUTPUT;
+			return retval;
+		}
+		/* saturate result to +/- 2 microTesla */
+		if (retval > BMM050_POSITIVE_SATURATION_Z) {
+			retval =  BMM050_POSITIVE_SATURATION_Z;
+		} else {
+			if (retval < BMM050_NEGATIVE_SATURATION_Z)
+				retval = BMM050_NEGATIVE_SATURATION_Z;
+		}
+	} else {
+		/* overflow */
+		retval = BMM050_OVERFLOW_OUTPUT;
+	}
+	return (int16_t)retval;
 }

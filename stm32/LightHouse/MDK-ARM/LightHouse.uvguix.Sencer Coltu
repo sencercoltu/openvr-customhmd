@@ -11,17 +11,17 @@
     <View>
       <WinId>38003</WinId>
       <ViewName>Registers</ViewName>
-      <TableColWidths>115 251</TableColWidths>
+      <TableColWidths>131 99</TableColWidths>
     </View>
     <View>
       <WinId>346</WinId>
       <ViewName>Code Coverage</ViewName>
-      <TableColWidths>1010 160</TableColWidths>
+      <TableColWidths>1010 656</TableColWidths>
     </View>
     <View>
       <WinId>204</WinId>
       <ViewName>Performance Analyzer</ViewName>
-      <TableColWidths>1170</TableColWidths>
+      <TableColWidths>1170 175 175 146</TableColWidths>
     </View>
   </SECTreeCtrl>
 
@@ -36,7 +36,7 @@
       <WinId>1936</WinId>
       <ViewName>Watch 1</ViewName>
       <UserString></UserString>
-      <TableColWidths>80 80 80</TableColWidths>
+      <TableColWidths>223 282 80</TableColWidths>
     </View>
     <View>
       <WinId>1937</WinId>
@@ -77,25 +77,25 @@
       <flags>2</flags>
       <showCmd>3</showCmd>
       <MinPosition>
-        <xPos>-1</xPos>
-        <yPos>-1</yPos>
+        <xPos>-32000</xPos>
+        <yPos>-32000</yPos>
       </MinPosition>
       <MaxPosition>
         <xPos>-1</xPos>
         <yPos>-1</yPos>
       </MaxPosition>
       <NormalPosition>
-        <Top>81</Top>
-        <Left>0</Left>
-        <Right>1440</Right>
-        <Bottom>848</Bottom>
+        <Top>177</Top>
+        <Left>202</Left>
+        <Right>1642</Right>
+        <Bottom>944</Bottom>
       </NormalPosition>
     </WindowPosition>
     <MDIClientArea>
       <RegID>0</RegID>
       <MDITabState>
-        <Len>251</Len>
-        <Data>01000000040000000100000001000000010000000100000000000000020000000000000001000000010000000000000028000000280000000100000001000000000000000100000037443A5C50726F6A656374735C57696E646F77735C537465616D56525C73746D33325C4C69676874486F7573655C5372635C6D61696E2E6300000000066D61696E2E6300000000FFDC7800FFFFFFFF0100000010000000C5D4F200FFDC7800BECEA100F0A0A100BCA8E1009CC1B600F7B88600D9ADC200A5C2D700B3A6BE00EAD6A300F6FA7D00B5E99D005FC3CF00C1838300CACAD500010000000000000002000000000000006600000004060000F0020000</Data>
+        <Len>329</Len>
+        <Data>0100000004000000010000000100000001000000010000000000000002000000000000000100000001000000000000002800000028000000010000000200000001000000010000003A443A5C50726F6A656374735C57696E646F77735C537465616D56525C73746D33325C547261636B65644465766963655C5372635C6D61696E2E6300000000066D61696E2E6300000000C5D4F200FFFFFFFF31443A5C50726F6A656374735C57696E646F77735C537465616D56525C73746D33325C436F6D6D6F6E5C626D783035352E630000000008626D783035352E6300000000FFDC7800FFFFFFFF0100000010000000C5D4F200FFDC7800BECEA100F0A0A100BCA8E1009CC1B600F7B88600D9ADC200A5C2D700B3A6BE00EAD6A300F6FA7D00B5E99D005FC3CF00C1838300CACAD5000100000000000000020000001F01000066000000800700002E030000</Data>
       </MDITabState>
     </MDIClientArea>
     <ViewEx>
@@ -3389,7 +3389,7 @@
       <Size>100</Size>
       <ActiveTab>0</ActiveTab>
       <Doc>
-        <Name>../Src/main.c</Name>
+        <Name>&lt;1&gt;../Src/main.c</Name>
         <ColumnNumber>45</ColumnNumber>
         <TopLine>113</TopLine>
         <CurrentLine>122</CurrentLine>

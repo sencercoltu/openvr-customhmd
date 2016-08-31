@@ -20,10 +20,13 @@ extern "C" {
 #pragma pack(push)
 #pragma pack(1)
 
-#define HMD_SOURCE 0x00
-#define LEFTCTL_SOURCE 0x01
-#define RIGHTCTL_SOURCE 0x02
-#define BASESTATION_SOURCE 0x03
+#define HMD_SOURCE 			0x00
+#define LEFTCTL_SOURCE 		0x01
+#define RIGHTCTL_SOURCE 	0x02
+#define BASESTATION_SOURCE 	0x03
+#define LIGHTHOUSE1_SOURCE 	0x04
+#define LIGHTHOUSE2_SOURCE 	0x05
+#define MAX_SOURCE 			0x06
 
 #define ROTATION_DATA 0x10
 #define POSITION_DATA 0x20
@@ -33,7 +36,8 @@ extern "C" {
 #define CMD_NONE 		0x00
 #define CMD_VIBRATE		0x01
 #define CMD_CALIBRATE	0x02
-#define CMD_SYNC	0x03
+#define CMD_SYNC		0x03
+#define CMD_RAW_DATA	0x04
 
 #define BUTTON_0 0x01
 #define BUTTON_1 0x02
@@ -79,12 +83,25 @@ struct USBAxisData
 	float y;
 };
 
+struct USBRawData
+{
+	int16_t Accel[3];
+	int16_t Gyro[3];
+	int16_t Mag[3];
+};
+
 struct USBTriggerData
 {	
 	uint16_t Digital;
 	struct USBAxisData Analog[2];
 };
 
+struct USBCalibrationData
+{
+	uint8_t SensorMask;
+	uint8_t Automatic;
+	int16_t Data[3];
+};
 
 struct USBVibrationData
 {
@@ -96,6 +113,8 @@ union CommandData
 {
 	struct USBVibrationData Vibration;
 	struct USBSyncData Sync;
+	struct USBCalibrationData Calibration;
+	struct USBRawData Raw;
 };
 
 struct USBCommandData

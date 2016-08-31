@@ -496,12 +496,12 @@ ARM Macro Assembler    Page 8
               00000000 
 Command Line: --debug --xref --diag_suppress=9931 --cpu=Cortex-M3 --apcs=interw
 ork --depend=lighthouse\startup_stm32f103xb.d -olighthouse\startup_stm32f103xb.
-o -ID:\Projects\Windows\SteamVR\stm32\LightHouse\MDK-ARM\RTE -ID:\Programs\STMi
-croelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include -ID:\Progr
-ams\STMicroelectronics\Keil\ARM\CMSIS\Include --predefine="__EVAL SETA 1" --pre
-define="__MICROLIB SETA 1" --predefine="__UVISION_VERSION SETA 520" --predefine
-="_RTE_ SETA 1" --predefine="STM32F10X_MD SETA 1" --list=startup_stm32f103xb.ls
-t startup_stm32f103xb.s
+o -ID:\Projects\STM32\SteamVR\LightHouse\MDK-ARM\RTE -ID:\Programs\STMicroelect
+ronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include -ID:\Programs\STMi
+croelectronics\Keil\ARM\CMSIS\Include --predefine="__EVAL SETA 1" --predefine="
+__MICROLIB SETA 1" --predefine="__UVISION_VERSION SETA 521" --predefine="_RTE_ 
+SETA 1" --predefine="STM32F10X_MD SETA 1" --list=startup_stm32f103xb.lst startu
+p_stm32f103xb.s
 
 
 

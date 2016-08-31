@@ -24,9 +24,10 @@ uint8_t RF_TransmitMode(SPI_HandleTypeDef* SPIx, uint8_t *address)
 	RF_CE_LOW();																
 	tmp &= ~RF_Mode_RX;
 	tmp = RF_Send_Cmd(SPIx, CONFIG_REG, tmp);
-	if (address) tmp = RF_Send_Adrs(SPIx, TX_ADDR_REG, address);
+	if (address) 
+		tmp = RF_Send_Adrs(SPIx, TX_ADDR_REG, address);		
 	//flush
-	RF_Flush(SPIx, RF_Flush_TX_CMD);
+	//RF_Flush(SPIx, RF_Flush_TX_CMD);
 	RF_CE_HIGH();
 	HAL_Delay(1);
 	return tmp;
@@ -39,9 +40,10 @@ uint8_t RF_ReceiveMode(SPI_HandleTypeDef* SPIx, uint8_t *address)
 	RF_CE_LOW();	
 	tmp |= RF_Mode_RX;	
 	tmp = RF_Send_Cmd(SPIx, CONFIG_REG, tmp);
-	if (address) tmp = RF_Send_Adrs(SPIx, TX_ADDR_REG, address);
+	if (address) 
+		tmp = RF_Send_Adrs(SPIx, TX_ADDR_REG, address);
 	//flush
-	RF_Flush(SPIx, RF_Flush_TX_CMD);
+	//RF_Flush(SPIx, RF_Flush_TX_CMD);	
 	RF_CE_HIGH();
 	HAL_Delay(1);
 	return tmp;
@@ -101,6 +103,7 @@ unsigned char RF_Init(SPI_HandleTypeDef* SPIx, RF_InitTypeDef* RF_InitStruct)		 
 
 unsigned char RF_SendPayload(SPI_HandleTypeDef* SPIx, unsigned char * data, unsigned char DataLen)
 {
+  RF_CE_LOW();
   RF_NSS_LOW();
   SPI_SendByte(SPIx, RF_SendPayload_CMD);
   while(DataLen) 
@@ -117,6 +120,7 @@ unsigned char RF_SendPayload(SPI_HandleTypeDef* SPIx, unsigned char * data, unsi
 unsigned char RF_ReceivePayload(SPI_HandleTypeDef* SPIx, unsigned char * Data, unsigned char Data_Len)					  			//returns 0xFF if no data received. Data_Len = num of bytes to receive
 {																																							//returns PIPE num if data received succesfully		
 	unsigned char temp;			
+	//RF_CE_LOW();
 	RF_NSS_LOW();
 	temp = (SPI_ReadByte(SPIx, 0x61)&0x0E)>>1;					//read status reg and send R_RX_PAYLOAD Command															  	
 	while(Data_Len)																			//read DATA from FIFO
@@ -129,6 +133,7 @@ unsigned char RF_ReceivePayload(SPI_HandleTypeDef* SPIx, unsigned char * Data, u
 	temp = RF_Read_Cmd(SPIx, FIFO_STATUS_REG) & RF_RX_FIFO_EMPTY_Bit;	//check available data in RX FIFO, set if empty
 	if (temp == 1)
 		RF_IRQ_CLEAR(SPIx, RF_RX_DR_IRQ_CLEAR);	//if NO DATA in RX FIFO, clear IRQ
+	//RF_CE_HIGH();
 	return temp;
 }
 

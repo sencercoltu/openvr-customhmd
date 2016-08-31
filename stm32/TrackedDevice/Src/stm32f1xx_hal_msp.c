@@ -159,7 +159,7 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef* hi2c)
   if(hi2c->Instance==I2C2)
   {
   /* USER CODE BEGIN I2C2_MspInit 0 */
-	
+	GPIO_InitStruct.Pull = GPIO_PULLUP;
   /* USER CODE END I2C2_MspInit 0 */
   
     /**I2C2 GPIO Configuration    
