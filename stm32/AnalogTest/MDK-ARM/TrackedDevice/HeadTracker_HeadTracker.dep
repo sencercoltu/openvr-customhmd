@@ -1,1344 +1,0 @@
-Dependencies for Project 'HeadTracker', Target 'HeadTracker': (DO NOT MODIFY !)
-F (../Drivers/CMSIS//Device/ST/STM32F1xx/Source/Templates/system_stm32f1xx.c)(0x5748E89D)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I ../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o headtracker\system_stm32f1xx_1.o --omf_browse headtracker\system_stm32f1xx_1.crf --depend headtracker\system_stm32f1xx_1.d)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x5748E89C)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h)(0x5748E89C)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdint.h)(0x56FE892E)
-I (../Drivers/CMSIS/Include/core_cmInstr.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/core_cmFunc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x5748E89C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x5748E8A0)
-I (../Inc/stm32f1xx_hal_conf.h)(0x5783FF28)
-I (../Inc/mxconstants.h)(0x5783FF28)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdio.h)(0x56FE892E)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x5748E8A0)
-F (startup_stm32f103xb.s)(0x5783FF29)(--cpu Cortex-M3 --pd "__EVAL SETA 1" -g --apcs=interwork --pd "__MICROLIB SETA 1"-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include--pd "__UVISION_VERSION SETA 520" --pd "_RTE_ SETA 1" --pd "STM32F10X_MD SETA 1"--list startup_stm32f103xb.lst --xref -o headtracker\startup_stm32f103xb.o --depend headtracker\startup_stm32f103xb.d)
-F (../Src/usb_device.c)(0x5783FF27)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I ../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o headtracker\usb_device.o --omf_browse headtracker\usb_device.crf --depend headtracker\usb_device.d)
-I (../Inc/usb_device.h)(0x5783FF27)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x5748E89C)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h)(0x5748E89C)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdint.h)(0x56FE892E)
-I (../Drivers/CMSIS/Include/core_cmInstr.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/core_cmFunc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x5748E89C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x5748E8A0)
-I (../Inc/stm32f1xx_hal_conf.h)(0x5783FF28)
-I (../Inc/mxconstants.h)(0x5783FF28)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdio.h)(0x56FE892E)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x5748E8A0)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_def.h)(0x5748E8A3)
-I (../Inc/usbd_conf.h)(0x5783FF27)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdlib.h)(0x56FE892E)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\string.h)(0x56FE892E)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_core.h)(0x5748E8A3)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h)(0x5748E8A3)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ctlreq.h)(0x5748E8A3)
-I (../Inc/usbd_desc.h)(0x5783FF27)
-I (../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc/usbd_customhid.h)(0x576B2FBF)
-I (../Inc/usbd_custom_hid_if.h)(0x5783FF27)
-F (../Src/stm32f1xx_it.c)(0x5783FF27)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I ../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o headtracker\stm32f1xx_it.o --omf_browse headtracker\stm32f1xx_it.crf --depend headtracker\stm32f1xx_it.d)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x5748E8A0)
-I (../Inc/stm32f1xx_hal_conf.h)(0x5783FF28)
-I (../Inc/mxconstants.h)(0x5783FF28)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x5748E89C)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h)(0x5748E89C)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdint.h)(0x56FE892E)
-I (../Drivers/CMSIS/Include/core_cmInstr.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/core_cmFunc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x5748E89C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdio.h)(0x56FE892E)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x5748E8A0)
-I (../Inc/stm32f1xx_it.h)(0x5783FF27)
-F (../Src/stm32f1xx_hal_msp.c)(0x5783FF28)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I ../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o headtracker\stm32f1xx_hal_msp.o --omf_browse headtracker\stm32f1xx_hal_msp.crf --depend headtracker\stm32f1xx_hal_msp.d)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x5748E8A0)
-I (../Inc/stm32f1xx_hal_conf.h)(0x5783FF28)
-I (../Inc/mxconstants.h)(0x5783FF28)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x5748E89C)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h)(0x5748E89C)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdint.h)(0x56FE892E)
-I (../Drivers/CMSIS/Include/core_cmInstr.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/core_cmFunc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x5748E89C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdio.h)(0x56FE892E)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x5748E8A0)
-F (../Src/main.c)(0x5783FF28)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I ../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o headtracker\main.o --omf_browse headtracker\main.crf --depend headtracker\main.d)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x5748E8A0)
-I (../Inc/stm32f1xx_hal_conf.h)(0x5783FF28)
-I (../Inc/mxconstants.h)(0x5783FF28)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x5748E89C)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h)(0x5748E89C)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdint.h)(0x56FE892E)
-I (../Drivers/CMSIS/Include/core_cmInstr.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/core_cmFunc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x5748E89C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdio.h)(0x56FE892E)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x5748E8A0)
-I (../Inc/usb_device.h)(0x5783FF27)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_def.h)(0x5748E8A3)
-I (../Inc/usbd_conf.h)(0x5783FF27)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdlib.h)(0x56FE892E)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\string.h)(0x56FE892E)
-I (../Src/..\\..\\Common\\led.h)(0x576C37E1)
-I (../Src/..\\..\\Common\\SensorFusion.h)(0x574B455E)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\math.h)(0x56FE8926)
-I (../Src/..\\..\\Common\\Quaternion.h)(0x574B1749)
-I (../Src/..\\..\\Common\\gy8x.h)(0x5769A2C3)
-I (../Src/..\\..\\Common\\adxl345.h)(0x574B4405)
-I (../Src/..\\..\\Common\\i2c.h)(0x576B22B3)
-I (../Src/..\\..\\Common\\l3g4200d.h)(0x574B440E)
-I (../Src/..\\..\\Common\\hmc5883l.h)(0x574B4408)
-I (../Src/..\\..\\Common\\itg3200.h)(0x574B43F6)
-I (../Src/..\\..\\Common\\bmx055.h)(0x5783F577)
-I (../Src/..\\..\\Common\\se8r01.h)(0x57828143)
-I (../Src/..\\..\\Common\\spi.h)(0x57828300)
-I (../Src/..\\..\\Common\\usb.h)(0x576C674F)
-I (../Inc/usbd_custom_hid_if.h)(0x5783FF27)
-I (../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc/usbd_customhid.h)(0x576B2FBF)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h)(0x5748E8A3)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_core.h)(0x5748E8A3)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ctlreq.h)(0x5748E8A3)
-F (../Src/usbd_desc.c)(0x5783FF27)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I ../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o headtracker\usbd_desc.o --omf_browse headtracker\usbd_desc.crf --depend headtracker\usbd_desc.d)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_core.h)(0x5748E8A3)
-I (../Inc/usbd_conf.h)(0x5783FF27)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdio.h)(0x56FE892E)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdlib.h)(0x56FE892E)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\string.h)(0x56FE892E)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x5748E89C)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h)(0x5748E89C)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdint.h)(0x56FE892E)
-I (../Drivers/CMSIS/Include/core_cmInstr.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/core_cmFunc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x5748E89C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x5748E8A0)
-I (../Inc/stm32f1xx_hal_conf.h)(0x5783FF28)
-I (../Inc/mxconstants.h)(0x5783FF28)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x5748E8A0)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_def.h)(0x5748E8A3)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h)(0x5748E8A3)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ctlreq.h)(0x5748E8A3)
-I (../Inc/usbd_desc.h)(0x5783FF27)
-F (../Src/usbd_conf.c)(0x5783FF27)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I ../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o headtracker\usbd_conf.o --omf_browse headtracker\usbd_conf.crf --depend headtracker\usbd_conf.d)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x5748E89C)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h)(0x5748E89C)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdint.h)(0x56FE892E)
-I (../Drivers/CMSIS/Include/core_cmInstr.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/core_cmFunc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x5748E89C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x5748E8A0)
-I (../Inc/stm32f1xx_hal_conf.h)(0x5783FF28)
-I (../Inc/mxconstants.h)(0x5783FF28)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdio.h)(0x56FE892E)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x5748E8A0)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_def.h)(0x5748E8A3)
-I (../Inc/usbd_conf.h)(0x5783FF27)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdlib.h)(0x56FE892E)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\string.h)(0x56FE892E)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_core.h)(0x5748E8A3)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h)(0x5748E8A3)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ctlreq.h)(0x5748E8A3)
-I (../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc/usbd_customhid.h)(0x576B2FBF)
-F (../Src/usbd_custom_hid_if.c)(0x5783FF27)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I ../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o headtracker\usbd_custom_hid_if.o --omf_browse headtracker\usbd_custom_hid_if.crf --depend headtracker\usbd_custom_hid_if.d)
-I (../Inc/usbd_custom_hid_if.h)(0x5783FF27)
-I (../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc/usbd_customhid.h)(0x576B2FBF)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h)(0x5748E8A3)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_def.h)(0x5748E8A3)
-I (../Inc/usbd_conf.h)(0x5783FF27)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdio.h)(0x56FE892E)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdlib.h)(0x56FE892E)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\string.h)(0x56FE892E)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x5748E89C)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h)(0x5748E89C)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdint.h)(0x56FE892E)
-I (../Drivers/CMSIS/Include/core_cmInstr.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/core_cmFunc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x5748E89C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x5748E8A0)
-I (../Inc/stm32f1xx_hal_conf.h)(0x5783FF28)
-I (../Inc/mxconstants.h)(0x5783FF28)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x5748E8A0)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_core.h)(0x5748E8A3)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ctlreq.h)(0x5748E8A3)
-F (..\..\Common\Quaternion.cpp)(0x5744EAFA)(--cpp -c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I ../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o headtracker\quaternion.o --omf_browse headtracker\quaternion.crf --depend headtracker\quaternion.d)
-I (..\..\Common\Quaternion.h)(0x574B1749)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\math.h)(0x56FE8926)
-F (..\..\Common\SensorFusion.cpp)(0x574B456F)(--cpp -c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I ../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o headtracker\sensorfusion.o --omf_browse headtracker\sensorfusion.crf --depend headtracker\sensorfusion.d)
-I (..\..\Common\SensorFusion.h)(0x574B455E)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdint.h)(0x56FE892E)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\math.h)(0x56FE8926)
-I (..\..\Common\Quaternion.h)(0x574B1749)
-F (..\..\Common\i2c.c)(0x576C233B)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I ../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o headtracker\i2c.o --omf_browse headtracker\i2c.crf --depend headtracker\i2c.d)
-I (..\..\Common\i2c.h)(0x576B22B3)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x5748E8A0)
-I (../Inc/stm32f1xx_hal_conf.h)(0x5783FF28)
-I (../Inc/mxconstants.h)(0x5783FF28)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x5748E89C)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h)(0x5748E89C)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdint.h)(0x56FE892E)
-I (../Drivers/CMSIS/Include/core_cmInstr.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/core_cmFunc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x5748E89C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdio.h)(0x56FE892E)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x5748E8A0)
-I (..\..\Common\led.h)(0x576C37E1)
-F (..\..\Common\led.c)(0x576C37D6)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I ../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o headtracker\led.o --omf_browse headtracker\led.crf --depend headtracker\led.d)
-I (..\..\Common\led.h)(0x576C37E1)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x5748E8A0)
-I (../Inc/stm32f1xx_hal_conf.h)(0x5783FF28)
-I (../Inc/mxconstants.h)(0x5783FF28)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x5748E89C)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h)(0x5748E89C)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdint.h)(0x56FE892E)
-I (../Drivers/CMSIS/Include/core_cmInstr.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/core_cmFunc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x5748E89C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdio.h)(0x56FE892E)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x5748E8A0)
-F (..\..\Common\usb.c)(0x5769C239)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I ../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o headtracker\usb.o --omf_browse headtracker\usb.crf --depend headtracker\usb.d)
-I (..\..\Common\usb.h)(0x576C674F)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x5748E8A0)
-I (../Inc/stm32f1xx_hal_conf.h)(0x5783FF28)
-I (../Inc/mxconstants.h)(0x5783FF28)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x5748E89C)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h)(0x5748E89C)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdint.h)(0x56FE892E)
-I (../Drivers/CMSIS/Include/core_cmInstr.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/core_cmFunc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x5748E89C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdio.h)(0x56FE892E)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x5748E8A0)
-I (../Inc/usbd_custom_hid_if.h)(0x5783FF27)
-I (../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc/usbd_customhid.h)(0x576B2FBF)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h)(0x5748E8A3)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_def.h)(0x5748E8A3)
-I (../Inc/usbd_conf.h)(0x5783FF27)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdlib.h)(0x56FE892E)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\string.h)(0x56FE892E)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_core.h)(0x5748E8A3)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ctlreq.h)(0x5748E8A3)
-F (..\..\Common\adxl345.c)(0x576C3624)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I ../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o headtracker\adxl345.o --omf_browse headtracker\adxl345.crf --depend headtracker\adxl345.d)
-I (..\..\Common\adxl345.h)(0x574B4405)
-I (..\..\Common\i2c.h)(0x576B22B3)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x5748E8A0)
-I (../Inc/stm32f1xx_hal_conf.h)(0x5783FF28)
-I (../Inc/mxconstants.h)(0x5783FF28)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x5748E89C)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h)(0x5748E89C)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdint.h)(0x56FE892E)
-I (../Drivers/CMSIS/Include/core_cmInstr.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/core_cmFunc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x5748E89C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdio.h)(0x56FE892E)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x5748E8A0)
-I (..\..\Common\led.h)(0x576C37E1)
-F (..\..\Common\l3g4200d.c)(0x576C3609)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I ../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o headtracker\l3g4200d.o --omf_browse headtracker\l3g4200d.crf --depend headtracker\l3g4200d.d)
-I (..\..\Common\l3g4200d.h)(0x574B440E)
-I (..\..\Common\i2c.h)(0x576B22B3)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x5748E8A0)
-I (../Inc/stm32f1xx_hal_conf.h)(0x5783FF28)
-I (../Inc/mxconstants.h)(0x5783FF28)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x5748E89C)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h)(0x5748E89C)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdint.h)(0x56FE892E)
-I (../Drivers/CMSIS/Include/core_cmInstr.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/core_cmFunc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x5748E89C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdio.h)(0x56FE892E)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x5748E8A0)
-I (..\..\Common\led.h)(0x576C37E1)
-F (..\..\Common\hmc5883l.c)(0x576C3611)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I ../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o headtracker\hmc5883l.o --omf_browse headtracker\hmc5883l.crf --depend headtracker\hmc5883l.d)
-I (..\..\Common\hmc5883l.h)(0x574B4408)
-I (..\..\Common\i2c.h)(0x576B22B3)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x5748E8A0)
-I (../Inc/stm32f1xx_hal_conf.h)(0x5783FF28)
-I (../Inc/mxconstants.h)(0x5783FF28)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x5748E89C)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h)(0x5748E89C)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdint.h)(0x56FE892E)
-I (../Drivers/CMSIS/Include/core_cmInstr.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/core_cmFunc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x5748E89C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdio.h)(0x56FE892E)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x5748E8A0)
-I (..\..\Common\led.h)(0x576C37E1)
-F (..\..\Common\itg3200.c)(0x576C3600)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I ../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o headtracker\itg3200.o --omf_browse headtracker\itg3200.crf --depend headtracker\itg3200.d)
-I (..\..\Common\itg3200.h)(0x574B43F6)
-I (..\..\Common\i2c.h)(0x576B22B3)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x5748E8A0)
-I (../Inc/stm32f1xx_hal_conf.h)(0x5783FF28)
-I (../Inc/mxconstants.h)(0x5783FF28)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x5748E89C)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h)(0x5748E89C)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdint.h)(0x56FE892E)
-I (../Drivers/CMSIS/Include/core_cmInstr.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/core_cmFunc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x5748E89C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdio.h)(0x56FE892E)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x5748E8A0)
-I (..\..\Common\led.h)(0x576C37E1)
-F (..\..\Common\bmx055.c)(0x5783F580)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I ../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o headtracker\bmx055.o --omf_browse headtracker\bmx055.crf --depend headtracker\bmx055.d)
-I (..\..\Common\bmx055.h)(0x5783F577)
-I (..\..\Common\i2c.h)(0x576B22B3)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x5748E8A0)
-I (../Inc/stm32f1xx_hal_conf.h)(0x5783FF28)
-I (../Inc/mxconstants.h)(0x5783FF28)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x5748E89C)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h)(0x5748E89C)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdint.h)(0x56FE892E)
-I (../Drivers/CMSIS/Include/core_cmInstr.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/core_cmFunc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x5748E89C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdio.h)(0x56FE892E)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x5748E8A0)
-I (..\..\Common\led.h)(0x576C37E1)
-F (..\..\Common\se8r01.c)(0x5784180F)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I ../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o headtracker\se8r01.o --omf_browse headtracker\se8r01.crf --depend headtracker\se8r01.d)
-I (..\..\Common\se8r01.h)(0x57828143)
-I (..\..\Common\spi.h)(0x57828300)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x5748E8A0)
-I (../Inc/stm32f1xx_hal_conf.h)(0x5783FF28)
-I (../Inc/mxconstants.h)(0x5783FF28)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x5748E89C)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h)(0x5748E89C)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdint.h)(0x56FE892E)
-I (../Drivers/CMSIS/Include/core_cmInstr.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/core_cmFunc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x5748E89C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdio.h)(0x56FE892E)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x5748E8A0)
-I (..\..\Common\led.h)(0x576C37E1)
-I (..\..\Common\usb.h)(0x576C674F)
-I (../Inc/usbd_custom_hid_if.h)(0x5783FF27)
-I (../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc/usbd_customhid.h)(0x576B2FBF)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h)(0x5748E8A3)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_def.h)(0x5748E8A3)
-I (../Inc/usbd_conf.h)(0x5783FF27)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdlib.h)(0x56FE892E)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\string.h)(0x56FE892E)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_core.h)(0x5748E8A3)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ctlreq.h)(0x5748E8A3)
-F (..\..\Common\spi.c)(0x57841A4B)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I ../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o headtracker\spi.o --omf_browse headtracker\spi.crf --depend headtracker\spi.d)
-I (..\..\Common\spi.h)(0x57828300)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x5748E8A0)
-I (../Inc/stm32f1xx_hal_conf.h)(0x5783FF28)
-I (../Inc/mxconstants.h)(0x5783FF28)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x5748E89C)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h)(0x5748E89C)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdint.h)(0x56FE892E)
-I (../Drivers/CMSIS/Include/core_cmInstr.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/core_cmFunc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x5748E89C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdio.h)(0x56FE892E)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x5748E8A0)
-I (..\..\Common\led.h)(0x576C37E1)
-F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_i2c.c)(0x5748E8A0)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I ../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o headtracker\stm32f1xx_hal_i2c.o --omf_browse headtracker\stm32f1xx_hal_i2c.crf --depend headtracker\stm32f1xx_hal_i2c.d)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x5748E8A0)
-I (../Inc/stm32f1xx_hal_conf.h)(0x5783FF28)
-I (../Inc/mxconstants.h)(0x5783FF28)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x5748E89C)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h)(0x5748E89C)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdint.h)(0x56FE892E)
-I (../Drivers/CMSIS/Include/core_cmInstr.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/core_cmFunc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x5748E89C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdio.h)(0x56FE892E)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x5748E8A0)
-F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_gpio.c)(0x5748E8A0)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I ../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o headtracker\stm32f1xx_hal_gpio.o --omf_browse headtracker\stm32f1xx_hal_gpio.crf --depend headtracker\stm32f1xx_hal_gpio.d)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x5748E8A0)
-I (../Inc/stm32f1xx_hal_conf.h)(0x5783FF28)
-I (../Inc/mxconstants.h)(0x5783FF28)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x5748E89C)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h)(0x5748E89C)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdint.h)(0x56FE892E)
-I (../Drivers/CMSIS/Include/core_cmInstr.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/core_cmFunc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x5748E89C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdio.h)(0x56FE892E)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x5748E8A0)
-F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_dma.c)(0x5748E8A0)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I ../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o headtracker\stm32f1xx_hal_dma.o --omf_browse headtracker\stm32f1xx_hal_dma.crf --depend headtracker\stm32f1xx_hal_dma.d)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x5748E8A0)
-I (../Inc/stm32f1xx_hal_conf.h)(0x5783FF28)
-I (../Inc/mxconstants.h)(0x5783FF28)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x5748E89C)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h)(0x5748E89C)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdint.h)(0x56FE892E)
-I (../Drivers/CMSIS/Include/core_cmInstr.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/core_cmFunc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x5748E89C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdio.h)(0x56FE892E)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x5748E8A0)
-F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_ll_usb.c)(0x5748E8A0)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I ../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o headtracker\stm32f1xx_ll_usb.o --omf_browse headtracker\stm32f1xx_ll_usb.crf --depend headtracker\stm32f1xx_ll_usb.d)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x5748E8A0)
-I (../Inc/stm32f1xx_hal_conf.h)(0x5783FF28)
-I (../Inc/mxconstants.h)(0x5783FF28)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x5748E89C)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h)(0x5748E89C)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdint.h)(0x56FE892E)
-I (../Drivers/CMSIS/Include/core_cmInstr.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/core_cmFunc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x5748E89C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdio.h)(0x56FE892E)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x5748E8A0)
-F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_pcd.c)(0x5748E8A0)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I ../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o headtracker\stm32f1xx_hal_pcd.o --omf_browse headtracker\stm32f1xx_hal_pcd.crf --depend headtracker\stm32f1xx_hal_pcd.d)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x5748E8A0)
-I (../Inc/stm32f1xx_hal_conf.h)(0x5783FF28)
-I (../Inc/mxconstants.h)(0x5783FF28)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x5748E89C)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h)(0x5748E89C)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdint.h)(0x56FE892E)
-I (../Drivers/CMSIS/Include/core_cmInstr.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/core_cmFunc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x5748E89C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdio.h)(0x56FE892E)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x5748E8A0)
-F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim.c)(0x5748E8A0)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I ../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o headtracker\stm32f1xx_hal_tim.o --omf_browse headtracker\stm32f1xx_hal_tim.crf --depend headtracker\stm32f1xx_hal_tim.d)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x5748E8A0)
-I (../Inc/stm32f1xx_hal_conf.h)(0x5783FF28)
-I (../Inc/mxconstants.h)(0x5783FF28)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x5748E89C)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h)(0x5748E89C)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdint.h)(0x56FE892E)
-I (../Drivers/CMSIS/Include/core_cmInstr.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/core_cmFunc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x5748E89C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdio.h)(0x56FE892E)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x5748E8A0)
-F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_spi.c)(0x5748E8A0)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I ../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o headtracker\stm32f1xx_hal_spi.o --omf_browse headtracker\stm32f1xx_hal_spi.crf --depend headtracker\stm32f1xx_hal_spi.d)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x5748E8A0)
-I (../Inc/stm32f1xx_hal_conf.h)(0x5783FF28)
-I (../Inc/mxconstants.h)(0x5783FF28)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x5748E89C)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h)(0x5748E89C)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdint.h)(0x56FE892E)
-I (../Drivers/CMSIS/Include/core_cmInstr.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/core_cmFunc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x5748E89C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdio.h)(0x56FE892E)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x5748E8A0)
-F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc_ex.c)(0x5748E8A0)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I ../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o headtracker\stm32f1xx_hal_rcc_ex.o --omf_browse headtracker\stm32f1xx_hal_rcc_ex.crf --depend headtracker\stm32f1xx_hal_rcc_ex.d)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x5748E8A0)
-I (../Inc/stm32f1xx_hal_conf.h)(0x5783FF28)
-I (../Inc/mxconstants.h)(0x5783FF28)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x5748E89C)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h)(0x5748E89C)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdint.h)(0x56FE892E)
-I (../Drivers/CMSIS/Include/core_cmInstr.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/core_cmFunc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x5748E89C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdio.h)(0x56FE892E)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x5748E8A0)
-F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_pwr.c)(0x5748E8A0)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I ../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o headtracker\stm32f1xx_hal_pwr.o --omf_browse headtracker\stm32f1xx_hal_pwr.crf --depend headtracker\stm32f1xx_hal_pwr.d)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x5748E8A0)
-I (../Inc/stm32f1xx_hal_conf.h)(0x5783FF28)
-I (../Inc/mxconstants.h)(0x5783FF28)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x5748E89C)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h)(0x5748E89C)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdint.h)(0x56FE892E)
-I (../Drivers/CMSIS/Include/core_cmInstr.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/core_cmFunc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x5748E89C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdio.h)(0x56FE892E)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x5748E8A0)
-F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim_ex.c)(0x5748E8A0)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I ../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o headtracker\stm32f1xx_hal_tim_ex.o --omf_browse headtracker\stm32f1xx_hal_tim_ex.crf --depend headtracker\stm32f1xx_hal_tim_ex.d)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x5748E8A0)
-I (../Inc/stm32f1xx_hal_conf.h)(0x5783FF28)
-I (../Inc/mxconstants.h)(0x5783FF28)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x5748E89C)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h)(0x5748E89C)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdint.h)(0x56FE892E)
-I (../Drivers/CMSIS/Include/core_cmInstr.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/core_cmFunc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x5748E89C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdio.h)(0x56FE892E)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x5748E8A0)
-F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal.c)(0x5748E8A0)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I ../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o headtracker\stm32f1xx_hal.o --omf_browse headtracker\stm32f1xx_hal.crf --depend headtracker\stm32f1xx_hal.d)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x5748E8A0)
-I (../Inc/stm32f1xx_hal_conf.h)(0x5783FF28)
-I (../Inc/mxconstants.h)(0x5783FF28)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x5748E89C)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h)(0x5748E89C)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdint.h)(0x56FE892E)
-I (../Drivers/CMSIS/Include/core_cmInstr.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/core_cmFunc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x5748E89C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdio.h)(0x56FE892E)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x5748E8A0)
-F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc.c)(0x5748E8A0)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I ../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o headtracker\stm32f1xx_hal_rcc.o --omf_browse headtracker\stm32f1xx_hal_rcc.crf --depend headtracker\stm32f1xx_hal_rcc.d)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x5748E8A0)
-I (../Inc/stm32f1xx_hal_conf.h)(0x5783FF28)
-I (../Inc/mxconstants.h)(0x5783FF28)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x5748E89C)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h)(0x5748E89C)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdint.h)(0x56FE892E)
-I (../Drivers/CMSIS/Include/core_cmInstr.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/core_cmFunc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x5748E89C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdio.h)(0x56FE892E)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x5748E8A0)
-F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_pcd_ex.c)(0x5748E8A0)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I ../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o headtracker\stm32f1xx_hal_pcd_ex.o --omf_browse headtracker\stm32f1xx_hal_pcd_ex.crf --depend headtracker\stm32f1xx_hal_pcd_ex.d)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x5748E8A0)
-I (../Inc/stm32f1xx_hal_conf.h)(0x5783FF28)
-I (../Inc/mxconstants.h)(0x5783FF28)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x5748E89C)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h)(0x5748E89C)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdint.h)(0x56FE892E)
-I (../Drivers/CMSIS/Include/core_cmInstr.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/core_cmFunc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x5748E89C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdio.h)(0x56FE892E)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x5748E8A0)
-F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_flash.c)(0x5748E8A0)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I ../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o headtracker\stm32f1xx_hal_flash.o --omf_browse headtracker\stm32f1xx_hal_flash.crf --depend headtracker\stm32f1xx_hal_flash.d)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x5748E8A0)
-I (../Inc/stm32f1xx_hal_conf.h)(0x5783FF28)
-I (../Inc/mxconstants.h)(0x5783FF28)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x5748E89C)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h)(0x5748E89C)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdint.h)(0x56FE892E)
-I (../Drivers/CMSIS/Include/core_cmInstr.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/core_cmFunc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x5748E89C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdio.h)(0x56FE892E)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x5748E8A0)
-F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_flash_ex.c)(0x5748E8A0)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I ../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o headtracker\stm32f1xx_hal_flash_ex.o --omf_browse headtracker\stm32f1xx_hal_flash_ex.crf --depend headtracker\stm32f1xx_hal_flash_ex.d)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x5748E8A0)
-I (../Inc/stm32f1xx_hal_conf.h)(0x5783FF28)
-I (../Inc/mxconstants.h)(0x5783FF28)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x5748E89C)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h)(0x5748E89C)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdint.h)(0x56FE892E)
-I (../Drivers/CMSIS/Include/core_cmInstr.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/core_cmFunc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x5748E89C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdio.h)(0x56FE892E)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x5748E8A0)
-F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_spi_ex.c)(0x5748E8A0)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I ../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o headtracker\stm32f1xx_hal_spi_ex.o --omf_browse headtracker\stm32f1xx_hal_spi_ex.crf --depend headtracker\stm32f1xx_hal_spi_ex.d)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x5748E8A0)
-I (../Inc/stm32f1xx_hal_conf.h)(0x5783FF28)
-I (../Inc/mxconstants.h)(0x5783FF28)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x5748E89C)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h)(0x5748E89C)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdint.h)(0x56FE892E)
-I (../Drivers/CMSIS/Include/core_cmInstr.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/core_cmFunc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x5748E89C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdio.h)(0x56FE892E)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x5748E8A0)
-F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_cortex.c)(0x5748E8A0)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I ../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o headtracker\stm32f1xx_hal_cortex.o --omf_browse headtracker\stm32f1xx_hal_cortex.crf --depend headtracker\stm32f1xx_hal_cortex.d)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x5748E8A0)
-I (../Inc/stm32f1xx_hal_conf.h)(0x5783FF28)
-I (../Inc/mxconstants.h)(0x5783FF28)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x5748E89C)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h)(0x5748E89C)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdint.h)(0x56FE892E)
-I (../Drivers/CMSIS/Include/core_cmInstr.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/core_cmFunc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x5748E89C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdio.h)(0x56FE892E)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x5748E8A0)
-F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_gpio_ex.c)(0x5748E8A0)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I ../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o headtracker\stm32f1xx_hal_gpio_ex.o --omf_browse headtracker\stm32f1xx_hal_gpio_ex.crf --depend headtracker\stm32f1xx_hal_gpio_ex.d)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x5748E8A0)
-I (../Inc/stm32f1xx_hal_conf.h)(0x5783FF28)
-I (../Inc/mxconstants.h)(0x5783FF28)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x5748E89C)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h)(0x5748E89C)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdint.h)(0x56FE892E)
-I (../Drivers/CMSIS/Include/core_cmInstr.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/core_cmFunc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x5748E89C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdio.h)(0x56FE892E)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x5748E8A0)
-F (../Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_core.c)(0x5748E8A3)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I ../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o headtracker\usbd_core.o --omf_browse headtracker\usbd_core.crf --depend headtracker\usbd_core.d)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_core.h)(0x5748E8A3)
-I (../Inc/usbd_conf.h)(0x5783FF27)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdio.h)(0x56FE892E)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdlib.h)(0x56FE892E)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\string.h)(0x56FE892E)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x5748E89C)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h)(0x5748E89C)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdint.h)(0x56FE892E)
-I (../Drivers/CMSIS/Include/core_cmInstr.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/core_cmFunc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x5748E89C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x5748E8A0)
-I (../Inc/stm32f1xx_hal_conf.h)(0x5783FF28)
-I (../Inc/mxconstants.h)(0x5783FF28)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x5748E8A0)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_def.h)(0x5748E8A3)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h)(0x5748E8A3)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ctlreq.h)(0x5748E8A3)
-F (../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Src/usbd_customhid.c)(0x5748E8A3)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I ../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o headtracker\usbd_customhid.o --omf_browse headtracker\usbd_customhid.crf --depend headtracker\usbd_customhid.d)
-I (../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc/usbd_customhid.h)(0x576B2FBF)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h)(0x5748E8A3)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_def.h)(0x5748E8A3)
-I (../Inc/usbd_conf.h)(0x5783FF27)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdio.h)(0x56FE892E)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdlib.h)(0x56FE892E)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\string.h)(0x56FE892E)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x5748E89C)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h)(0x5748E89C)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdint.h)(0x56FE892E)
-I (../Drivers/CMSIS/Include/core_cmInstr.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/core_cmFunc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x5748E89C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x5748E8A0)
-I (../Inc/stm32f1xx_hal_conf.h)(0x5783FF28)
-I (../Inc/mxconstants.h)(0x5783FF28)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x5748E8A0)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_core.h)(0x5748E8A3)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ctlreq.h)(0x5748E8A3)
-I (../Inc/usbd_desc.h)(0x5783FF27)
-F (../Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ioreq.c)(0x5748E8A3)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I ../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o headtracker\usbd_ioreq.o --omf_browse headtracker\usbd_ioreq.crf --depend headtracker\usbd_ioreq.d)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h)(0x5748E8A3)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_def.h)(0x5748E8A3)
-I (../Inc/usbd_conf.h)(0x5783FF27)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdio.h)(0x56FE892E)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdlib.h)(0x56FE892E)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\string.h)(0x56FE892E)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x5748E89C)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h)(0x5748E89C)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdint.h)(0x56FE892E)
-I (../Drivers/CMSIS/Include/core_cmInstr.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/core_cmFunc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x5748E89C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x5748E8A0)
-I (../Inc/stm32f1xx_hal_conf.h)(0x5783FF28)
-I (../Inc/mxconstants.h)(0x5783FF28)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x5748E8A0)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_core.h)(0x5748E8A3)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ctlreq.h)(0x5748E8A3)
-F (../Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ctlreq.c)(0x5748E8A3)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I ../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-I D:\Projects\STM32\HeadTracker\MDK-ARM\RTE-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I D:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o headtracker\usbd_ctlreq.o --omf_browse headtracker\usbd_ctlreq.crf --depend headtracker\usbd_ctlreq.d)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ctlreq.h)(0x5748E8A3)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_def.h)(0x5748E8A3)
-I (../Inc/usbd_conf.h)(0x5783FF27)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdio.h)(0x56FE892E)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdlib.h)(0x56FE892E)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\string.h)(0x56FE892E)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x5748E89C)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h)(0x5748E89C)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x5748E8A0)
-I (D:\Programs\STMicroelectronics\Keil\ARM\ARMCC\include\stdint.h)(0x56FE892E)
-I (../Drivers/CMSIS/Include/core_cmInstr.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Include/core_cmFunc.h)(0x5748E8A0)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x5748E89C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x5748E8A0)
-I (../Inc/stm32f1xx_hal_conf.h)(0x5783FF28)
-I (../Inc/mxconstants.h)(0x5783FF28)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h)(0x5748E8A0)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x5748E8A0)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h)(0x5748E8A3)
-I (../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_core.h)(0x5748E8A3)
