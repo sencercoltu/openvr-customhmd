@@ -465,21 +465,23 @@ int main(void)
 						lastCommandSequence = pUSBCommandPacket->Header.Sequence; 
 						switch (pUSBCommandPacket->Command.Command)
 						{
-							case CMD_RAW_DATA:
-								feedRawData = !feedRawData;
+							case CMD_RAW_DATA:								
+								feedRawData = pUSBCommandPacket->Command.Data.Raw.State != 0;
 								break;
 							case CMD_VIBRATE:
 								vibrationStopTime = HAL_GetTick() + pUSBCommandPacket->Command.Data.Vibration.Duration;
 								HAL_GPIO_WritePin(CTL_VIBRATE_GPIO_Port, CTL_VIBRATE_Pin, GPIO_PIN_SET);							
 								break;
 							case CMD_CALIBRATE:
-								if (pUSBCommandPacket->Command.Data.Calibration.Automatic)
+								//manually set sensor offsets
+								for (int i=0; i<3; i++)
 								{
-									//do calibration of given sensors
-								}
-								else
-								{
-									//manually set sensor calibration
+									if ((pUSBCommandPacket->Command.Data.Calibration.SensorMask & SENSOR_ACCEL) == SENSOR_ACCEL)
+										tSensorData.OffsetAccel[i] =  pUSBCommandPacket->Command.Data.Calibration.OffsetAccel[i];
+									if ((pUSBCommandPacket->Command.Data.Calibration.SensorMask & SENSOR_GYRO) == SENSOR_GYRO)
+										tSensorData.OffsetGyro[i] = pUSBCommandPacket->Command.Data.Calibration.OffsetGyro[i];
+									if ((pUSBCommandPacket->Command.Data.Calibration.SensorMask & SENSOR_MAG) == SENSOR_MAG)
+										tSensorData.OffsetMag[i] = pUSBCommandPacket->Command.Data.Calibration.OffsetMag[i];
 								}
 								break;
 						}

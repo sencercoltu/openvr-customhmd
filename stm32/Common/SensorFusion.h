@@ -11,7 +11,12 @@ typedef struct
 	int16_t Accel[3]; 
 	int16_t Gyro[3];
 	int16_t Mag[3];
-} SensorData; //total 34
+	
+	int16_t OffsetAccel[3]; 
+	int16_t OffsetGyro[3];
+	int16_t OffsetMag[3];	
+	
+} SensorData; 
 #pragma pack(pop)
 
 

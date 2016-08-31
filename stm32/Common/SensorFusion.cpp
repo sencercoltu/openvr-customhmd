@@ -32,17 +32,20 @@ Quaternion CSensorFusion::Fuse(SensorData *pData)
 	//MahonyQuaternionUpdate(
 		pData->TimeElapsed, 
 
-		pData->Accel[0] * m_aR,
-		pData->Accel[1] * m_aR,
-		pData->Accel[2] * m_aR,
+		//as normalized vector
+		(pData->Accel[0] + pData->OffsetAccel[0]) * m_aR,   
+		(pData->Accel[1] + pData->OffsetAccel[1]) * m_aR,
+		(pData->Accel[2] + pData->OffsetAccel[2]) * m_aR,
 		
-		RAD(pData->Gyro[0] * m_gR),
-		RAD(pData->Gyro[1] * m_gR),
-		RAD(pData->Gyro[2] * m_gR),
+		//as radians
+		RAD((pData->Gyro[0] + pData->OffsetGyro[0]) * m_gR),
+		RAD((pData->Gyro[1] + pData->OffsetGyro[1]) * m_gR),
+		RAD((pData->Gyro[2] + pData->OffsetGyro[2]) * m_gR),
 		
-		pData->Mag[0] * m_mR,
-		pData->Mag[1] * m_mR,
-		pData->Mag[2] * m_mR
+		//as normalized vector
+		(pData->Mag[0] + pData->OffsetMag[0]) * m_mR,
+		(pData->Mag[1] + pData->OffsetMag[1]) * m_mR,
+		(pData->Mag[2] + pData->OffsetMag[2]) * m_mR
 	);
 
 	return Value();

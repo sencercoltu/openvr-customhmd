@@ -33,16 +33,21 @@ extern "C" {
 #define TRIGGER_DATA 0x40
 #define COMMAND_DATA 0x80
 
-#define CMD_NONE 		0x00
-#define CMD_VIBRATE		0x01
-#define CMD_CALIBRATE	0x02
-#define CMD_SYNC		0x03
-#define CMD_RAW_DATA	0x04
+#define CMD_NONE 			0x00
+#define CMD_VIBRATE			0x01
+#define CMD_CALIBRATE		0x02
+#define CMD_SYNC			0x03
+#define CMD_RAW_DATA		0x04
+
 
 #define BUTTON_0 0x01
 #define BUTTON_1 0x02
 #define BUTTON_2 0x04
 #define BUTTON_3 0x08
+
+#define SENSOR_ACCEL	0x01
+#define SENSOR_GYRO		0x02
+#define SENSOR_MAG		0x04
 
 struct USBDataHeader
 {
@@ -85,6 +90,7 @@ struct USBAxisData
 
 struct USBRawData
 {
+	uint8_t State; //1 for enable, 0 for disable (set by driver)
 	int16_t Accel[3];
 	int16_t Gyro[3];
 	int16_t Mag[3];
@@ -98,9 +104,10 @@ struct USBTriggerData
 
 struct USBCalibrationData
 {
-	uint8_t SensorMask;
-	uint8_t Automatic;
-	int16_t Data[3];
+	uint8_t SensorMask;	
+	int16_t OffsetAccel[3];
+	int16_t OffsetGyro[3];
+	int16_t OffsetMag[3];
 };
 
 struct USBVibrationData
@@ -109,12 +116,19 @@ struct USBVibrationData
 	uint16_t Duration;
 };
 
+struct USBStatusData
+{
+	uint8_t CalibrationMask;
+	
+};
+
 union CommandData
 {
 	struct USBVibrationData Vibration;
 	struct USBSyncData Sync;
 	struct USBCalibrationData Calibration;
 	struct USBRawData Raw;
+	struct USBStatusData Status;
 };
 
 struct USBCommandData

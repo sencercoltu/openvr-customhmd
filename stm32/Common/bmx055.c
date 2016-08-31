@@ -136,8 +136,8 @@ void initBMX055()
 		
 	HAL_Delay(100); // Wait for all registers to reset 
 		
-	i2c_writeRegisterByte(BMX055_MAG_ADDRESS, BMX055_MAG_REP_XY, 47);  // 47 repetitions (oversampling)
-	i2c_writeRegisterByte(BMX055_MAG_ADDRESS, BMX055_MAG_REP_Z,  83);  // 83 repetitions (oversampling)
+	i2c_writeRegisterByte(BMX055_MAG_ADDRESS, BMX055_MAG_REP_XY, 23);  // 2x+1 = 47 sample avg for XY-axis
+	i2c_writeRegisterByte(BMX055_MAG_ADDRESS, BMX055_MAG_REP_Z,  41);  // 2x+1 = 83 sample avg for Z-axis
 
 	HAL_Delay(100); // Wait for all registers to reset 
 	
