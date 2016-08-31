@@ -190,8 +190,8 @@ bool readBMX055DataAccel(int16_t *destination)
 {
 	uint8_t rawData[6];  // x/y/z accel register data stored here
 	i2c_readData(BMX055_ACC_ADDRESS, BMX055_ACC_D_X_LSB, rawData, 6);  // Read the six raw data registers into data array
-	destination[0] = ((int16_t)((rawData[1] << 8) | rawData[0]) / 8);  // Turn the MSB and LSB into a signed 12-bit value
-	destination[1] = ((int16_t)((rawData[3] << 8) | rawData[2]) / 8);  
+	destination[1] = -((int16_t)((rawData[1] << 8) | rawData[0]) / 8);  // Turn the MSB and LSB into a signed 12-bit value
+	destination[0] = ((int16_t)((rawData[3] << 8) | rawData[2]) / 8);  
 	destination[2] = ((int16_t)((rawData[5] << 8) | rawData[4]) / 8); 
 	return true;
 }
@@ -200,8 +200,8 @@ bool readBMX055DataGyro(int16_t *destination)
 {
 	uint8_t rawData[6];  // x/y/z gyro register data stored here
 	i2c_readData(BMX055_GYRO_ADDRESS, BMX055_GYRO_RATE_X_LSB, rawData, 6);  // Read the six raw data registers sequentially into data array
-	destination[0] = (int16_t) (((int16_t)rawData[1] << 8) | rawData[0]);   // Turn the MSB and LSB into a signed 16-bit value
-	destination[1] = (int16_t) (((int16_t)rawData[3] << 8) | rawData[2]);  
+	destination[1] = -(int16_t) (((int16_t)rawData[1] << 8) | rawData[0]);   // Turn the MSB and LSB into a signed 16-bit value
+	destination[0] = (int16_t) (((int16_t)rawData[3] << 8) | rawData[2]);  
 	destination[2] = (int16_t) (((int16_t)rawData[5] << 8) | rawData[4]); 
 	return true;
 }
@@ -223,7 +223,7 @@ bool readBMX055DataMag(int16_t *destination)
 		data_r = (uint16_t) (((uint16_t)rawData[7] << 8) | rawData[6]) >> 2;  // 14-bit unsigned integer for Hall resistance
 
 		destination[0] = compensate_BMX055_X(mdata_x, data_r);
-		destination[1] = compensate_BMX055_Y(mdata_y, data_r);
+		destination[1] = -compensate_BMX055_Y(mdata_y, data_r);
 		destination[2] = compensate_BMX055_Z(mdata_z, data_r);
 		
 		

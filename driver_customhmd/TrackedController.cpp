@@ -224,12 +224,7 @@ bool CTrackedController::TriggerHapticPulse(uint32_t unAxisId, uint16_t usPulseD
 	packet.Command.Command = CMD_VIBRATE;
 	packet.Command.Data.Vibration.Axis = unAxisId;
 	packet.Command.Data.Vibration.Duration = usPulseDurationMicroseconds;
-	
-	uint8_t* data = (uint8_t*)&packet;
-	uint8_t crc = 0;
-	for (int i = 0; i<sizeof(USBPacket); i++)
-		crc ^= data[i];
-	packet.Header.Crc8 = crc;
+	SetPacketCrc(&packet);
 	m_pServer->SendUSBCommand(packet);
 	return true;
 }

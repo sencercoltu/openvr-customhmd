@@ -333,7 +333,7 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x5748E8A0)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x5748E8A0)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x5748E8A0)
 I (..\..\Common\led.h)(0x576C37E1)
-F (..\..\Common\bmx055.c)(0x57C733F5)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-ID:\Projects\Windows\SteamVR\stm32\TrackedDevice\MDK-ARM\RTE-ID:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-ID:\Programs\STMicroelectronics\Keil\ARM\CMSIS\Include-D__UVISION_VERSION="521" -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o trackeddevice\bmx055.o --omf_browse trackeddevice\bmx055.crf --depend trackeddevice\bmx055.d)
+F (..\..\Common\bmx055.c)(0x57C75352)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Include -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include --C99  --cpp-ID:\Projects\Windows\SteamVR\stm32\TrackedDevice\MDK-ARM\RTE-ID:\Programs\STMicroelectronics\Keil\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include-ID:\Programs\STMicroelectronics\Keil\ARM\CMSIS\Include-D__UVISION_VERSION="521" -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o trackeddevice\bmx055.o --omf_browse trackeddevice\bmx055.crf --depend trackeddevice\bmx055.d)
 I (..\..\Common\bmx055.h)(0x57C0C451)
 I (..\..\Common\i2c.h)(0x57A2865C)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x5748E8A0)

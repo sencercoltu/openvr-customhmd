@@ -3,7 +3,7 @@
 <title>Static Call Graph - [TrackedDevice\TrackedDevice.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image TrackedDevice\TrackedDevice.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060300: Last Updated: Wed Aug 31 23:38:03 2016
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060300: Last Updated: Thu Sep 01 00:59:48 2016
 <BR><P>
 <H3>Maximum Stack Usage =        512 bytes + Unknown(Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
@@ -1431,7 +1431,7 @@ Global Symbols
 <LI><a href="#[97]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;checkBMX055()
 </UL>
 
-<P><STRONG><a name="[a7]"></a>readBMX055DataMag(short*)</STRONG> (Thumb, 84 bytes, Stack size 32 bytes, bmx055.o(i._Z17readBMX055DataMagPs))
+<P><STRONG><a name="[a7]"></a>readBMX055DataMag(short*)</STRONG> (Thumb, 86 bytes, Stack size 32 bytes, bmx055.o(i._Z17readBMX055DataMagPs))
 <BR><BR>[Stack]<UL><LI>Max Depth = 176<LI>Call Chain = readBMX055DataMag(short*) &rArr; i2c_readData(unsigned char, unsigned char, unsigned char*, unsigned short) &rArr; HAL_I2C_Mem_Read &rArr; I2C_RequestMemoryRead(I2C_HandleTypeDef*, unsigned short, unsigned short, unsigned short, unsigned) &rArr; I2C_WaitOnFlagUntilTimeout(I2C_HandleTypeDef*, unsigned, FlagStatus, unsigned)
 </UL>
 <BR>[Calls]<UL><LI><a href="#[c3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;compensate_BMX055_Z(short, unsigned short)
@@ -1457,7 +1457,7 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[35]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
-<P><STRONG><a name="[b2]"></a>readBMX055DataGyro(short*)</STRONG> (Thumb, 38 bytes, Stack size 16 bytes, bmx055.o(i._Z18readBMX055DataGyroPs))
+<P><STRONG><a name="[b2]"></a>readBMX055DataGyro(short*)</STRONG> (Thumb, 40 bytes, Stack size 16 bytes, bmx055.o(i._Z18readBMX055DataGyroPs))
 <BR><BR>[Stack]<UL><LI>Max Depth = 160<LI>Call Chain = readBMX055DataGyro(short*) &rArr; i2c_readData(unsigned char, unsigned char, unsigned char*, unsigned short) &rArr; HAL_I2C_Mem_Read &rArr; I2C_RequestMemoryRead(I2C_HandleTypeDef*, unsigned short, unsigned short, unsigned short, unsigned) &rArr; I2C_WaitOnFlagUntilTimeout(I2C_HandleTypeDef*, unsigned, FlagStatus, unsigned)
 </UL>
 <BR>[Calls]<UL><LI><a href="#[91]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;i2c_readData(unsigned char, unsigned char, unsigned char*, unsigned short)
@@ -1483,7 +1483,7 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[a7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;readBMX055DataMag(short*)
 </UL>
 
-<P><STRONG><a name="[b8]"></a>readBMX055DataAccel(short*)</STRONG> (Thumb, 62 bytes, Stack size 16 bytes, bmx055.o(i._Z19readBMX055DataAccelPs))
+<P><STRONG><a name="[b8]"></a>readBMX055DataAccel(short*)</STRONG> (Thumb, 64 bytes, Stack size 16 bytes, bmx055.o(i._Z19readBMX055DataAccelPs))
 <BR><BR>[Stack]<UL><LI>Max Depth = 160<LI>Call Chain = readBMX055DataAccel(short*) &rArr; i2c_readData(unsigned char, unsigned char, unsigned char*, unsigned short) &rArr; HAL_I2C_Mem_Read &rArr; I2C_RequestMemoryRead(I2C_HandleTypeDef*, unsigned short, unsigned short, unsigned short, unsigned) &rArr; I2C_WaitOnFlagUntilTimeout(I2C_HandleTypeDef*, unsigned, FlagStatus, unsigned)
 </UL>
 <BR>[Calls]<UL><LI><a href="#[91]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;i2c_readData(unsigned char, unsigned char, unsigned char*, unsigned short)

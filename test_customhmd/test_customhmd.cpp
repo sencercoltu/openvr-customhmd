@@ -141,27 +141,41 @@ int main(int argc, char* argv[])
 	res = hid_get_manufacturer_string(handle, wstr, MAX_STR);
 	if (res < 0)
 		printf("Unable to read manufacturer string\n");
-	printf("Manufacturer String: %ls\n", wstr);
+	else
+		printf("Manufacturer String: %ls\n", wstr);
 
 	// Read the Product String
 	wstr[0] = 0x0000;
 	res = hid_get_product_string(handle, wstr, MAX_STR);
 	if (res < 0)
 		printf("Unable to read product string\n");
-	printf("Product String: %ls\n", wstr);
+	else
+		printf("Product String: %ls\n", wstr);
 
 	// Read the Serial Number String
 	wstr[0] = 0x0000;
 	res = hid_get_serial_number_string(handle, wstr, MAX_STR);
 	if (res < 0)
 		printf("Unable to read serial number string\n");
-	printf("Serial Number String: (%d) %ls", wstr[0], wstr);
-	printf("\n");
+	else
+		printf("Serial Number String: (%d) %ls\n", wstr[0], wstr);
+	
 
 	// Set the hid_read() function to be non-blocking.
 	hid_set_nonblocking(handle, 1);
 	
+
+	struct CalibData  
+	{
+		uint8_t State; //1 for enable, 0 for disable (set by driver)
+		float Accel[3];
+		float Gyro[3];
+		float Mag[3];
+	} calib;
+	calib = { 0 };
 	
+	int rawState = 0;
+
 	auto xxx = (USBPacket*)buf;
 	auto yyy = (USBPacket*)(buf+1);
 	uint8_t lastType = 0;
@@ -224,11 +238,41 @@ int main(int argc, char* argv[])
 						{
 							case CMD_RAW_DATA:
 								//calc averages
+								if (!calib.State)
+								{
+									for (int i = 0; i < 3; i++)
+									{
+										
+										calib.Accel[i] = xxx->Command.Data.Raw.Accel[i];
+										calib.Gyro[i] = xxx->Command.Data.Raw.Gyro[i];
+										calib.Mag[i] = xxx->Command.Data.Raw.Mag[i];
 
-								printf("AX: %05d AY: %05d AZ: %05d GX: %05d GY: %05d GZ: %05d MX: %05d MY: %05d MZ: %05d", 
-									xxx->Command.Data.Raw.Accel[0], xxx->Command.Data.Raw.Accel[1], xxx->Command.Data.Raw.Accel[2],
-									xxx->Command.Data.Raw.Gyro[0], xxx->Command.Data.Raw.Gyro[1], xxx->Command.Data.Raw.Gyro[2],
-									xxx->Command.Data.Raw.Mag[0], xxx->Command.Data.Raw.Mag[1], xxx->Command.Data.Raw.Mag[2]);
+									}
+									memcpy(&calib, &xxx->Command.Data.Raw, sizeof(calib));
+									calib.State = 1;
+								}
+								else
+								{
+									for (int i = 0; i < 3; i++)
+									{
+										
+										calib.Accel[i] = (calib.Accel[i] * 0.95f) + ((float)xxx->Command.Data.Raw.Accel[i] * 0.05f); 
+										calib.Gyro[i] = (calib.Gyro[i] * 0.95f) + ((float)xxx->Command.Data.Raw.Gyro[i] * 0.05f); 
+										calib.Mag[i] = (calib.Mag[i] * 0.95f) + ((float)xxx->Command.Data.Raw.Mag[i] * 0.05f); 
+
+									}
+								}
+
+								//printf("AX: %05d AY: %05d AZ: %05d GX: %05d GY: %05d GZ: %05d MX: %05d MY: %05d MZ: %05d\n", 
+								//	xxx->Command.Data.Raw.Accel[0], xxx->Command.Data.Raw.Accel[1], xxx->Command.Data.Raw.Accel[2],
+								//	xxx->Command.Data.Raw.Gyro[0], xxx->Command.Data.Raw.Gyro[1], xxx->Command.Data.Raw.Gyro[2],
+								//	xxx->Command.Data.Raw.Mag[0], xxx->Command.Data.Raw.Mag[1], xxx->Command.Data.Raw.Mag[2]);
+
+								printf("AAX: %05d AAY: %05d AAZ: %05d AGX: %05d AGY: %05d AGZ: %05d AMX: %05d AMY: %05d AMZ: %05d",
+									(int)calib.Accel[0], (int)calib.Accel[1], (int)calib.Accel[2],
+									(int)calib.Gyro[0], (int)calib.Gyro[1], (int)calib.Gyro[2],
+									(int)calib.Mag[0], (int)calib.Mag[1], (int)calib.Mag[2]);
+
 								break;
 						}
 						break;
@@ -258,7 +302,23 @@ int main(int argc, char* argv[])
 			yyy->Header.Type = COMMAND_DATA | HMD_SOURCE;
 			yyy->Header.Crc8 = 0;
 			yyy->Command.Command = CMD_RAW_DATA;
-			yyy->Command.Data.Raw.State = 1;
+			rawState++;
+			yyy->Command.Data.Raw.State = (rawState % 2);
+			SetPacketCrc(yyy);
+			hid_write(handle, buf, sizeof(buf));
+		}
+		if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) && ((GetAsyncKeyState(VK_LSHIFT) & 0x8000)))
+		{
+			printf("Sending calib data cmd\n");
+			memset(buf, 0, sizeof(buf));
+			yyy->Header.Sequence = (uint16_t)(GetTickCount() / 1000);
+			yyy->Header.Type = COMMAND_DATA | HMD_SOURCE;
+			yyy->Header.Crc8 = 0;
+			yyy->Command.Command = CMD_CALIBRATE;
+			yyy->Command.Data.Calibration.SensorMask = SENSOR_MAG;
+			yyy->Command.Data.Calibration.OffsetMag[0] = -48;
+			yyy->Command.Data.Calibration.OffsetMag[1] = 1215;
+			yyy->Command.Data.Calibration.OffsetMag[2] = -1165;
 			SetPacketCrc(yyy);
 			hid_write(handle, buf, sizeof(buf));
 		}
