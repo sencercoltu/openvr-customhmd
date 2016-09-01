@@ -7,7 +7,7 @@
 float gRes = 1.0f;
 float mRes = 1.0f;
 float aRes = 1.0f;
-int16_t gyroOffset[3] = {0};
+
 
 
 bool hasADXL345 = false;
@@ -69,31 +69,31 @@ void resetGyroOffset()
 {
 }
 
-void calibrateGyroOffset()
-{	
-	resetGyroOffset();
-	int readings = 0;	
-	int16_t data[3] = {0};		
-	do
-	{
-		if (readGyroData(data))
-		{			
-			if (!readings)
-			{
-				gyroOffset[0] = data[0];
-				gyroOffset[1] = data[1];
-				gyroOffset[2] = data[2];
-			}
-			else
-			{			
-				gyroOffset[0] = gyroOffset[0] * 0.95 + data[0] * 0.05;
-				gyroOffset[1] = gyroOffset[1] * 0.95 + data[1] * 0.05;
-				gyroOffset[2] = gyroOffset[2] * 0.95 + data[2] * 0.05;
-			}
-			readings++;
-		}		
-	} while(readings < 100);
-}
+//void calibrateGyroOffset()
+//{	
+//	resetGyroOffset();
+//	int readings = 0;	
+//	int16_t data[3] = {0};		
+//	do
+//	{
+//		if (readGyroData(data))
+//		{			
+//			if (!readings)
+//			{
+//				gyroOffset[0] = data[0];
+//				gyroOffset[1] = data[1];
+//				gyroOffset[2] = data[2];
+//			}
+//			else
+//			{			
+//				gyroOffset[0] = gyroOffset[0] * 0.95 + data[0] * 0.05;
+//				gyroOffset[1] = gyroOffset[1] * 0.95 + data[1] * 0.05;
+//				gyroOffset[2] = gyroOffset[2] * 0.95 + data[2] * 0.05;
+//			}
+//			readings++;
+//		}		
+//	} while(readings < 100);
+//}
 
 
 
@@ -150,7 +150,7 @@ bool initSensors()
 	hasBMX055 = checkBMX055(); if (hasBMX055) {initBMX055();}
 	if (!hasBMX055)
 	{
-		hasADXL345 = checkADXL345(); if (hasADXL345) {initADXL345();}
+		hasADXL345 = checkADXL345(); if (hasADXL345) initADXL345();
 		hasHMC5883L = checkHMC5883L(); if (hasHMC5883L) initHMC5883L();
 		hasL3G4200D = checkL3G4200D(); if (hasL3G4200D) initL3G4200D();
 		if (!hasL3G4200D) //same address as hasITG3200

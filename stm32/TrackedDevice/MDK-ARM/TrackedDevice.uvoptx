@@ -202,32 +202,42 @@
         <Ww>
           <count>0</count>
           <WinNumber>1</WinNumber>
-          <ItemText>sndCounter</ItemText>
+          <ItemText>magMaxX,0x0A</ItemText>
         </Ww>
         <Ww>
           <count>1</count>
           <WinNumber>1</WinNumber>
-          <ItemText>rcvCounter</ItemText>
+          <ItemText>magMinX,0x0A</ItemText>
         </Ww>
         <Ww>
           <count>2</count>
           <WinNumber>1</WinNumber>
-          <ItemText>nextSend</ItemText>
+          <ItemText>magMaxY,0x0A</ItemText>
         </Ww>
         <Ww>
           <count>3</count>
           <WinNumber>1</WinNumber>
-          <ItemText>RF_InitStruct</ItemText>
+          <ItemText>magMinY,0x0A</ItemText>
         </Ww>
         <Ww>
           <count>4</count>
           <WinNumber>1</WinNumber>
-          <ItemText>rfStatus</ItemText>
+          <ItemText>magMaxZ,0x0A</ItemText>
         </Ww>
         <Ww>
           <count>5</count>
           <WinNumber>1</WinNumber>
-          <ItemText>pUSBCommandPacket-&gt;Command.Data.Calibration</ItemText>
+          <ItemText>magMinZ,0x0A</ItemText>
+        </Ww>
+        <Ww>
+          <count>6</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>magDiffX</ItemText>
+        </Ww>
+        <Ww>
+          <count>7</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>destination</ItemText>
         </Ww>
       </WatchWindow1>
       <Tracepoint>

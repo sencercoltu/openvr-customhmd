@@ -246,9 +246,8 @@ int main(int argc, char* argv[])
 										calib.Accel[i] = xxx->Command.Data.Raw.Accel[i];
 										calib.Gyro[i] = xxx->Command.Data.Raw.Gyro[i];
 										calib.Mag[i] = xxx->Command.Data.Raw.Mag[i];
-
 									}
-									memcpy(&calib, &xxx->Command.Data.Raw, sizeof(calib));
+									
 									calib.State = 1;
 								}
 								else

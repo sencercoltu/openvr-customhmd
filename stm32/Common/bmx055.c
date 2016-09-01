@@ -4,8 +4,12 @@ uint8_t Gscale = GFS55_500DPS;       // set gyro full scale
 uint8_t GODRBW = G55_400Hz47Hz;      // set gyro ODR and bandwidth 
 uint8_t Ascale = AFS_2G;           // set accel full scale  
 uint8_t ACCBW  = 0x08 | ABW_500Hz;  // Choose bandwidth for accelerometer, need bit 3 = 1 to enable bandwidth choice in enum
-uint8_t Mmode  = highAccuracy;          // Choose magnetometer operation mode
-uint8_t MODR   = MODR_20Hz;        // set magnetometer data rate 
+uint8_t Mmode  = lowPower;          // Choose magnetometer operation mode
+uint8_t MODR   = MODR_10Hz;        // set magnetometer data rate 
+
+int16_t magMaxX = -32000, magMinX = 32000;
+int16_t magMaxY = -32000, magMinY = 32000;
+int16_t magMaxZ = -32000, magMinZ = 32000;
 
 bool checkBMX055()
 {
@@ -127,8 +131,9 @@ void initBMX055()
 	
 	HAL_Delay(100); 
 	
-	i2c_writeRegisterByte(BMX055_MAG_ADDRESS, BMX055_MAG_PWR_CNTL1, 0x82);  // Softreset magnetometer, ends up in sleep mode
+	i2c_writeRegisterByte(BMX055_MAG_ADDRESS, BMX055_MAG_PWR_CNTL1, 0x82);  // Softreset magnetometer, ends up in sleep mode	
 	HAL_Delay(100);
+	
 	i2c_writeRegisterByte(BMX055_MAG_ADDRESS, BMX055_MAG_PWR_CNTL1, 0x01); // Wake up magnetometer
 	HAL_Delay(100);
 
@@ -136,8 +141,8 @@ void initBMX055()
 		
 	HAL_Delay(100); // Wait for all registers to reset 
 		
-	i2c_writeRegisterByte(BMX055_MAG_ADDRESS, BMX055_MAG_REP_XY, 23);  // 2x+1 = 47 sample avg for XY-axis
-	i2c_writeRegisterByte(BMX055_MAG_ADDRESS, BMX055_MAG_REP_Z,  41);  // 2x+1 = 83 sample avg for Z-axis
+	i2c_writeRegisterByte(BMX055_MAG_ADDRESS, BMX055_MAG_REP_XY, 1 /*23*/);  //  3 samples // 2x+1 = 47 sample avg for XY-axis
+	i2c_writeRegisterByte(BMX055_MAG_ADDRESS, BMX055_MAG_REP_Z, 2 /*41*/);  // 3 samples //2x+1 = 83 sample avg for Z-axis
 
 	HAL_Delay(100); // Wait for all registers to reset 
 	
@@ -222,10 +227,14 @@ bool readBMX055DataMag(int16_t *destination)
 		
 		data_r = (uint16_t) (((uint16_t)rawData[7] << 8) | rawData[6]) >> 2;  // 14-bit unsigned integer for Hall resistance
 
-		destination[0] = compensate_BMX055_X(mdata_x, data_r);
+		destination[0] = -compensate_BMX055_X(mdata_x, data_r);
 		destination[1] = -compensate_BMX055_Y(mdata_y, data_r);
-		destination[2] = compensate_BMX055_Z(mdata_z, data_r);
+		destination[2] = -compensate_BMX055_Z(mdata_z, data_r);
 		
+		//auto offset calibration
+		if (destination[0] > magMaxX) magMaxX = destination[0]; if (destination[0] < magMinX) magMinX = destination[0]; int16_t magDiffX = (magMaxX + magMinX) / 2; destination[0] -= magDiffX;
+		if (destination[1] > magMaxY) magMaxY = destination[1]; if (destination[1] < magMinY) magMinY = destination[1]; int16_t magDiffY = (magMaxY + magMinY) / 2; destination[1] -= magDiffY;
+		if (destination[2] > magMaxZ) magMaxZ = destination[2]; if (destination[2] < magMinZ) magMinZ = destination[2]; int16_t magDiffZ = (magMaxZ + magMinZ) / 2; destination[2] -= magDiffZ;
 		
 //		// calculate temperature compensated 16-bit magnetic fields
 //		temp = ((int16_t)(((uint16_t)((((int32_t)dig_xyz1) << 14)/(data_r != 0 ? data_r : dig_xyz1))) - ((uint16_t)0x4000)));

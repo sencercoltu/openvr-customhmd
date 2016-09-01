@@ -57,7 +57,7 @@ Quaternion CSensorFusion::Fuse(SensorData *pData)
 // device orientation -- which can be converted to yaw, pitch, and roll. Useful for stabilizing quadcopters, etc.
 // The performance of the orientation filter is at least as good as conventional Kalman-based filtering algorithms
 // but is much less computationally intensive---it can be performed on a 3.3 V Pro Mini operating at 8 MHz!
-void CSensorFusion::MadgwickQuaternionUpdate(float deltat, float ax, float ay, float az, float gx, float gy, float gz, float my, float mx, float mz)
+void CSensorFusion::MadgwickQuaternionUpdate(float deltat, float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz)
 {	
 	float q1 = m_RotQuat.w, q2 = m_RotQuat.x, q3 = m_RotQuat.y, q4 = m_RotQuat.z;   // short name local variable for readability
 	
