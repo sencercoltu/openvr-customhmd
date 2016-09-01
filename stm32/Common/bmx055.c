@@ -5,7 +5,8 @@ uint8_t GODRBW = G55_400Hz47Hz;      // set gyro ODR and bandwidth
 uint8_t Ascale = AFS_2G;           // set accel full scale  
 uint8_t ACCBW  = 0x08 | ABW_500Hz;  // Choose bandwidth for accelerometer, need bit 3 = 1 to enable bandwidth choice in enum
 uint8_t Mmode  = lowPower;          // Choose magnetometer operation mode
-uint8_t MODR   = MODR_10Hz;        // set magnetometer data rate 
+//uint8_t MODR   = MODR_10Hz;        // set magnetometer data rate 
+uint8_t MODR   = MODR_30Hz;        // set magnetometer data rate 
 
 int16_t magMaxX = -32000, magMinX = 32000;
 int16_t magMaxY = -32000, magMinY = 32000;
@@ -141,8 +142,10 @@ void initBMX055()
 		
 	HAL_Delay(100); // Wait for all registers to reset 
 		
-	i2c_writeRegisterByte(BMX055_MAG_ADDRESS, BMX055_MAG_REP_XY, 1 /*23*/);  //  3 samples // 2x+1 = 47 sample avg for XY-axis
-	i2c_writeRegisterByte(BMX055_MAG_ADDRESS, BMX055_MAG_REP_Z, 2 /*41*/);  // 3 samples //2x+1 = 83 sample avg for Z-axis
+	i2c_writeRegisterByte(BMX055_MAG_ADDRESS, BMX055_MAG_REP_XY, 23);  //  2x+1 = 47 sample avg for XY-axis
+	i2c_writeRegisterByte(BMX055_MAG_ADDRESS, BMX055_MAG_REP_Z, 41);  // 2x+1 = 83 sample avg for Z-axis
+	//i2c_writeRegisterByte(BMX055_MAG_ADDRESS, BMX055_MAG_REP_XY, 1 /*23*/);  //  3 samples // 2x+1 = 47 sample avg for XY-axis
+	//i2c_writeRegisterByte(BMX055_MAG_ADDRESS, BMX055_MAG_REP_Z, 2 /*41*/);  // 3 samples //2x+1 = 83 sample avg for Z-axis
 
 	HAL_Delay(100); // Wait for all registers to reset 
 	

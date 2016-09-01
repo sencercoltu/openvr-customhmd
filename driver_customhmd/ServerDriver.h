@@ -27,6 +27,7 @@ public:
 	IServerDriverHost *m_pDriverHost;
 	void AlignHMD(HmdVector3d_t *pAlign);
 	void SendUSBCommand(USBPacket &command);
+	void RemoveTrackedDevice(CTrackedDevice *pDevice);
 private:	
 	std::string m_UserDriverConfigDir;
 	std::string m_DriverInstallDir;

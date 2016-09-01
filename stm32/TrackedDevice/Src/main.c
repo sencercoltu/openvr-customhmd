@@ -224,10 +224,21 @@ int main(void)
 
   /* USER CODE BEGIN 2 */
 	LedOff();	 
-	HAL_GPIO_WritePin(CTL_VIBRATE_GPIO_Port, CTL_VIBRATE_Pin, GPIO_PIN_SET); 
-	BlinkRease(30);
-	HAL_GPIO_WritePin(CTL_VIBRATE_GPIO_Port, CTL_VIBRATE_Pin, GPIO_PIN_RESET);
 
+
+	ctlSource = HMD_SOURCE;
+	ctlSource += (GPIO_PIN_SET == HAL_GPIO_ReadPin(CTL_MODE1_GPIO_Port, CTL_MODE1_Pin)?1:0); 
+	ctlSource += (GPIO_PIN_SET == HAL_GPIO_ReadPin(CTL_MODE2_GPIO_Port, CTL_MODE2_Pin)?2:0); 	
+	srand(ctlSource);
+
+
+	if (ctlSource == RIGHTCTL_SOURCE || ctlSource == LEFTCTL_SOURCE)
+	{
+		HAL_GPIO_WritePin(CTL_VIBRATE_GPIO_Port, CTL_VIBRATE_Pin, GPIO_PIN_SET); 
+		BlinkRease(30);
+		HAL_GPIO_WritePin(CTL_VIBRATE_GPIO_Port, CTL_VIBRATE_Pin, GPIO_PIN_RESET);
+		HAL_Delay(250);
+	}
 
 //	GPIO_InitTypeDef GPIO_InitStruct;
 //	GPIO_InitStruct.Pin = I2C_SCL_Pin;
@@ -247,11 +258,6 @@ int main(void)
 //	HAL_GPIO_DeInit(I2C_SCL_GPIO_Port, I2C_SCL_Pin);
 //	HAL_Delay(10);
 //	
-
-	ctlSource = HMD_SOURCE;
-	ctlSource += (GPIO_PIN_SET == HAL_GPIO_ReadPin(CTL_MODE1_GPIO_Port, CTL_MODE1_Pin)?1:0); 
-	ctlSource += (GPIO_PIN_SET == HAL_GPIO_ReadPin(CTL_MODE2_GPIO_Port, CTL_MODE2_Pin)?2:0); 	
-	srand(ctlSource);
 
 	rfStatus = TrackedDevice_NRF24L01_Init();	
 	if (rfStatus == 0x00 || rfStatus == 0xff)
@@ -275,8 +281,17 @@ int main(void)
 		HAL_Delay(10);
 	}
 	
+	if (ctlSource == RIGHTCTL_SOURCE || ctlSource == LEFTCTL_SOURCE)
+	{
+		HAL_GPIO_WritePin(CTL_VIBRATE_GPIO_Port, CTL_VIBRATE_Pin, GPIO_PIN_SET); 
+		BlinkRease(20);
+		HAL_GPIO_WritePin(CTL_VIBRATE_GPIO_Port, CTL_VIBRATE_Pin, GPIO_PIN_RESET);
+		HAL_Delay(100);
+	}
+
+	
 	//bool sensorWarmup = false;
-	int extraDelay = ctlSource>HMD_SOURCE? 25:5;
+	int extraDelay = ctlSource>HMD_SOURCE? 20:3;
 	
 	bool hasRotationData = false;
 	bool hasPositionData = false;
@@ -457,8 +472,9 @@ int main(void)
 				rcvCounter++;
 				//receive command
 				//has fifo, receive
-				readyToReceive = RF_ReceivePayload(&hspi2, (uint8_t*)pUSBCommandPacket, sizeof(USBPacket)) == 0; //if not empty 																
-				if ((pUSBCommandPacket->Header.Type & ctlSource) == ctlSource)
+				readyToReceive = RF_ReceivePayload(&hspi2, (uint8_t*)pUSBCommandPacket, sizeof(USBPacket)) == 0; //if not empty 
+				
+				if (CheckPacketCrc(pUSBCommandPacket) && ((pUSBCommandPacket->Header.Type & 0x0F)) == ctlSource)
 				{
 					if (lastCommandSequence != pUSBCommandPacket->Header.Sequence) //discard duplicates
 					{

@@ -66,7 +66,8 @@ void CTrackedController::Deactivate()
 
 void CTrackedController::PowerOff()
 {
-	_LOG(__FUNCTION__);
+	_LOG(__FUNCTION__);		
+	// m_pServer->RemoveTrackedDevice(this); no DriverHost->TrackedDeviceRemoved function present :((
 }
 
 void *CTrackedController::GetComponent(const char * pchComponentNameAndVersion)
@@ -486,12 +487,12 @@ void CTrackedController::PoseUpdate(USBPacket *pPacket, HmdVector3d_t *pCenterEu
 
 			switch (m_Role)
 			{
-			case ETrackedControllerRole::TrackedControllerRole_LeftHand:
+			case ETrackedControllerRole::TrackedControllerRole_RightHand:
 				m_ControllerData.Pose.vecPosition[0] += 0.2;
 				m_ControllerData.Pose.vecPosition[1] += -0.2;
 				m_ControllerData.Pose.vecPosition[2] += -0.5;
 				break;
-			case ETrackedControllerRole::TrackedControllerRole_RightHand:
+			case ETrackedControllerRole::TrackedControllerRole_LeftHand:
 				m_ControllerData.Pose.vecPosition[0] += -0.2;
 				m_ControllerData.Pose.vecPosition[1] += -0.2;
 				m_ControllerData.Pose.vecPosition[2] += -0.5;

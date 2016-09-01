@@ -27,6 +27,7 @@ extern "C" {
 #define LIGHTHOUSE1_SOURCE 	0x04
 #define LIGHTHOUSE2_SOURCE 	0x05
 #define MAX_SOURCE 			0x06
+#define INVALID_SOURCE 		0x0F
 
 #define ROTATION_DATA 0x10
 #define POSITION_DATA 0x20
@@ -58,7 +59,6 @@ struct USBDataHeader
 
 struct USBPositionData
 {
-	struct USBDataHeader Header;
 	uint16_t X1; //elapsed time since sync1 & 2
 	uint16_t Y1;
 	uint16_t X2;

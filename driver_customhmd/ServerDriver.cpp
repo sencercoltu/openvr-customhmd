@@ -107,6 +107,18 @@ void CServerDriver::ScanSyncReceived(uint64_t syncTime)
 	_LOG(__FUNCTION__" sync @ %I64u" , syncTime);
 }
 
+void CServerDriver::RemoveTrackedDevice(CTrackedDevice *pDevice)
+{
+	for (auto iter = m_TrackedDevices.begin(); iter != m_TrackedDevices.end(); iter++)
+	{
+		if (*iter == pDevice)
+		{
+			delete (*iter);
+			return;
+		}
+	}
+}
+
 void CServerDriver::Run()
 {	
 	int pos = 0;
@@ -165,7 +177,7 @@ void CServerDriver::Run()
 					switch (pUSBPacket->Header.Type & 0x0F)
 					{
 					case BASESTATION_SOURCE:
-						if ((pUSBPacket->Header.Type & COMMAND_DATA) == COMMAND_DATA)
+						if ((pUSBPacket->Header.Type & 0xF0) == COMMAND_DATA)
 							ScanSyncReceived(pUSBPacket->Command.Data.Sync.SyncTime);
 						break;							
 					case LEFTCTL_SOURCE:

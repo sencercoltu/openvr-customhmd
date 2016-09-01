@@ -20,8 +20,9 @@ typedef struct
 #pragma pack(pop)
 
 
-#define SF_GyroMeasError M_PI * (40.0f / 180.0f)       // gyroscope measurement error in rads/s (shown as 40 deg/s)
-#define SF_GyroMeasDrift M_PI * (0.0f / 180.0f)      // gyroscope measurement drift in rad/s/s (shown as 0.0 deg/s/s)
+//#define SF_GyroMeasError M_PI * (40.0f / 180.0f)       // gyroscope measurement error in rads/s (shown as 40 deg/s)
+#define SF_GyroMeasError M_PI * (20.0f / 180.0f)       // gyroscope measurement error in rads/s (shown as 40 deg/s)
+#define SF_GyroMeasDrift M_PI * (0.2f / 180.0f)      // gyroscope measurement drift in rad/s/s (shown as 0.0 deg/s/s)
 #define SF_Beta sqrt(3.0f / 4.0f) * SF_GyroMeasError // compute beta
 #define SF_Zeta sqrt(3.0f / 4.0f) * SF_GyroMeasDrift // compute zeta
 #define SF_Kp 2.0f * 5.0f // these are the free parameters in the Mahony filter and fusion scheme, Kp for proportional feedback, Ki for integral
