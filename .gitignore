@@ -34,3 +34,14 @@ driver_customhmd/*.filters
 *.VC.db
 *.tmp
 *.temp
+stm32/**/*.axf
+stm32/**/*.build_log.htm
+stm32/**/*.lnp
+stm32/**/*.d
+stm32/**/*.o
+stm32/**/*.dep
+stm32/**/*.hex
+stm32/**/*.htm
+stm32/**/*.lst
+stm32/**/*.map
+
