@@ -218,15 +218,16 @@ VRControllerState_t CTrackedController::GetControllerState()
 bool CTrackedController::TriggerHapticPulse(uint32_t unAxisId, uint16_t usPulseDurationMicroseconds)
 {
 	_LOG(__FUNCTION__" axId: %d, dur: %d", unAxisId, usPulseDurationMicroseconds);
-	USBPacket packet = { 0 };
-	packet.Header.Type = m_Role | COMMAND_DATA;
-	packet.Header.Crc8 = 0;
-	packet.Header.Sequence = (uint16_t) GetTickCount(); //put timestamp as sequence to hopefully prevent duplicates on target
-	packet.Command.Command = CMD_VIBRATE;
-	packet.Command.Data.Vibration.Axis = unAxisId;
-	packet.Command.Data.Vibration.Duration = usPulseDurationMicroseconds;
-	SetPacketCrc(&packet);
-	m_pServer->SendUSBCommand(packet);
+	USBPacket *pPacket = new USBPacket;
+	ZeroMemory(pPacket, sizeof(USBPacket));
+	pPacket->Header.Type = m_Role | COMMAND_DATA;
+	pPacket->Header.Crc8 = 0;
+	pPacket->Header.Sequence = (uint16_t) GetTickCount(); //put timestamp as sequence to hopefully prevent duplicates on target
+	pPacket->Command.Command = CMD_VIBRATE;
+	pPacket->Command.Data.Vibration.Axis = unAxisId;
+	pPacket->Command.Data.Vibration.Duration = usPulseDurationMicroseconds;
+	SetPacketCrc(pPacket);
+	m_pServer->SendUSBCommand(pPacket);
 	return true;
 }
 
@@ -382,8 +383,8 @@ void CTrackedController::RunFrame(DWORD currTick)
 	if (WAIT_OBJECT_0 == WaitForSingleObject(m_ControllerData.hPoseLock, INFINITE))
 	{
 		if (m_ControllerData.PoseUpdated)
-		{
-			pose = m_ControllerData.Pose;
+		{			
+			pose = m_ControllerData.Pose;			
 			m_ControllerData.PoseUpdated = false;
 		}
 		ReleaseMutex(m_ControllerData.hPoseLock);

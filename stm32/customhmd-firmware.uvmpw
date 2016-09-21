@@ -9,7 +9,6 @@
 
   <project>
     <PathAndName>.\BaseStation\MDK-ARM\BaseStation.uvprojx</PathAndName>
-    <NodeIsExpanded>1</NodeIsExpanded>
   </project>
 
   <project>

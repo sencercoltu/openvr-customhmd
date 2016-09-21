@@ -180,6 +180,8 @@
 #define AFS_8G  0x08
 #define AFS_16G 0x0C
 
+extern int16_t AccelOffsets[3];
+
 enum BMX055_Arate {    // define BMX055 accelerometer bandwidths
   ABW_8Hz,      // 7.81 Hz,  64 ms update time
   ABW_16Hz,     // 15.63 Hz, 32 ms update time
@@ -188,7 +190,7 @@ enum BMX055_Arate {    // define BMX055 accelerometer bandwidths
   ABW_125Hz,    // 125   Hz,  4 ms update time
   ABW_250Hz,    // 250   Hz,  2 ms update time
   ABW_500Hz,    // 500   Hz,  1 ms update time
-  ABW_100Hz     // 1000  Hz,  0.5 ms update time
+  ABW_1000Hz     // 1000  Hz,  0.5 ms update time
 };
 
 enum BMX055_Gscale {

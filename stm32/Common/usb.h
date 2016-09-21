@@ -39,6 +39,7 @@ extern "C" {
 #define CMD_CALIBRATE		0x02
 #define CMD_SYNC			0x03
 #define CMD_RAW_DATA		0x04
+#define CMD_STATUS			0x05
 
 
 #define BUTTON_0 0x01
@@ -57,17 +58,23 @@ struct USBDataHeader
 	uint8_t Crc8; //source & data
 };
 
+//struct USBPositionData
+//{
+//	uint16_t X1; //elapsed time since sync1 & 2
+//	uint16_t Y1;
+//	uint16_t X2;
+//	uint16_t Y2;
+//	uint16_t X3;
+//	uint16_t Y3;
+//	uint16_t X4;
+//	uint16_t Y4;	
+//};
+
 struct USBPositionData
 {
-	uint16_t X1; //elapsed time since sync1 & 2
-	uint16_t Y1;
-	uint16_t X2;
-	uint16_t Y2;
-	uint16_t X3;
-	uint16_t Y3;
-	uint16_t X4;
-	uint16_t Y4;
+	float Position[3];
 };
+
 
 struct USBSyncData
 {	
@@ -93,7 +100,7 @@ struct USBRawData
 	uint8_t State; //1 for enable, 0 for disable (set by driver)
 	int16_t Accel[3];
 	int16_t Gyro[3];
-	int16_t Mag[3];
+	int16_t Mag[3];	
 };
 
 struct USBTriggerData
@@ -102,10 +109,15 @@ struct USBTriggerData
 	struct USBAxisData Analog[2];
 };
 
+// 2/65535 ( 0.00003052 to 2.0)
+#define TO_CALIB_SCALE(x) ((uint16_t)((float)x * 32768.0f))
+#define FROM_CALIB_SCALE(x) ((float)((float)x / 32768.0f))
+
 struct USBCalibrationData
 {
 	uint8_t SensorMask;	
-	int16_t OffsetAccel[3];
+	int16_t OffsetAccel[3];	
+	uint16_t ScaleAccel[3]; 
 	int16_t OffsetGyro[3];
 	int16_t OffsetMag[3];
 };
@@ -128,7 +140,7 @@ union CommandData
 	struct USBSyncData Sync;
 	struct USBCalibrationData Calibration;
 	struct USBRawData Raw;
-	struct USBStatusData Status;
+	struct USBStatusData Status;	
 };
 
 struct USBCommandData
@@ -137,13 +149,12 @@ struct USBCommandData
 	union CommandData Data;	
 };
 
-
 union USBData
 {	
 	struct USBPositionData Position;
 	struct USBRotationData Rotation;
 	struct USBTriggerData Trigger;
-	struct USBCommandData Command;	
+	struct USBCommandData Command;		
 };
 
 struct USBDataCache //used at ps side/server only

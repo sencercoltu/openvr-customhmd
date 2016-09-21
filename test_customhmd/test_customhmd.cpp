@@ -165,12 +165,16 @@ int main(int argc, char* argv[])
 	hid_set_nonblocking(handle, 1);
 	
 
-	struct CalibData  
+	struct LocalCalibData  
 	{
-		uint8_t State; //1 for enable, 0 for disable (set by driver)
+		uint8_t State; 
 		float Accel[3];
+		float MaxAccel[3];
+		float MinAccel[3];
 		float Gyro[3];
 		float Mag[3];
+		float MaxMag[3];
+		float MinMag[3];
 	} calib;
 	calib = { 0 };
 	
@@ -195,8 +199,8 @@ int main(int argc, char* argv[])
 				auto sequence = xxx->Header.Sequence;
 				auto source = xxx->Header.Type & 0x0F;
 				auto type = xxx->Header.Type & 0xF0;
-
-				//if (type != COMMAND_DATA) continue;
+				
+				//if (type != POSITION_DATA) continue;
 
 				switch (source)
 				{
@@ -227,6 +231,7 @@ int main(int argc, char* argv[])
 						break;
 					case POSITION_DATA:
 						printf("POSITION_DATA\t");
+						printf("x:%f y:%f z:%f", xxx->Position.Position[0], xxx->Position.Position[1], xxx->Position.Position[2]);
 						break;
 					case TRIGGER_DATA:
 						printf("TRIGGER_DATA\t");
@@ -241,24 +246,29 @@ int main(int argc, char* argv[])
 								if (!calib.State)
 								{
 									for (int i = 0; i < 3; i++)
-									{
-										
+									{										
 										calib.Accel[i] = xxx->Command.Data.Raw.Accel[i];
+										calib.MaxAccel[i] = FLT_MIN;
+										calib.MinAccel[i] = FLT_MAX;
 										calib.Gyro[i] = xxx->Command.Data.Raw.Gyro[i];
-										calib.Mag[i] = xxx->Command.Data.Raw.Mag[i];
-									}
-									
+										calib.Mag[i] = xxx->Command.Data.Raw.Mag[i];										
+										calib.MaxMag[i] = FLT_MIN;
+										calib.MinMag[i] = FLT_MAX;
+									}									
+
 									calib.State = 1;
 								}
 								else
 								{
 									for (int i = 0; i < 3; i++)
-									{
-										
+									{										
 										calib.Accel[i] = (calib.Accel[i] * 0.95f) + ((float)xxx->Command.Data.Raw.Accel[i] * 0.05f); 
+										if (calib.Accel[i] > calib.MaxAccel[i]) calib.MaxAccel[i] = calib.Accel[i];
+										if (calib.Accel[i] < calib.MinAccel[i]) calib.MinAccel[i] = calib.Accel[i];
 										calib.Gyro[i] = (calib.Gyro[i] * 0.95f) + ((float)xxx->Command.Data.Raw.Gyro[i] * 0.05f); 
-										calib.Mag[i] = (calib.Mag[i] * 0.95f) + ((float)xxx->Command.Data.Raw.Mag[i] * 0.05f); 
-
+										calib.Mag[i] = (calib.Mag[i] * 0.95f) + ((float)xxx->Command.Data.Raw.Mag[i] * 0.05f);
+										if (calib.Mag[i] > calib.MaxMag[i]) calib.MaxMag[i] = calib.Mag[i];
+										if (calib.Mag[i] < calib.MinMag[i]) calib.MinMag[i] = calib.Mag[i];
 									}
 								}
 
@@ -267,10 +277,13 @@ int main(int argc, char* argv[])
 								//	xxx->Command.Data.Raw.Gyro[0], xxx->Command.Data.Raw.Gyro[1], xxx->Command.Data.Raw.Gyro[2],
 								//	xxx->Command.Data.Raw.Mag[0], xxx->Command.Data.Raw.Mag[1], xxx->Command.Data.Raw.Mag[2]);
 
-								printf("AAX: %05d AAY: %05d AAZ: %05d AGX: %05d AGY: %05d AGZ: %05d AMX: %05d AMY: %05d AMZ: %05d",
+								printf("\nAAX: %05d AAY: %05d AAZ: %05d\nAGX: %05d AGY: %05d AGZ: %05d\nAMX: %05d AMY: %05d AMZ: %05d\n",
 									(int)calib.Accel[0], (int)calib.Accel[1], (int)calib.Accel[2],
 									(int)calib.Gyro[0], (int)calib.Gyro[1], (int)calib.Gyro[2],
 									(int)calib.Mag[0], (int)calib.Mag[1], (int)calib.Mag[2]);
+								printf("LAX:(%05d / %05d) LAY:(%05d / %05d) LAZ:(%05d / %05d)\nLMX:(%05d / %05d) LMY:(%05d / %05d) LMZ:(%05d / %05d)\n",
+									(int)calib.MinAccel[0], (int)calib.MaxAccel[0], (int)calib.MinAccel[1], (int)calib.MaxAccel[1], (int)calib.MinAccel[2], (int)calib.MaxAccel[2],
+									(int)calib.MinMag[0], (int)calib.MaxMag[0], (int)calib.MinMag[1], (int)calib.MaxMag[1], (int)calib.MinMag[2], (int)calib.MaxMag[2]);
 
 								break;
 						}
@@ -293,6 +306,10 @@ int main(int argc, char* argv[])
 			handle = hid_open(0x1974, 0x0001, NULL);
 		}
 
+		if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000))
+		{
+			ZeroMemory(&calib, sizeof(calib));
+		}
 		if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) && ((GetAsyncKeyState(VK_RCONTROL) & 0x8000)))
 		{
 			printf("Sending raw data cmd\n");
@@ -305,6 +322,7 @@ int main(int argc, char* argv[])
 			yyy->Command.Data.Raw.State = (rawState % 2);
 			SetPacketCrc(yyy);
 			hid_write(handle, buf, sizeof(buf));
+			//Sleep(500);
 		}
 		if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) && ((GetAsyncKeyState(VK_LSHIFT) & 0x8000)))
 		{
@@ -314,10 +332,19 @@ int main(int argc, char* argv[])
 			yyy->Header.Type = COMMAND_DATA | HMD_SOURCE;
 			yyy->Header.Crc8 = 0;
 			yyy->Command.Command = CMD_CALIBRATE;
-			yyy->Command.Data.Calibration.SensorMask = SENSOR_MAG;
-			yyy->Command.Data.Calibration.OffsetMag[0] = -48;
-			yyy->Command.Data.Calibration.OffsetMag[1] = 1215;
-			yyy->Command.Data.Calibration.OffsetMag[2] = -1165;
+			yyy->Command.Data.Calibration.SensorMask = SENSOR_MAG | SENSOR_ACCEL | SENSOR_GYRO;
+			yyy->Command.Data.Calibration.OffsetAccel[0] = 0;  //53;
+			yyy->Command.Data.Calibration.OffsetAccel[1] = 0;  //-16;
+			yyy->Command.Data.Calibration.OffsetAccel[2] = 0;  //158;
+			yyy->Command.Data.Calibration.ScaleAccel[0] = 1; // TO_CALIB_SCALE(0.984142239);
+			yyy->Command.Data.Calibration.ScaleAccel[1] = 1; // TO_CALIB_SCALE(0.97803247);
+			yyy->Command.Data.Calibration.ScaleAccel[2] = 1; // TO_CALIB_SCALE(1);
+			yyy->Command.Data.Calibration.OffsetGyro[0] = 0;
+			yyy->Command.Data.Calibration.OffsetGyro[1] = -7;
+			yyy->Command.Data.Calibration.OffsetGyro[2] = -5;
+			yyy->Command.Data.Calibration.OffsetMag[0] = +20;
+			yyy->Command.Data.Calibration.OffsetMag[1] = -50;
+			yyy->Command.Data.Calibration.OffsetMag[2] = 187;
 			SetPacketCrc(yyy);
 			hid_write(handle, buf, sizeof(buf));
 		}

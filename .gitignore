@@ -45,3 +45,4 @@ stm32/**/*.htm
 stm32/**/*.lst
 stm32/**/*.map
 
+*.opendb

@@ -15,13 +15,13 @@ CSensorFusion::~CSensorFusion()
 {
 }
 
-Quaternion CSensorFusion::Value()
+ Quaternion CSensorFusion::Fix(const Quaternion &quat)
 {
 	Quaternion ret;
-	ret.w = m_RotQuat.w;
-	ret.x = -m_RotQuat.y;
-	ret.y = m_RotQuat.z;
-	ret.z = -m_RotQuat.x;
+	ret.w = quat.w;
+	ret.x = -quat.y;
+	ret.y = quat.z;
+	ret.z = -quat.x;
 	return ret;	
 }
 
@@ -33,9 +33,9 @@ Quaternion CSensorFusion::Fuse(SensorData *pData)
 		pData->TimeElapsed, 
 
 		//as normalized vector
-		(pData->Accel[0] + pData->OffsetAccel[0]) * m_aR,   
-		(pData->Accel[1] + pData->OffsetAccel[1]) * m_aR,
-		(pData->Accel[2] + pData->OffsetAccel[2]) * m_aR,
+		(pData->Accel[0] + pData->OffsetAccel[0]) * m_aR * pData->ScaleAccel[0],   
+		(pData->Accel[1] + pData->OffsetAccel[1]) * m_aR * pData->ScaleAccel[1],
+		(pData->Accel[2] + pData->OffsetAccel[2]) * m_aR * pData->ScaleAccel[2],
 		
 		//as radians
 		RAD((pData->Gyro[0] + pData->OffsetGyro[0]) * m_gR),
@@ -48,7 +48,7 @@ Quaternion CSensorFusion::Fuse(SensorData *pData)
 		(pData->Mag[2] + pData->OffsetMag[2]) * m_mR
 	);
 
-	return Value();
+	return m_RotQuat;
 }
 
 // Implementation of Sebastian Madgwick's "...efficient orientation filter for... inertial/magnetic sensor arrays"

@@ -101,16 +101,16 @@ unsigned char BaseStation_NRF24L01_Init (void)
 	RF_InitStruct.RF_TX_Power=RF_TX_Power_High;
 	RF_InitStruct.RF_Data_Rate=RF_Data_Rate_2Mbs;
 	RF_InitStruct.RF_Channel=250;
-	RF_InitStruct.RF_TX_Adress[0]='S';
-	RF_InitStruct.RF_TX_Adress[1]='E';
-	RF_InitStruct.RF_TX_Adress[2]='N';
-	RF_InitStruct.RF_TX_Adress[3]='C';
-	RF_InitStruct.RF_TX_Adress[4]='Y';
-	RF_InitStruct.RF_RX_Adress_Pipe0[0]='S';
-	RF_InitStruct.RF_RX_Adress_Pipe0[1]='E';
-	RF_InitStruct.RF_RX_Adress_Pipe0[2]='N';
-	RF_InitStruct.RF_RX_Adress_Pipe0[3]='C';
-	RF_InitStruct.RF_RX_Adress_Pipe0[4]='Y'; //HMD
+	RF_InitStruct.RF_TX_Adress[0]='C';
+	RF_InitStruct.RF_TX_Adress[1]='T';
+	RF_InitStruct.RF_TX_Adress[2]='R';
+	RF_InitStruct.RF_TX_Adress[3]='L';
+	RF_InitStruct.RF_TX_Adress[4]='0';
+	RF_InitStruct.RF_RX_Adress_Pipe0[0]='B';
+	RF_InitStruct.RF_RX_Adress_Pipe0[1]='A';
+	RF_InitStruct.RF_RX_Adress_Pipe0[2]='S';
+	RF_InitStruct.RF_RX_Adress_Pipe0[3]='E';
+	RF_InitStruct.RF_RX_Adress_Pipe0[4]='1'; //HMD
 //	RF_InitStruct.RF_RX_Adress_Pipe1[0]=0xC3;
 //	RF_InitStruct.RF_RX_Adress_Pipe1[1]=0xC4;
 //	RF_InitStruct.RF_RX_Adress_Pipe1[2]=0xC5;
@@ -276,13 +276,13 @@ int main(void)
 				readyToSend = false;
 				pChannel->nextTransmit = HAL_GetTick() + (rand() % 10); //max 10 ms for retransmit
 				//switch to tx mode and send command to device			
-				RF_TransmitMode(&hspi1, NULL);
+				RF_TransmitMode(&hspi1, RF_InitStruct.RF_TX_Adress);
 				RF_SendPayload(&hspi1, (uint8_t *)&pChannel->lastCommand, sizeof(USBPacket));
 				do { rfStatus = RF_FifoStatus(&hspi1); } while ((rfStatus & RF_TX_FIFO_EMPTY_Bit) != RF_TX_FIFO_EMPTY_Bit); //wait for send complete
 				pChannel->remainingTransmits--;
 				if (!pChannel->remainingTransmits)					
 					memset(&pChannel->lastCommand, 0, sizeof(USBPacket));																
-				RF_ReceiveMode(&hspi1, NULL);
+				RF_ReceiveMode(&hspi1, RF_InitStruct.RF_RX_Adress_Pipe0);
 				break; //send single packet only
 			}
 		}

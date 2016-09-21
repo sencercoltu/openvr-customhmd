@@ -3,7 +3,7 @@
 uint8_t Gscale = GFS55_500DPS;       // set gyro full scale  
 uint8_t GODRBW = G55_400Hz47Hz;      // set gyro ODR and bandwidth 
 uint8_t Ascale = AFS_2G;           // set accel full scale  
-uint8_t ACCBW  = 0x08 | ABW_500Hz;  // Choose bandwidth for accelerometer, need bit 3 = 1 to enable bandwidth choice in enum
+uint8_t ACCBW  = 0x08 | ABW_1000Hz;  // Choose bandwidth for accelerometer, need bit 3 = 1 to enable bandwidth choice in enum
 uint8_t Mmode  = lowPower;          // Choose magnetometer operation mode
 //uint8_t MODR   = MODR_10Hz;        // set magnetometer data rate 
 uint8_t MODR   = MODR_30Hz;        // set magnetometer data rate 
@@ -11,6 +11,8 @@ uint8_t MODR   = MODR_30Hz;        // set magnetometer data rate
 int16_t magMaxX = -32000, magMinX = 32000;
 int16_t magMaxY = -32000, magMinY = 32000;
 int16_t magMaxZ = -32000, magMinZ = 32000;
+
+int16_t AccelOffsets[3] = {0};
 
 bool checkBMX055()
 {
@@ -110,11 +112,63 @@ void trimBMX055()  // get trim values for magnetometer sensitivity
 	dig_xyz1 = (uint16_t) (((uint16_t)rawData[1] << 8) | rawData[0]);  
 }
 
+void selfTestBMX055()
+{
+	i2c_writeRegisterByte(BMX055_ACC_ADDRESS,  BMX055_ACC_BGW_SOFTRESET, 0xB6);  // reset accelerometer
+	HAL_Delay(100); // Wait for all registers to reset    
+	i2c_writeRegisterByte(BMX055_ACC_ADDRESS, BMX055_ACC_PMU_LPW, 0x00); //normal mode
+	i2c_writeRegisterByte(BMX055_ACC_ADDRESS, BMX055_ACC_PMU_RANGE, AFS_2G); // Set accelerometer full range
+	
+	int16_t data[3] = { 0 };
+	int16_t posData[3] = { 0 };
+	int16_t negData[3] = { 0 };
+	
+	i2c_writeRegisterByte(BMX055_ACC_ADDRESS, BMX055_ACC_PMU_SELF_TEST, 0x05); // x positive
+	HAL_Delay(100);  	
+	readBMX055DataAccel(data);
+	posData[1] = data[1];
+	
+	i2c_writeRegisterByte(BMX055_ACC_ADDRESS, BMX055_ACC_PMU_SELF_TEST, 0x06); // y positive
+	HAL_Delay(100);  
+	readBMX055DataAccel(data);
+	posData[0] = data[0];
+	
+	i2c_writeRegisterByte(BMX055_ACC_ADDRESS, BMX055_ACC_PMU_SELF_TEST, 0x07); // z positive
+	HAL_Delay(100);  
+	readBMX055DataAccel(data);
+	posData[2] = data[2];
+
+	i2c_writeRegisterByte(BMX055_ACC_ADDRESS, BMX055_ACC_PMU_SELF_TEST, 0x01); // x negative
+	HAL_Delay(100);
+	readBMX055DataAccel(data);
+	negData[1] = data[1];
+	
+	i2c_writeRegisterByte(BMX055_ACC_ADDRESS, BMX055_ACC_PMU_SELF_TEST, 0x02); // y negative
+	HAL_Delay(100);
+	readBMX055DataAccel(data);
+	negData[0] = data[0];
+	
+	i2c_writeRegisterByte(BMX055_ACC_ADDRESS, BMX055_ACC_PMU_SELF_TEST, 0x03); // z negative
+	HAL_Delay(100); 
+	readBMX055DataAccel(data);
+	negData[2] = data[2];
+	
+	i2c_writeRegisterByte(BMX055_ACC_ADDRESS, BMX055_ACC_PMU_SELF_TEST, 0x00); // disable
+	
+	AccelOffsets[0] = -((posData[0] - negData[0]) / 2);
+	AccelOffsets[1] = -((posData[1] - negData[1]) / 2);
+	AccelOffsets[2] = -((posData[2] - negData[2]) / 2);
+}
+
 void initBMX055()
 {
+   selfTestBMX055();
+   HAL_Delay(100); // Wait for all registers to reset    
+	
    i2c_writeRegisterByte(BMX055_ACC_ADDRESS,  BMX055_ACC_BGW_SOFTRESET, 0xB6);  // reset accelerometer
-   HAL_Delay(1000); // Wait for all registers to reset 
-
+   HAL_Delay(100); // Wait for all registers to reset    
+   i2c_writeRegisterByte(BMX055_ACC_ADDRESS, BMX055_ACC_PMU_LPW, 0x00); //normal mode
+	
    // Configure accelerometer
    i2c_writeRegisterByte(BMX055_ACC_ADDRESS, BMX055_ACC_PMU_RANGE, Ascale & 0x0F); // Set accelerometer full range
    i2c_writeRegisterByte(BMX055_ACC_ADDRESS, BMX055_ACC_PMU_BW, ACCBW & 0x0F);     // Set accelerometer bandwidth
@@ -178,13 +232,13 @@ float getBMX055resAccel() {
 	// 2 Gs (0011), 4 Gs (0101), 8 Gs (1000), and 16 Gs  (1100). 
         // BMX055 ACC data is signed 12 bit
     case AFS_2G:
-          return 2.0/2048.0;          
+          return 1.0/2048.0;          
     case AFS_4G:
-          return  4.0/2048.0;          
+          return  2.0/2048.0;          
     case AFS_8G:
-          return  8.0/2048.0;          
+          return  4.0/2048.0;          
     case AFS_16G:
-          return  16.0/2048.0;          
+          return  8.0/2048.0;          
   }
   return 0.0f;
 }
@@ -198,9 +252,9 @@ bool readBMX055DataAccel(int16_t *destination)
 {
 	uint8_t rawData[6];  // x/y/z accel register data stored here
 	i2c_readData(BMX055_ACC_ADDRESS, BMX055_ACC_D_X_LSB, rawData, 6);  // Read the six raw data registers into data array
-	destination[1] = -((int16_t)((rawData[1] << 8) | rawData[0]) / 8);  // Turn the MSB and LSB into a signed 12-bit value
-	destination[0] = ((int16_t)((rawData[3] << 8) | rawData[2]) / 8);  
-	destination[2] = ((int16_t)((rawData[5] << 8) | rawData[4]) / 8); 
+	destination[1] = -((int16_t)((rawData[1] << 8) | rawData[0]) / 8) + AccelOffsets[1];  // Turn the MSB and LSB into a signed 12-bit value
+	destination[0] = ((int16_t)((rawData[3] << 8) | rawData[2]) / 8) + AccelOffsets[0];  
+	destination[2] = ((int16_t)((rawData[5] << 8) | rawData[4]) / 8) + AccelOffsets[2]; 
 	return true;
 }
 
@@ -235,10 +289,11 @@ bool readBMX055DataMag(int16_t *destination)
 		destination[2] = -compensate_BMX055_Z(mdata_z, data_r);
 		
 		//auto offset calibration
+		/*
 		if (destination[0] > magMaxX) magMaxX = destination[0]; if (destination[0] < magMinX) magMinX = destination[0]; int16_t magDiffX = (magMaxX + magMinX) / 2; destination[0] -= magDiffX;
 		if (destination[1] > magMaxY) magMaxY = destination[1]; if (destination[1] < magMinY) magMinY = destination[1]; int16_t magDiffY = (magMaxY + magMinY) / 2; destination[1] -= magDiffY;
 		if (destination[2] > magMaxZ) magMaxZ = destination[2]; if (destination[2] < magMinZ) magMinZ = destination[2]; int16_t magDiffZ = (magMaxZ + magMinZ) / 2; destination[2] -= magDiffZ;
-		
+		*/
 //		// calculate temperature compensated 16-bit magnetic fields
 //		temp = ((int16_t)(((uint16_t)((((int32_t)dig_xyz1) << 14)/(data_r != 0 ? data_r : dig_xyz1))) - ((uint16_t)0x4000)));
 //		destination[0] = ((int16_t)((((int32_t)mdata_x) * ((((((((int32_t)dig_xy2) * ((((int32_t)temp) * ((int32_t)temp)) >> 7)) + (((int32_t)temp) * ((int32_t)(((int16_t)dig_xy1) << 7)))) >> 9) + ((int32_t)0x100000)) * ((int32_t)(((int16_t)dig_x2) + ((int16_t)0xA0)))) >> 12)) >> 13)) + (((int16_t)dig_x1) << 3);

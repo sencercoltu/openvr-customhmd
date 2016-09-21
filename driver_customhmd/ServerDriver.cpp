@@ -9,7 +9,7 @@ EVRInitError CServerDriver::Init(IDriverLog * pDriverLog, IServerDriverHost * pD
 	m_CurrTick = m_LastTick = GetTickCount();
 
 	m_pLog = new CDriverLog(pDriverLog);
-
+	m_LastTypeSequence = 0;
 	_LOG(__FUNCTION__" start");
 
 	m_pDriverHost = pDriverHost;
@@ -86,6 +86,12 @@ void CServerDriver::OpenUSB(hid_device **ppHandle)
 	if (!handle)
 		return;
 	*ppHandle = handle;
+	
+	#define MAX_STR 255
+	wchar_t wstr[MAX_STR];
+	int res = hid_get_manufacturer_string(handle, wstr, MAX_STR);
+	res = hid_get_product_string(handle, wstr, MAX_STR);
+	res = hid_get_serial_number_string(handle, wstr, MAX_STR);
 	hid_set_nonblocking(handle, 1);
 }
 
@@ -97,7 +103,7 @@ void CServerDriver::CloseUSB(hid_device **ppHandle)
 	*ppHandle = nullptr;
 }
 
-void CServerDriver::SendUSBCommand(USBPacket &command)
+void CServerDriver::SendUSBCommand(USBPacket *command)
 {
 	m_CommandQueue.push_back(command);
 }
@@ -134,6 +140,26 @@ void CServerDriver::Run()
 
 	hid_device *pHandle = nullptr;
 	DWORD lastTick = GetTickCount();
+	DWORD lastCalibSend = 0;
+	uint8_t calibDeviceIndex = 0;
+
+	USBCalibrationData calibrationData[3] = { 0 };
+	for (auto i = 0; i < 3; i++)
+	{
+		calibrationData[i].SensorMask = SENSOR_ACCEL | SENSOR_GYRO | SENSOR_MAG;
+		char sectionName[32];
+		sprintf_s(sectionName, "offsetAccX_%d", i); calibrationData[i].OffsetAccel[0] = (int16_t) m_pSettings->GetInt32("driver_customhmd", sectionName, 0);
+		sprintf_s(sectionName, "offsetAccY_%d", i); calibrationData[i].OffsetAccel[1] = (int16_t)m_pSettings->GetInt32("driver_customhmd", sectionName, 0);
+		sprintf_s(sectionName, "offsetAccZ_%d", i); calibrationData[i].OffsetAccel[2] = (int16_t)m_pSettings->GetInt32("driver_customhmd", sectionName, 0);
+		sprintf_s(sectionName, "offsetGyroX_%d", i); calibrationData[i].OffsetGyro[0] = (int16_t)m_pSettings->GetInt32("driver_customhmd", sectionName, 0);
+		sprintf_s(sectionName, "offsetGyroY_%d", i); calibrationData[i].OffsetGyro[1] = (int16_t)m_pSettings->GetInt32("driver_customhmd", sectionName, 0);
+		sprintf_s(sectionName, "offsetGyroZ_%d", i); calibrationData[i].OffsetGyro[2] = (int16_t)m_pSettings->GetInt32("driver_customhmd", sectionName, 0);
+		sprintf_s(sectionName, "offsetMagX_%d", i); calibrationData[i].OffsetMag[0] = (int16_t)m_pSettings->GetInt32("driver_customhmd", sectionName, 0);
+		sprintf_s(sectionName, "offsetMagY_%d", i); calibrationData[i].OffsetMag[1] = (int16_t)m_pSettings->GetInt32("driver_customhmd", sectionName, 0);
+		sprintf_s(sectionName, "offsetMagZ_%d", i); calibrationData[i].OffsetMag[2] = (int16_t)m_pSettings->GetInt32("driver_customhmd", sectionName, 0);
+	}
+
+
 
 	while (m_IsRunning)
 	{
@@ -141,7 +167,7 @@ void CServerDriver::Run()
 		if (!pHandle)
 		{
 			OpenUSB(&pHandle);
-			lastTick = GetTickCount();
+			lastCalibSend = lastTick = GetTickCount();
 			if (!pHandle)
 			{
 				//MessageBox(nullptr, L"No USB", L"Info", 0);
@@ -150,11 +176,33 @@ void CServerDriver::Run()
 			}
 		}
 		else
-		{
+		{ 
+			DWORD now = GetTickCount();
+			if (now - lastCalibSend >= 3000)
+			{
+				//send calibration data for each device every 9 seconds 
+				USBPacket *pPacket = new USBPacket();
+				ZeroMemory(pPacket, sizeof(USBPacket));
+				pPacket->Header.Type = calibDeviceIndex | COMMAND_DATA;
+				pPacket->Header.Crc8 = 0;
+				pPacket->Header.Sequence = (uint16_t)GetTickCount(); //put timestamp as sequence to hopefully prevent duplicates on target
+				pPacket->Command.Command = CMD_CALIBRATE;
+				pPacket->Command.Data.Calibration = calibrationData[calibDeviceIndex];
+				SetPacketCrc(pPacket);
+				SendUSBCommand(pPacket);
+
+				calibDeviceIndex++;
+				if (calibDeviceIndex > 2) //hmd=0, left = 1, right = 2
+					calibDeviceIndex = 0;
+				lastCalibSend = now;
+			}
+
 			if (m_CommandQueue.size() > 0)
 			{	
 				buf[0] = 0x00;
-				*((USBPacket*)(buf + 1)) = m_CommandQueue.front();;
+				USBPacket *pPacket = m_CommandQueue.front();
+				*((USBPacket*)(buf + 1)) = *pPacket;
+				delete pPacket;
 				m_CommandQueue.pop_front();				
 				res = hid_write(pHandle, buf, sizeof(buf));
 			}
@@ -163,7 +211,7 @@ void CServerDriver::Run()
 			res = hid_read_timeout(pHandle, buf, sizeof(buf), 10); 
 			if (res > 0)
 			{
-				lastTick = GetTickCount();	
+				lastTick = now;
 
 				//auto crcTemp = pUSBPacket->Header.Crc8;
 				//pUSBPacket->Header.Crc8 = 0;
@@ -208,7 +256,7 @@ void CServerDriver::Run()
 			}
 			else
 			{
-				if (GetTickCount() - lastTick >= 5000)
+				if (now - lastTick >= 5000) //reset usb if no data for 5 secs
 				{
 					CloseUSB(&pHandle);
 					Sleep(1000);

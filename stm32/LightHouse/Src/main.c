@@ -80,15 +80,44 @@ void HAL_MicroDelay(uint64_t delay)
 	}
 }
 
-//void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-//{
-//	if (htim->Instance == TIM1)
-//		HAL_GPIO_TogglePin(IR_SND_GPIO_Port, IR_SND_Pin);
-//}
+volatile int step = 0;
+#define SYNC_MAGIC 0xD300
+volatile uint16_t syncMark = 0;
+volatile bool gotSync = false;
 
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+	
+}
+
+//void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+//{	
+//	if (htim->Instance == TIM1)
+//	{
+//		HAL_GPIO_TogglePin(TEST_GPIO_Port, TEST_Pin);
+//		syncMark = syncMark << 1;
+//		syncMark |= (HAL_GPIO_ReadPin(IR_SYNC_GPIO_Port, IR_SYNC_Pin) == GPIO_PIN_RESET);
+//		if ((syncMark & 0xFF00) == SYNC_MAGIC)
+//			gotSync = true;
+//	}
+//}
 
 uint32_t delay = 0;
 int pwm = 0;
+
+void SendIRByte(uint8_t data)
+{	
+	for (int i=0; i<8; i++)
+	{
+		if ((data & 0x80) == 0x80)
+			HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+		else
+			HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_1);		
+		data = data << 1;
+		HAL_Delay(1);		
+	}
+	HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_1);		
+}
 
 /* USER CODE END 0 */
 
@@ -119,17 +148,112 @@ int main(void)
 
   /* USER CODE BEGIN 2 */
 	//HAL_TIM_Base_Start_IT(&htim1);
-	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+	//HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  
+	int delay = 100;	
+	//int dir = 1;
+	//int angles = 0;
+	int prevStep = -1;
+	
+	 HAL_GPIO_WritePin(STEPPER1_A_GPIO_Port, STEPPER1_A_Pin, GPIO_PIN_RESET);
+	 HAL_GPIO_WritePin(STEPPER1_B_GPIO_Port, STEPPER1_B_Pin, GPIO_PIN_RESET);
+	 HAL_GPIO_WritePin(STEPPER1_C_GPIO_Port, STEPPER1_C_Pin, GPIO_PIN_RESET);
+	 HAL_GPIO_WritePin(STEPPER1_D_GPIO_Port, STEPPER1_D_Pin, GPIO_PIN_RESET);
+	 uint32_t now;
+	 uint32_t lastSend = 0;
+	
+	//HAL_TIM_Base_Start_IT(&htim1) ;
+
+	 //HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
 	while (true)
-	{
-		HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
-		HAL_Delay(100);
-		HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_1);
-		HAL_Delay(900);
+	{		
+//		now = HAL_GetTick();
+//		if (now - lastSend >= 1000)
+//		{
+//			//SendIRByte(0xd3);
+//			//SendIRByte(0x01);
+//			lastSend = now;
+//			if (gotSync)
+//			{
+//				gotSync = false;
+//				
+//			}
+//		}
+		
+		step++;
+		HAL_MicroDelay(1000);
+		
+		
+		if (step > 8) step = 1;
+		
+		switch(step){
+		   case 0:			   
+			 //HAL_GPIO_WritePin(STEPPER1_A_GPIO_Port, STEPPER1_A_Pin, GPIO_PIN_RESET);
+			 //HAL_GPIO_WritePin(STEPPER1_B_GPIO_Port, STEPPER1_B_Pin, GPIO_PIN_RESET);
+			 //HAL_GPIO_WritePin(STEPPER1_C_GPIO_Port, STEPPER1_C_Pin, GPIO_PIN_RESET);
+			 HAL_GPIO_WritePin(STEPPER1_D_GPIO_Port, STEPPER1_D_Pin, GPIO_PIN_SET);
+		   break; 
+		   case 1:
+			 //HAL_GPIO_WritePin(STEPPER1_A_GPIO_Port, STEPPER1_A_Pin, GPIO_PIN_RESET);
+			 //HAL_GPIO_WritePin(STEPPER1_B_GPIO_Port, STEPPER1_B_Pin, GPIO_PIN_RESET);
+			 HAL_GPIO_WritePin(STEPPER1_C_GPIO_Port, STEPPER1_C_Pin, GPIO_PIN_SET);
+			 //HAL_GPIO_WritePin(STEPPER1_D_GPIO_Port, STEPPER1_D_Pin, GPIO_PIN_SET);
+		   break; 
+		   case 2:
+			 //HAL_GPIO_WritePin(STEPPER1_A_GPIO_Port, STEPPER1_A_Pin, GPIO_PIN_RESET);
+			 //HAL_GPIO_WritePin(STEPPER1_B_GPIO_Port, STEPPER1_B_Pin, GPIO_PIN_RESET);
+			 //HAL_GPIO_WritePin(STEPPER1_C_GPIO_Port, STEPPER1_C_Pin, GPIO_PIN_SET);
+			 HAL_GPIO_WritePin(STEPPER1_D_GPIO_Port, STEPPER1_D_Pin, GPIO_PIN_RESET);
+		   break; 
+		   case 3:
+			 //HAL_GPIO_WritePin(STEPPER1_A_GPIO_Port, STEPPER1_A_Pin, GPIO_PIN_RESET);
+			 HAL_GPIO_WritePin(STEPPER1_B_GPIO_Port, STEPPER1_B_Pin, GPIO_PIN_SET);
+			 //HAL_GPIO_WritePin(STEPPER1_C_GPIO_Port, STEPPER1_C_Pin, GPIO_PIN_SET);
+			 //HAL_GPIO_WritePin(STEPPER1_D_GPIO_Port, STEPPER1_D_Pin, GPIO_PIN_RESET);
+		   break; 
+		   case 4:
+			 //HAL_GPIO_WritePin(STEPPER1_A_GPIO_Port, STEPPER1_A_Pin, GPIO_PIN_RESET);
+			 //HAL_GPIO_WritePin(STEPPER1_B_GPIO_Port, STEPPER1_B_Pin, GPIO_PIN_SET);
+			 HAL_GPIO_WritePin(STEPPER1_C_GPIO_Port, STEPPER1_C_Pin, GPIO_PIN_RESET);
+			 //HAL_GPIO_WritePin(STEPPER1_D_GPIO_Port, STEPPER1_D_Pin, GPIO_PIN_RESET);
+		   break; 
+		   case 5:
+			 HAL_GPIO_WritePin(STEPPER1_A_GPIO_Port, STEPPER1_A_Pin, GPIO_PIN_SET);
+			 //HAL_GPIO_WritePin(STEPPER1_B_GPIO_Port, STEPPER1_B_Pin, GPIO_PIN_SET);
+			 //HAL_GPIO_WritePin(STEPPER1_C_GPIO_Port, STEPPER1_C_Pin, GPIO_PIN_RESET);
+			 //HAL_GPIO_WritePin(STEPPER1_D_GPIO_Port, STEPPER1_D_Pin, GPIO_PIN_RESET);
+		   break; 
+			 case 6:
+			 //HAL_GPIO_WritePin(STEPPER1_A_GPIO_Port, STEPPER1_A_Pin, GPIO_PIN_SET);
+			 HAL_GPIO_WritePin(STEPPER1_B_GPIO_Port, STEPPER1_B_Pin, GPIO_PIN_RESET);
+			 //HAL_GPIO_WritePin(STEPPER1_C_GPIO_Port, STEPPER1_C_Pin, GPIO_PIN_RESET);
+			 //HAL_GPIO_WritePin(STEPPER1_D_GPIO_Port, STEPPER1_D_Pin, GPIO_PIN_RESET);
+		   break; 
+		   case 7:
+			 //HAL_GPIO_WritePin(STEPPER1_A_GPIO_Port, STEPPER1_A_Pin, GPIO_PIN_SET);
+			 //HAL_GPIO_WritePin(STEPPER1_B_GPIO_Port, STEPPER1_B_Pin, GPIO_PIN_RESET);
+			 //HAL_GPIO_WritePin(STEPPER1_C_GPIO_Port, STEPPER1_C_Pin, GPIO_PIN_RESET);
+			 HAL_GPIO_WritePin(STEPPER1_D_GPIO_Port, STEPPER1_D_Pin, GPIO_PIN_SET);
+		   break; 
+		   case 8:			   
+			 HAL_GPIO_WritePin(STEPPER1_A_GPIO_Port, STEPPER1_A_Pin, GPIO_PIN_RESET);
+			 //HAL_GPIO_WritePin(STEPPER1_B_GPIO_Port, STEPPER1_B_Pin, GPIO_PIN_RESET);
+			 //HAL_GPIO_WritePin(STEPPER1_C_GPIO_Port, STEPPER1_C_Pin, GPIO_PIN_RESET);
+			 //HAL_GPIO_WritePin(STEPPER1_D_GPIO_Port, STEPPER1_D_Pin, GPIO_PIN_SET);		   
+		   break; 
+		   default:
+			 HAL_GPIO_WritePin(STEPPER1_A_GPIO_Port, STEPPER1_A_Pin, GPIO_PIN_RESET);
+			 HAL_GPIO_WritePin(STEPPER1_B_GPIO_Port, STEPPER1_B_Pin, GPIO_PIN_RESET);
+			 HAL_GPIO_WritePin(STEPPER1_C_GPIO_Port, STEPPER1_C_Pin, GPIO_PIN_RESET);
+			 HAL_GPIO_WritePin(STEPPER1_D_GPIO_Port, STEPPER1_D_Pin, GPIO_PIN_RESET);
+		   break; 		
+		}
+		//HAL_MicroDelay(delay);
+		//HAL_Delay(1);
 	}
   /* USER CODE END WHILE */
 
@@ -230,7 +354,7 @@ static void MX_TIM1_Init(void)
     Error_Handler();
   }
 
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
   if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig) != HAL_OK)
   {
@@ -287,7 +411,8 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(IR_SND_GPIO_Port, IR_SND_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, STEPPER1_A_Pin|STEPPER1_B_Pin|STEPPER1_C_Pin|STEPPER1_D_Pin 
+                          |TEST_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : LED_Pin */
   GPIO_InitStruct.Pin = LED_Pin;
@@ -295,15 +420,27 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(LED_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : IR_SND_Pin */
-  GPIO_InitStruct.Pin = IR_SND_Pin;
+  /*Configure GPIO pins : STEPPER1_A_Pin STEPPER1_B_Pin STEPPER1_C_Pin STEPPER1_D_Pin */
+  GPIO_InitStruct.Pin = STEPPER1_A_Pin|STEPPER1_B_Pin|STEPPER1_C_Pin|STEPPER1_D_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : TEST_Pin */
+  GPIO_InitStruct.Pin = TEST_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-  HAL_GPIO_Init(IR_SND_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(TEST_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : IR_SYNC_Pin */
+  GPIO_InitStruct.Pin = IR_SYNC_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(IR_SYNC_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : IR_RCV_Pin */
   GPIO_InitStruct.Pin = IR_RCV_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(IR_RCV_GPIO_Port, &GPIO_InitStruct);
 

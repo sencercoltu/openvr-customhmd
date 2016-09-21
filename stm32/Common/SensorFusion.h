@@ -13,6 +13,7 @@ typedef struct
 	int16_t Mag[3];
 	
 	int16_t OffsetAccel[3]; 
+	float ScaleAccel[3];
 	int16_t OffsetGyro[3];
 	int16_t OffsetMag[3];	
 	
@@ -35,12 +36,12 @@ public:
 	CSensorFusion(float aR, float gR, float mR);
 	~CSensorFusion();
 	Quaternion Fuse(SensorData *pData);
-	Quaternion Value();
+	Quaternion m_RotQuat;	
+	static Quaternion Fix(const Quaternion &quat);    
 private:
 	float m_aR, m_mR, m_gR;
 	float exInt, eyInt, ezInt;
-	float iq0, iq1, iq2, iq3;
-	Quaternion m_RotQuat;
+	float iq0, iq1, iq2, iq3;	
 	void MadgwickQuaternionUpdate(float deltat, float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz);
 };
 

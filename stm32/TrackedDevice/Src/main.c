@@ -95,23 +95,23 @@ unsigned char TrackedDevice_NRF24L01_Init (void)
 	RF_InitStruct.RF_Power_State=RF_Power_On;
 	RF_InitStruct.RF_Config=RF_Config_IRQ_RX_Off|RF_Config_IRQ_TX_Off|RF_Confing_IRQ_Max_Rt_Off;
 	RF_InitStruct.RF_CRC_Mode=RF_CRC8_On;
-	RF_InitStruct.RF_Mode=RF_Mode_TX;
+	RF_InitStruct.RF_Mode=RF_Mode_RX;
 	RF_InitStruct.RF_Pipe_Auto_Ack=0;	
 	RF_InitStruct.RF_Enable_Pipe=1;	
 	RF_InitStruct.RF_Setup=RF_Setup_5_Byte_Adress;
 	RF_InitStruct.RF_TX_Power=RF_TX_Power_High;
 	RF_InitStruct.RF_Data_Rate=RF_Data_Rate_2Mbs;
 	RF_InitStruct.RF_Channel=250;
-	RF_InitStruct.RF_TX_Adress[0]='S';
-	RF_InitStruct.RF_TX_Adress[1]='E';
-	RF_InitStruct.RF_TX_Adress[2]='N';
-	RF_InitStruct.RF_TX_Adress[3]='C';
-	RF_InitStruct.RF_TX_Adress[4]='Y';
-	RF_InitStruct.RF_RX_Adress_Pipe0[0]='S';
-	RF_InitStruct.RF_RX_Adress_Pipe0[1]='E';
-	RF_InitStruct.RF_RX_Adress_Pipe0[2]='N';
-	RF_InitStruct.RF_RX_Adress_Pipe0[3]='C';
-	RF_InitStruct.RF_RX_Adress_Pipe0[4]='Y';
+	RF_InitStruct.RF_TX_Adress[0]='B';
+	RF_InitStruct.RF_TX_Adress[1]='A';
+	RF_InitStruct.RF_TX_Adress[2]='S';
+	RF_InitStruct.RF_TX_Adress[3]='E';
+	RF_InitStruct.RF_TX_Adress[4]='1';
+	RF_InitStruct.RF_RX_Adress_Pipe0[0]='C';
+	RF_InitStruct.RF_RX_Adress_Pipe0[1]='T';
+	RF_InitStruct.RF_RX_Adress_Pipe0[2]='R';
+	RF_InitStruct.RF_RX_Adress_Pipe0[3]='L';
+	RF_InitStruct.RF_RX_Adress_Pipe0[4]='0';
 	RF_InitStruct.RF_Payload_Size_Pipe0=32;
 	RF_InitStruct.RF_Auto_Retransmit_Count=0;
 	RF_InitStruct.RF_Auto_Retransmit_Delay=0;
@@ -189,8 +189,9 @@ float ADC_Averages[3] = {0};
 float ADC_Offsets[3] = {0};
 int32_t ADC_Cache[3] = {0};
 
+Quaternion gravityQuat(0, 0, 0, 1);
 
-uint64_t lastUpdate = 0; 
+uint64_t lastRotationUpdate = 0; 
 uint64_t now = 0;        
 uint32_t nextSend = 0; 
 
@@ -204,6 +205,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
+	tSensorData.ScaleAccel[0] = tSensorData.ScaleAccel[1] = tSensorData.ScaleAccel[2] = 1.0f;
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -291,11 +293,12 @@ int main(void)
 
 	
 	//bool sensorWarmup = false;
-	int extraDelay = ctlSource>HMD_SOURCE? 20:3;
-	
+	int extraDelay = ctlSource>HMD_SOURCE? 10:3;
+	bool isCalibrated = false;
 	bool hasRotationData = false;
 	bool hasPositionData = false;
-	bool hasTriggerData = false;
+	uint8_t buttonRetransmit = 0;
+	//bool hasTriggerData = false;
 
 	CSensorFusion fuse(aRes, gRes, mRes);
 
@@ -328,14 +331,29 @@ int main(void)
 	bool feedRawData = false;
 	bool readyToSend = false;
 	bool readyToReceive = false;
+	
 	Quaternion quat;
-	RF_ReceiveMode(&hspi2, NULL); //default to receive mode			
+	//RF_ReceiveMode(&hspi2, NULL); //default to receive mode			
 	uint32_t lastCommandSequence = 0;
 	uint32_t vibrationStopTime = 0;	
+	uint64_t lastButtonSend = 0;		
+	uint64_t lastPositionTime = 0;
+	uint64_t lastPositionSend;
 	DigitalValues = DigitalCache = 0;
+	
+	int16_t AccelVector[3] = {0};
+	int16_t GravityVector[3] = {0};
+	float CompAccelVector[3] = {0};
+	float VelocityVector[3] = {0};
+	USBPositionData position = {0};
 	
 	while (true)
 	{		
+		Blink(blinkDelay);
+		blinkDelay = 1000;
+		
+		now = HAL_GetMicros();				
+
 		if (ctlSource == RIGHTCTL_SOURCE || ctlSource == LEFTCTL_SOURCE)
 		{
 			for (int i=0; i<3; i++)
@@ -346,7 +364,8 @@ int main(void)
 				{
 					//if any analog value has changes
 					ADC_Cache[i] = value;
-					hasTriggerData = true;
+					//hasTriggerData = true;
+					buttonRetransmit = 5;					
 				}
 			}
 			
@@ -354,16 +373,22 @@ int main(void)
 			{
 				//if any digital value has changes
 				DigitalCache = DigitalValues;
-				hasTriggerData = true;
+				//hasTriggerData = true;
+				buttonRetransmit = 5;
+				lastButtonSend = now;
+			}
+			
+			if (now - lastButtonSend > 500000)
+			{
+				//update button status every 500ms.
+				buttonRetransmit++;
+				lastButtonSend = now;
 			}
 		}
 		
-		Blink(blinkDelay);
-		blinkDelay = 1000;
-		
-		now = HAL_GetMicros();				
 
-		float elapsedTime = ((now - lastUpdate) / 1000000.0f); // set integration time by time elapsed since last filter update				
+		
+		float elapsedTime = (now - lastRotationUpdate) / 1000000.0f; // set integration time by time elapsed since last filter update				
 		
 		if (elapsedTime >= 0.005f) //update at 200hz
 		{		
@@ -376,26 +401,60 @@ int main(void)
 		if (hasRotationData) //fuse it
 		{
 			tSensorData.TimeElapsed = elapsedTime;
-			lastUpdate = now;	
-			quat = fuse.Fuse(&tSensorData);
+			lastRotationUpdate = now;	
+			Quaternion result = fuse.Fuse(&tSensorData);
+			quat = CSensorFusion::Fix(fuse.m_RotQuat);			
+			now = HAL_GetMicros();			
+			if (isCalibrated && now >= 10000000)
+			{
+				float elapsedPositionTime = (now - lastPositionTime) / 1000000.0f;
+				if (elapsedPositionTime >= 0.005) // calculate every 5 ms
+				{
+					result = (result * gravityQuat) * result.conjugate();
+					GravityVector[0] = (int16_t)(result.x / (aRes * tSensorData.ScaleAccel[0])); //2.0f * (result.x * result.z - result.w * result.y); 
+					GravityVector[1] = (int16_t)(result.y / (aRes * tSensorData.ScaleAccel[1])); //2.0f * (result.w * result.x + result.y * result.z); 
+					GravityVector[2] = (int16_t)(result.z / (aRes * tSensorData.ScaleAccel[2])); //result.x * result.w - result.x * result.x - result.y * result.y + result.z * result.z; 				
+					for (int i=0; i<3; i++)
+					{
+						AccelVector[i] = ((float)(tSensorData.Accel[i] + tSensorData.OffsetAccel[i])); // * aRes * tSensorData.ScaleAccel[i];					
+						float prevVel = VelocityVector[i];
+						float prevAcc = CompAccelVector[i];					
+						CompAccelVector[i] = (float)(AccelVector[i] - GravityVector[i]) * 9.80665f * aRes * tSensorData.ScaleAccel[i]; 
+						VelocityVector[i] += (prevAcc + ((CompAccelVector[i] - prevAcc) / 2.0f)) * elapsedPositionTime;
+						position.Position[i] += (prevVel + ((VelocityVector[i] - prevVel) / 2.0f)) * elapsedPositionTime;				
+						
+					}	
+					
+					if (now - lastPositionSend >= 50000) //50 ms
+					{
+						hasPositionData = true;
+						lastPositionSend = now;	
+					}
+					
+					lastPositionTime = now;
+				}
+			}
+			else
+				lastPositionTime = now;
 		}
 
 		if (!readyToSend)
 		{
 			rfStatus = RF_FifoStatus(&hspi2);
 			readyToSend = (rfStatus & RF_TX_FIFO_FULL_Bit) == 0x00; //send if not full
-			readyToSend &= hasRotationData | feedRawData | hasPositionData | hasTriggerData;
+			readyToSend &= hasRotationData | feedRawData | hasPositionData | buttonRetransmit;
 			//readyToSend = ((rfStatus & RF_TX_FIFO_EMPTY_Bit) == RF_TX_FIFO_EMPTY_Bit); //if empty 
 		}
 		
 		if (readyToSend && HAL_GetTick() >= nextSend)
 		{
-			sndCounter++;
-			readyToSend = false;
-			//send update
-			RF_TransmitMode(&hspi2, NULL); //switch to tx mode
+			RF_TransmitMode(&hspi2, RF_InitStruct.RF_TX_Adress); //switch to tx mode
+			//HAL_MicroDelay(10);			
 			blinkDelay = 100;
-			
+
+			sndCounter++;
+			//send update
+				
 			if (feedRawData)
 			{
 				USBDataPacket.Header.Type = ctlSource | COMMAND_DATA;
@@ -411,50 +470,62 @@ int main(void)
 				SetPacketCrc(&USBDataPacket);
 				RF_SendPayload(&hspi2, (uint8_t*)&USBDataPacket, sizeof(USBPacket));
 				do { rfStatus = RF_FifoStatus(&hspi2); } while ((rfStatus & RF_TX_FIFO_EMPTY_Bit) != RF_TX_FIFO_EMPTY_Bit); //wait for send complete
-				hasRotationData = hasPositionData = hasTriggerData = false;
+				HAL_MicroDelay(10);
+				//hasRotationData = hasPositionData = false;										
 			}
-			else
-			{			
-				if (hasRotationData)
-				{
-					hasRotationData = false;
-					//send rot data
-					USBDataPacket.Header.Type = ctlSource | ROTATION_DATA;
-					USBDataPacket.Header.Sequence++;
-					USBDataPacket.Header.Crc8 = 0;
-					USBDataPacket.Rotation.w = quat.w;
-					USBDataPacket.Rotation.x = quat.x;
-					USBDataPacket.Rotation.y = quat.y;
-					USBDataPacket.Rotation.z = quat.z;	
-					SetPacketCrc(&USBDataPacket);
-					RF_SendPayload(&hspi2, (uint8_t*)&USBDataPacket, sizeof(USBPacket));
-					do { rfStatus = RF_FifoStatus(&hspi2); } while ((rfStatus & RF_TX_FIFO_EMPTY_Bit) != RF_TX_FIFO_EMPTY_Bit); //wait for send complete
-				}
-				
-				if (hasPositionData)
-				{
-					hasPositionData = false;
-				}
-				
-				if (hasTriggerData)
-				{
-					hasTriggerData = false;
-					//send trigger data
-					USBDataPacket.Header.Type = ctlSource | TRIGGER_DATA;
-					USBDataPacket.Header.Sequence++;
-					USBDataPacket.Header.Crc8 = 0;
-					USBDataPacket.Trigger.Analog[0].x = ((float)ADC_Cache[0]) / 200.0f;
-					USBDataPacket.Trigger.Analog[0].y = 0;				
-					USBDataPacket.Trigger.Analog[1].x = ((float)ADC_Cache[1]) / 100.0f;
-					USBDataPacket.Trigger.Analog[1].y = ((float)ADC_Cache[2]) / 100.0f;
-					USBDataPacket.Trigger.Digital = DigitalCache;
-					SetPacketCrc(&USBDataPacket);
-					RF_SendPayload(&hspi2, (uint8_t*)&USBDataPacket, sizeof(USBPacket));
-					do { rfStatus = RF_FifoStatus(&hspi2); } while ((rfStatus & RF_TX_FIFO_EMPTY_Bit) != RF_TX_FIFO_EMPTY_Bit); //wait for send complete
-				}
-			}
-			nextSend = HAL_GetTick() + (extraDelay + (rand() % 10));			
-			RF_ReceiveMode(&hspi2, NULL); //back to rx mode
+			if (hasRotationData)
+			{
+				hasRotationData = false;
+				//send rot data
+				USBDataPacket.Header.Type = ctlSource | ROTATION_DATA;
+				USBDataPacket.Header.Sequence++;
+				USBDataPacket.Header.Crc8 = 0;
+				USBDataPacket.Rotation.w = quat.w;
+				USBDataPacket.Rotation.x = quat.x;
+				USBDataPacket.Rotation.y = quat.y;
+				USBDataPacket.Rotation.z = quat.z;	
+				SetPacketCrc(&USBDataPacket);
+				RF_SendPayload(&hspi2, (uint8_t*)&USBDataPacket, sizeof(USBPacket));
+				do { rfStatus = RF_FifoStatus(&hspi2); } while ((rfStatus & RF_TX_FIFO_EMPTY_Bit) != RF_TX_FIFO_EMPTY_Bit); //wait for send complete	
+				HAL_MicroDelay(10);
+			} 
+			if (hasPositionData)
+			{
+				hasPositionData = false;
+				USBDataPacket.Header.Type = ctlSource | POSITION_DATA;
+				USBDataPacket.Header.Sequence++;
+				USBDataPacket.Header.Crc8 = 0;
+				for (int i=0; i<3; i++)
+					USBDataPacket.Position.Position[i] = position.Position[i];
+				SetPacketCrc(&USBDataPacket);
+				RF_SendPayload(&hspi2, (uint8_t*)&USBDataPacket, sizeof(USBPacket));
+				do { rfStatus = RF_FifoStatus(&hspi2); } while ((rfStatus & RF_TX_FIFO_EMPTY_Bit) != RF_TX_FIFO_EMPTY_Bit); //wait for send complete
+				HAL_MicroDelay(10);					
+			} 
+			if (buttonRetransmit)
+			{
+				buttonRetransmit--;
+				//send trigger data
+				USBDataPacket.Header.Type = ctlSource | TRIGGER_DATA;
+				USBDataPacket.Header.Sequence++;
+				USBDataPacket.Header.Crc8 = 0;
+				USBDataPacket.Trigger.Analog[0].x = ((float)ADC_Cache[0]) / 200.0f;
+				USBDataPacket.Trigger.Analog[0].y = 0;				
+				USBDataPacket.Trigger.Analog[1].x = ((float)ADC_Cache[1]) / 100.0f;
+				USBDataPacket.Trigger.Analog[1].y = ((float)ADC_Cache[2]) / 100.0f;
+				USBDataPacket.Trigger.Digital = DigitalCache;
+				SetPacketCrc(&USBDataPacket);
+				RF_SendPayload(&hspi2, (uint8_t*)&USBDataPacket, sizeof(USBPacket));
+				do { rfStatus = RF_FifoStatus(&hspi2); } while ((rfStatus & RF_TX_FIFO_EMPTY_Bit) != RF_TX_FIFO_EMPTY_Bit); //wait for send complete					
+				HAL_MicroDelay(10);									
+			}		
+			
+			if (!(hasRotationData | hasPositionData | buttonRetransmit))
+				nextSend = HAL_GetTick() + (extraDelay + (rand() % 10));
+			readyToSend = false;
+			
+			RF_ReceiveMode(&hspi2, RF_InitStruct.RF_RX_Adress_Pipe0); //back to rx mode
+			//HAL_MicroDelay(10);
 		}
 		
 		if (!readyToReceive)
@@ -492,13 +563,21 @@ int main(void)
 								//manually set sensor offsets
 								for (int i=0; i<3; i++)
 								{
+									position.Position[i] = 0;
+									VelocityVector[i] = 0;
 									if ((pUSBCommandPacket->Command.Data.Calibration.SensorMask & SENSOR_ACCEL) == SENSOR_ACCEL)
+									{
 										tSensorData.OffsetAccel[i] =  pUSBCommandPacket->Command.Data.Calibration.OffsetAccel[i];
+										tSensorData.ScaleAccel[i] =  FROM_CALIB_SCALE(pUSBCommandPacket->Command.Data.Calibration.ScaleAccel[i]);
+										if (tSensorData.ScaleAccel[i] < 0.0001f || tSensorData.ScaleAccel[i] > 2.0f) tSensorData.ScaleAccel[i] = 1.0f;
+									}
 									if ((pUSBCommandPacket->Command.Data.Calibration.SensorMask & SENSOR_GYRO) == SENSOR_GYRO)
 										tSensorData.OffsetGyro[i] = pUSBCommandPacket->Command.Data.Calibration.OffsetGyro[i];
 									if ((pUSBCommandPacket->Command.Data.Calibration.SensorMask & SENSOR_MAG) == SENSOR_MAG)
 										tSensorData.OffsetMag[i] = pUSBCommandPacket->Command.Data.Calibration.OffsetMag[i];
 								}
+								isCalibrated = true;
+								lastPositionSend = lastPositionTime = now;
 								break;
 						}
 					}

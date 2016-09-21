@@ -201,25 +201,65 @@
         <Bp>
           <Number>0</Number>
           <Type>0</Type>
-          <LineNumber>479</LineNumber>
+          <LineNumber>126</LineNumber>
           <EnabledFlag>1</EnabledFlag>
-          <Address>134238534</Address>
+          <Address>0</Address>
           <ByteObject>0</ByteObject>
           <HtxType>0</HtxType>
           <ManyObjects>0</ManyObjects>
           <SizeOfObject>0</SizeOfObject>
           <BreakByAccess>0</BreakByAccess>
-          <BreakIfRCount>1</BreakIfRCount>
-          <Filename>&lt;2&gt;../Src/main.c</Filename>
+          <BreakIfRCount>0</BreakIfRCount>
+          <Filename>&lt;2&gt;..\..\Common\bmx055.c</Filename>
           <ExecCommand></ExecCommand>
-          <Expression>\\TrackedDevice\../Src/main.c\479</Expression>
+          <Expression></Expression>
         </Bp>
       </Breakpoint>
       <WatchWindow1>
         <Ww>
           <count>0</count>
           <WinNumber>1</WinNumber>
-          <ItemText>pUSBCommandPacket</ItemText>
+          <ItemText>tSensorData.Accel</ItemText>
+        </Ww>
+        <Ww>
+          <count>1</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>GravityVector</ItemText>
+        </Ww>
+        <Ww>
+          <count>2</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>AccelVector</ItemText>
+        </Ww>
+        <Ww>
+          <count>3</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>CompAccelVector</ItemText>
+        </Ww>
+        <Ww>
+          <count>4</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>VelocityVector</ItemText>
+        </Ww>
+        <Ww>
+          <count>5</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>position.Position</ItemText>
+        </Ww>
+        <Ww>
+          <count>6</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>posData</ItemText>
+        </Ww>
+        <Ww>
+          <count>7</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>negData</ItemText>
+        </Ww>
+        <Ww>
+          <count>8</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>data</ItemText>
         </Ww>
       </WatchWindow1>
       <Tracepoint>

@@ -1811,32 +1811,32 @@ Image Symbol Table
     USBD_CUSTOM_HID_DataOut(_USBD_HandleTypeDef*, unsigned char) 0x08003055   Thumb Code    36  usbd_customhid.o(i._Z23USBD_CUSTOM_HID_DataOutP19_USBD_HandleTypeDefh)
     i._Z24USBD_FS_DeviceDescriptor17USBD_SpeedTypeDefPt 0x08003078   Section        0  usbd_desc.o(i._Z24USBD_FS_DeviceDescriptor17USBD_SpeedTypeDefPt)
     i._Z25BaseStation_NRF24L01_Initv         0x08003084   Section        0  main.o(i._Z25BaseStation_NRF24L01_Initv)
-    i._Z26SPI_WaitOnFlagUntilTimeoutP19__SPI_HandleTypeDefj10FlagStatusj 0x080030e4   Section        0  stm32f1xx_hal_spi.o(i._Z26SPI_WaitOnFlagUntilTimeoutP19__SPI_HandleTypeDefj10FlagStatusj)
-    SPI_WaitOnFlagUntilTimeout(__SPI_HandleTypeDef*, unsigned, FlagStatus, unsigned) 0x080030e5   Thumb Code   158  stm32f1xx_hal_spi.o(i._Z26SPI_WaitOnFlagUntilTimeoutP19__SPI_HandleTypeDefj10FlagStatusj)
-    i._Z26USBD_CUSTOM_HID_GetCfgDescPt       0x08003184   Section        0  usbd_customhid.o(i._Z26USBD_CUSTOM_HID_GetCfgDescPt)
-    USBD_CUSTOM_HID_GetCfgDesc(unsigned short*) 0x08003185   Thumb Code     8  usbd_customhid.o(i._Z26USBD_CUSTOM_HID_GetCfgDescPt)
-    i._Z27USBD_CUSTOM_HID_EP0_RxReadyP19_USBD_HandleTypeDef 0x08003190   Section        0  usbd_customhid.o(i._Z27USBD_CUSTOM_HID_EP0_RxReadyP19_USBD_HandleTypeDef)
-    USBD_CUSTOM_HID_EP0_RxReady(_USBD_HandleTypeDef*) 0x08003191   Thumb Code    34  usbd_customhid.o(i._Z27USBD_CUSTOM_HID_EP0_RxReadyP19_USBD_HandleTypeDef)
-    i._Z27USBD_FS_ConfigStrDescriptor17USBD_SpeedTypeDefPt 0x080031b4   Section        0  usbd_desc.o(i._Z27USBD_FS_ConfigStrDescriptor17USBD_SpeedTypeDefPt)
-    i._Z27USBD_FS_LangIDStrDescriptor17USBD_SpeedTypeDefPt 0x080031e0   Section        0  usbd_desc.o(i._Z27USBD_FS_LangIDStrDescriptor17USBD_SpeedTypeDefPt)
-    i._Z27USBD_FS_SerialStrDescriptor17USBD_SpeedTypeDefPt 0x080031ec   Section        0  usbd_desc.o(i._Z27USBD_FS_SerialStrDescriptor17USBD_SpeedTypeDefPt)
-    i._Z28USBD_FS_ProductStrDescriptor17USBD_SpeedTypeDefPt 0x0800320c   Section        0  usbd_desc.o(i._Z28USBD_FS_ProductStrDescriptor17USBD_SpeedTypeDefPt)
-    i._Z30USBD_FS_InterfaceStrDescriptor17USBD_SpeedTypeDefPt 0x0800322c   Section        0  usbd_desc.o(i._Z30USBD_FS_InterfaceStrDescriptor17USBD_SpeedTypeDefPt)
-    i._Z33USBD_FS_ManufacturerStrDescriptor17USBD_SpeedTypeDefPt 0x0800325c   Section        0  usbd_desc.o(i._Z33USBD_FS_ManufacturerStrDescriptor17USBD_SpeedTypeDefPt)
-    i._Z38USBD_CUSTOM_HID_GetDeviceQualifierDescPt 0x08003278   Section        0  usbd_customhid.o(i._Z38USBD_CUSTOM_HID_GetDeviceQualifierDescPt)
-    USBD_CUSTOM_HID_GetDeviceQualifierDesc(unsigned short*) 0x08003279   Thumb Code     8  usbd_customhid.o(i._Z38USBD_CUSTOM_HID_GetDeviceQualifierDescPt)
-    i._Z5Blinki                              0x08003284   Section        0  led.o(i._Z5Blinki)
-    i._Z6LedOffv                             0x080032a8   Section        0  led.o(i._Z6LedOffv)
-    i._Z7RF_InitP19__SPI_HandleTypeDefP14RF_InitTypeDef 0x080032b8   Section        0  nrf24l01.o(i._Z7RF_InitP19__SPI_HandleTypeDefP14RF_InitTypeDef)
-    i._Z8RF_FlushP19__SPI_HandleTypeDefh     0x08003434   Section        0  nrf24l01.o(i._Z8RF_FlushP19__SPI_HandleTypeDefh)
-    i._Z9LedTogglev                          0x08003450   Section        0  led.o(i._Z9LedTogglev)
-    i._Z9RF_CE_LOWv                          0x08003460   Section        0  nrf24l01.o(i._Z9RF_CE_LOWv)
-    i._Z9RF_StatusP19__SPI_HandleTypeDef     0x08003470   Section        0  nrf24l01.o(i._Z9RF_StatusP19__SPI_HandleTypeDef)
-    i.__scatterload_copy                     0x08003476   Section       14  handlers.o(i.__scatterload_copy)
-    i.__scatterload_null                     0x08003484   Section        2  handlers.o(i.__scatterload_null)
-    i.__scatterload_zeroinit                 0x08003486   Section       14  handlers.o(i.__scatterload_zeroinit)
-    i.main                                   0x08003494   Section        0  main.o(i.main)
-    .constdata                               0x08003690   Section       16  system_stm32f1xx.o(.constdata)
+    i._Z26SPI_WaitOnFlagUntilTimeoutP19__SPI_HandleTypeDefj10FlagStatusj 0x080030ec   Section        0  stm32f1xx_hal_spi.o(i._Z26SPI_WaitOnFlagUntilTimeoutP19__SPI_HandleTypeDefj10FlagStatusj)
+    SPI_WaitOnFlagUntilTimeout(__SPI_HandleTypeDef*, unsigned, FlagStatus, unsigned) 0x080030ed   Thumb Code   158  stm32f1xx_hal_spi.o(i._Z26SPI_WaitOnFlagUntilTimeoutP19__SPI_HandleTypeDefj10FlagStatusj)
+    i._Z26USBD_CUSTOM_HID_GetCfgDescPt       0x0800318c   Section        0  usbd_customhid.o(i._Z26USBD_CUSTOM_HID_GetCfgDescPt)
+    USBD_CUSTOM_HID_GetCfgDesc(unsigned short*) 0x0800318d   Thumb Code     8  usbd_customhid.o(i._Z26USBD_CUSTOM_HID_GetCfgDescPt)
+    i._Z27USBD_CUSTOM_HID_EP0_RxReadyP19_USBD_HandleTypeDef 0x08003198   Section        0  usbd_customhid.o(i._Z27USBD_CUSTOM_HID_EP0_RxReadyP19_USBD_HandleTypeDef)
+    USBD_CUSTOM_HID_EP0_RxReady(_USBD_HandleTypeDef*) 0x08003199   Thumb Code    34  usbd_customhid.o(i._Z27USBD_CUSTOM_HID_EP0_RxReadyP19_USBD_HandleTypeDef)
+    i._Z27USBD_FS_ConfigStrDescriptor17USBD_SpeedTypeDefPt 0x080031bc   Section        0  usbd_desc.o(i._Z27USBD_FS_ConfigStrDescriptor17USBD_SpeedTypeDefPt)
+    i._Z27USBD_FS_LangIDStrDescriptor17USBD_SpeedTypeDefPt 0x080031e8   Section        0  usbd_desc.o(i._Z27USBD_FS_LangIDStrDescriptor17USBD_SpeedTypeDefPt)
+    i._Z27USBD_FS_SerialStrDescriptor17USBD_SpeedTypeDefPt 0x080031f4   Section        0  usbd_desc.o(i._Z27USBD_FS_SerialStrDescriptor17USBD_SpeedTypeDefPt)
+    i._Z28USBD_FS_ProductStrDescriptor17USBD_SpeedTypeDefPt 0x08003214   Section        0  usbd_desc.o(i._Z28USBD_FS_ProductStrDescriptor17USBD_SpeedTypeDefPt)
+    i._Z30USBD_FS_InterfaceStrDescriptor17USBD_SpeedTypeDefPt 0x08003234   Section        0  usbd_desc.o(i._Z30USBD_FS_InterfaceStrDescriptor17USBD_SpeedTypeDefPt)
+    i._Z33USBD_FS_ManufacturerStrDescriptor17USBD_SpeedTypeDefPt 0x08003264   Section        0  usbd_desc.o(i._Z33USBD_FS_ManufacturerStrDescriptor17USBD_SpeedTypeDefPt)
+    i._Z38USBD_CUSTOM_HID_GetDeviceQualifierDescPt 0x08003280   Section        0  usbd_customhid.o(i._Z38USBD_CUSTOM_HID_GetDeviceQualifierDescPt)
+    USBD_CUSTOM_HID_GetDeviceQualifierDesc(unsigned short*) 0x08003281   Thumb Code     8  usbd_customhid.o(i._Z38USBD_CUSTOM_HID_GetDeviceQualifierDescPt)
+    i._Z5Blinki                              0x0800328c   Section        0  led.o(i._Z5Blinki)
+    i._Z6LedOffv                             0x080032b0   Section        0  led.o(i._Z6LedOffv)
+    i._Z7RF_InitP19__SPI_HandleTypeDefP14RF_InitTypeDef 0x080032c0   Section        0  nrf24l01.o(i._Z7RF_InitP19__SPI_HandleTypeDefP14RF_InitTypeDef)
+    i._Z8RF_FlushP19__SPI_HandleTypeDefh     0x0800343c   Section        0  nrf24l01.o(i._Z8RF_FlushP19__SPI_HandleTypeDefh)
+    i._Z9LedTogglev                          0x08003458   Section        0  led.o(i._Z9LedTogglev)
+    i._Z9RF_CE_LOWv                          0x08003468   Section        0  nrf24l01.o(i._Z9RF_CE_LOWv)
+    i._Z9RF_StatusP19__SPI_HandleTypeDef     0x08003478   Section        0  nrf24l01.o(i._Z9RF_StatusP19__SPI_HandleTypeDef)
+    i.__scatterload_copy                     0x0800347e   Section       14  handlers.o(i.__scatterload_copy)
+    i.__scatterload_null                     0x0800348c   Section        2  handlers.o(i.__scatterload_null)
+    i.__scatterload_zeroinit                 0x0800348e   Section       14  handlers.o(i.__scatterload_zeroinit)
+    i.main                                   0x0800349c   Section        0  main.o(i.main)
+    .constdata                               0x0800369c   Section       16  system_stm32f1xx.o(.constdata)
     .data                                    0x20000000   Section        4  system_stm32f1xx.o(.data)
     .data                                    0x20000004   Section        1  usbd_ctlreq.o(.data)
     cfgidx                                   0x20000004   Data           1  usbd_ctlreq.o(.data)
@@ -2089,27 +2089,27 @@ Image Symbol Table
     RF_ReceivePayload(__SPI_HandleTypeDef*, unsigned char*, unsigned char) 0x080029d5   Thumb Code    72  nrf24l01.o(i._Z17RF_ReceivePayloadP19__SPI_HandleTypeDefPhh)
     SystemClock_Config()                     0x08002d83   Thumb Code   114  main.o(i._Z18SystemClock_Configv)
     USBD_FS_DeviceDescriptor(USBD_SpeedTypeDef, unsigned short*) 0x08003079   Thumb Code     8  usbd_desc.o(i._Z24USBD_FS_DeviceDescriptor17USBD_SpeedTypeDefPt)
-    BaseStation_NRF24L01_Init()              0x08003085   Thumb Code    92  main.o(i._Z25BaseStation_NRF24L01_Initv)
-    USBD_FS_ConfigStrDescriptor(USBD_SpeedTypeDef, unsigned short*) 0x080031b5   Thumb Code    16  usbd_desc.o(i._Z27USBD_FS_ConfigStrDescriptor17USBD_SpeedTypeDefPt)
-    USBD_FS_LangIDStrDescriptor(USBD_SpeedTypeDef, unsigned short*) 0x080031e1   Thumb Code     8  usbd_desc.o(i._Z27USBD_FS_LangIDStrDescriptor17USBD_SpeedTypeDefPt)
-    USBD_FS_SerialStrDescriptor(USBD_SpeedTypeDef, unsigned short*) 0x080031ed   Thumb Code    16  usbd_desc.o(i._Z27USBD_FS_SerialStrDescriptor17USBD_SpeedTypeDefPt)
-    USBD_FS_ProductStrDescriptor(USBD_SpeedTypeDef, unsigned short*) 0x0800320d   Thumb Code    16  usbd_desc.o(i._Z28USBD_FS_ProductStrDescriptor17USBD_SpeedTypeDefPt)
-    USBD_FS_InterfaceStrDescriptor(USBD_SpeedTypeDef, unsigned short*) 0x0800322d   Thumb Code    16  usbd_desc.o(i._Z30USBD_FS_InterfaceStrDescriptor17USBD_SpeedTypeDefPt)
-    USBD_FS_ManufacturerStrDescriptor(USBD_SpeedTypeDef, unsigned short*) 0x0800325d   Thumb Code    16  usbd_desc.o(i._Z33USBD_FS_ManufacturerStrDescriptor17USBD_SpeedTypeDefPt)
-    Blink(int)                               0x08003285   Thumb Code    30  led.o(i._Z5Blinki)
-    LedOff()                                 0x080032a9   Thumb Code    10  led.o(i._Z6LedOffv)
-    RF_Init(__SPI_HandleTypeDef*, RF_InitTypeDef*) 0x080032b9   Thumb Code   380  nrf24l01.o(i._Z7RF_InitP19__SPI_HandleTypeDefP14RF_InitTypeDef)
-    RF_Flush(__SPI_HandleTypeDef*, unsigned char) 0x08003435   Thumb Code    28  nrf24l01.o(i._Z8RF_FlushP19__SPI_HandleTypeDefh)
-    LedToggle()                              0x08003451   Thumb Code    10  led.o(i._Z9LedTogglev)
-    RF_CE_LOW()                              0x08003461   Thumb Code    10  nrf24l01.o(i._Z9RF_CE_LOWv)
-    RF_Status(__SPI_HandleTypeDef*)          0x08003471   Thumb Code     6  nrf24l01.o(i._Z9RF_StatusP19__SPI_HandleTypeDef)
-    __scatterload_copy                       0x08003477   Thumb Code    14  handlers.o(i.__scatterload_copy)
-    __scatterload_null                       0x08003485   Thumb Code     2  handlers.o(i.__scatterload_null)
-    __scatterload_zeroinit                   0x08003487   Thumb Code    14  handlers.o(i.__scatterload_zeroinit)
-    main                                     0x08003495   Thumb Code   492  main.o(i.main)
-    AHBPrescTable                            0x08003690   Data          16  system_stm32f1xx.o(.constdata)
-    Region$$Table$$Base                      0x080036a0   Number         0  anon$$obj.o(Region$$Table)
-    Region$$Table$$Limit                     0x080036c0   Number         0  anon$$obj.o(Region$$Table)
+    BaseStation_NRF24L01_Init()              0x08003085   Thumb Code    98  main.o(i._Z25BaseStation_NRF24L01_Initv)
+    USBD_FS_ConfigStrDescriptor(USBD_SpeedTypeDef, unsigned short*) 0x080031bd   Thumb Code    16  usbd_desc.o(i._Z27USBD_FS_ConfigStrDescriptor17USBD_SpeedTypeDefPt)
+    USBD_FS_LangIDStrDescriptor(USBD_SpeedTypeDef, unsigned short*) 0x080031e9   Thumb Code     8  usbd_desc.o(i._Z27USBD_FS_LangIDStrDescriptor17USBD_SpeedTypeDefPt)
+    USBD_FS_SerialStrDescriptor(USBD_SpeedTypeDef, unsigned short*) 0x080031f5   Thumb Code    16  usbd_desc.o(i._Z27USBD_FS_SerialStrDescriptor17USBD_SpeedTypeDefPt)
+    USBD_FS_ProductStrDescriptor(USBD_SpeedTypeDef, unsigned short*) 0x08003215   Thumb Code    16  usbd_desc.o(i._Z28USBD_FS_ProductStrDescriptor17USBD_SpeedTypeDefPt)
+    USBD_FS_InterfaceStrDescriptor(USBD_SpeedTypeDef, unsigned short*) 0x08003235   Thumb Code    16  usbd_desc.o(i._Z30USBD_FS_InterfaceStrDescriptor17USBD_SpeedTypeDefPt)
+    USBD_FS_ManufacturerStrDescriptor(USBD_SpeedTypeDef, unsigned short*) 0x08003265   Thumb Code    16  usbd_desc.o(i._Z33USBD_FS_ManufacturerStrDescriptor17USBD_SpeedTypeDefPt)
+    Blink(int)                               0x0800328d   Thumb Code    30  led.o(i._Z5Blinki)
+    LedOff()                                 0x080032b1   Thumb Code    10  led.o(i._Z6LedOffv)
+    RF_Init(__SPI_HandleTypeDef*, RF_InitTypeDef*) 0x080032c1   Thumb Code   380  nrf24l01.o(i._Z7RF_InitP19__SPI_HandleTypeDefP14RF_InitTypeDef)
+    RF_Flush(__SPI_HandleTypeDef*, unsigned char) 0x0800343d   Thumb Code    28  nrf24l01.o(i._Z8RF_FlushP19__SPI_HandleTypeDefh)
+    LedToggle()                              0x08003459   Thumb Code    10  led.o(i._Z9LedTogglev)
+    RF_CE_LOW()                              0x08003469   Thumb Code    10  nrf24l01.o(i._Z9RF_CE_LOWv)
+    RF_Status(__SPI_HandleTypeDef*)          0x08003479   Thumb Code     6  nrf24l01.o(i._Z9RF_StatusP19__SPI_HandleTypeDef)
+    __scatterload_copy                       0x0800347f   Thumb Code    14  handlers.o(i.__scatterload_copy)
+    __scatterload_null                       0x0800348d   Thumb Code     2  handlers.o(i.__scatterload_null)
+    __scatterload_zeroinit                   0x0800348f   Thumb Code    14  handlers.o(i.__scatterload_zeroinit)
+    main                                     0x0800349d   Thumb Code   496  main.o(i.main)
+    AHBPrescTable                            0x0800369c   Data          16  system_stm32f1xx.o(.constdata)
+    Region$$Table$$Base                      0x080036ac   Number         0  anon$$obj.o(Region$$Table)
+    Region$$Table$$Limit                     0x080036cc   Number         0  anon$$obj.o(Region$$Table)
     SystemCoreClock                          0x20000000   Data           4  system_stm32f1xx.o(.data)
     USBD_CUSTOM_HID                          0x20000008   Data          60  usbd_customhid.o(.data)
     rfStatus                                 0x200000a0   Data           1  main.o(.data)
@@ -2140,9 +2140,9 @@ Memory Map of the image
 
   Image Entry point : 0x080000ed
 
-  Load Region LR_IROM1 (Base: 0x08000000, Size: 0x000037e4, Max: 0x00010000, ABSOLUTE)
+  Load Region LR_IROM1 (Base: 0x08000000, Size: 0x000037f0, Max: 0x00010000, ABSOLUTE)
 
-    Execution Region ER_IROM1 (Base: 0x08000000, Size: 0x000036c0, Max: 0x00010000, ABSOLUTE)
+    Execution Region ER_IROM1 (Base: 0x08000000, Size: 0x000036cc, Max: 0x00010000, ABSOLUTE)
 
     Base Addr    Size         Type   Attr      Idx    E Section Name        Object
 
@@ -2334,32 +2334,32 @@ Memory Map of the image
     0x08003022   0x00000032   Code   RO          401    i._Z22USBD_CUSTOM_HID_DeInitP19_USBD_HandleTypeDefh  usbd_customhid.o
     0x08003054   0x00000024   Code   RO          402    i._Z23USBD_CUSTOM_HID_DataOutP19_USBD_HandleTypeDefh  usbd_customhid.o
     0x08003078   0x0000000c   Code   RO          791    i._Z24USBD_FS_DeviceDescriptor17USBD_SpeedTypeDefPt  usbd_desc.o
-    0x08003084   0x00000060   Code   RO          561    i._Z25BaseStation_NRF24L01_Initv  main.o
-    0x080030e4   0x0000009e   Code   RO         2589    i._Z26SPI_WaitOnFlagUntilTimeoutP19__SPI_HandleTypeDefj10FlagStatusj  stm32f1xx_hal_spi.o
-    0x08003182   0x00000002   PAD
-    0x08003184   0x0000000c   Code   RO          403    i._Z26USBD_CUSTOM_HID_GetCfgDescPt  usbd_customhid.o
-    0x08003190   0x00000022   Code   RO          404    i._Z27USBD_CUSTOM_HID_EP0_RxReadyP19_USBD_HandleTypeDef  usbd_customhid.o
-    0x080031b2   0x00000002   PAD
-    0x080031b4   0x0000002c   Code   RO          792    i._Z27USBD_FS_ConfigStrDescriptor17USBD_SpeedTypeDefPt  usbd_desc.o
-    0x080031e0   0x0000000c   Code   RO          793    i._Z27USBD_FS_LangIDStrDescriptor17USBD_SpeedTypeDefPt  usbd_desc.o
-    0x080031ec   0x00000020   Code   RO          794    i._Z27USBD_FS_SerialStrDescriptor17USBD_SpeedTypeDefPt  usbd_desc.o
-    0x0800320c   0x00000020   Code   RO          795    i._Z28USBD_FS_ProductStrDescriptor17USBD_SpeedTypeDefPt  usbd_desc.o
-    0x0800322c   0x00000030   Code   RO          796    i._Z30USBD_FS_InterfaceStrDescriptor17USBD_SpeedTypeDefPt  usbd_desc.o
-    0x0800325c   0x0000001c   Code   RO          797    i._Z33USBD_FS_ManufacturerStrDescriptor17USBD_SpeedTypeDefPt  usbd_desc.o
-    0x08003278   0x0000000c   Code   RO          405    i._Z38USBD_CUSTOM_HID_GetDeviceQualifierDescPt  usbd_customhid.o
-    0x08003284   0x00000024   Code   RO         1189    i._Z5Blinki         led.o
-    0x080032a8   0x00000010   Code   RO         1191    i._Z6LedOffv        led.o
-    0x080032b8   0x0000017c   Code   RO         1275    i._Z7RF_InitP19__SPI_HandleTypeDefP14RF_InitTypeDef  nrf24l01.o
-    0x08003434   0x0000001c   Code   RO         1276    i._Z8RF_FlushP19__SPI_HandleTypeDefh  nrf24l01.o
-    0x08003450   0x00000010   Code   RO         1192    i._Z9LedTogglev     led.o
-    0x08003460   0x00000010   Code   RO         1277    i._Z9RF_CE_LOWv     nrf24l01.o
-    0x08003470   0x00000006   Code   RO         1278    i._Z9RF_StatusP19__SPI_HandleTypeDef  nrf24l01.o
-    0x08003476   0x0000000e   Code   RO         3379    i.__scatterload_copy  mc_w.l(handlers.o)
-    0x08003484   0x00000002   Code   RO         3380    i.__scatterload_null  mc_w.l(handlers.o)
-    0x08003486   0x0000000e   Code   RO         3381    i.__scatterload_zeroinit  mc_w.l(handlers.o)
-    0x08003494   0x000001fc   Code   RO          562    i.main              main.o
-    0x08003690   0x00000010   Data   RO            8    .constdata          system_stm32f1xx.o
-    0x080036a0   0x00000020   Data   RO         3377    Region$$Table       anon$$obj.o
+    0x08003084   0x00000068   Code   RO          561    i._Z25BaseStation_NRF24L01_Initv  main.o
+    0x080030ec   0x0000009e   Code   RO         2589    i._Z26SPI_WaitOnFlagUntilTimeoutP19__SPI_HandleTypeDefj10FlagStatusj  stm32f1xx_hal_spi.o
+    0x0800318a   0x00000002   PAD
+    0x0800318c   0x0000000c   Code   RO          403    i._Z26USBD_CUSTOM_HID_GetCfgDescPt  usbd_customhid.o
+    0x08003198   0x00000022   Code   RO          404    i._Z27USBD_CUSTOM_HID_EP0_RxReadyP19_USBD_HandleTypeDef  usbd_customhid.o
+    0x080031ba   0x00000002   PAD
+    0x080031bc   0x0000002c   Code   RO          792    i._Z27USBD_FS_ConfigStrDescriptor17USBD_SpeedTypeDefPt  usbd_desc.o
+    0x080031e8   0x0000000c   Code   RO          793    i._Z27USBD_FS_LangIDStrDescriptor17USBD_SpeedTypeDefPt  usbd_desc.o
+    0x080031f4   0x00000020   Code   RO          794    i._Z27USBD_FS_SerialStrDescriptor17USBD_SpeedTypeDefPt  usbd_desc.o
+    0x08003214   0x00000020   Code   RO          795    i._Z28USBD_FS_ProductStrDescriptor17USBD_SpeedTypeDefPt  usbd_desc.o
+    0x08003234   0x00000030   Code   RO          796    i._Z30USBD_FS_InterfaceStrDescriptor17USBD_SpeedTypeDefPt  usbd_desc.o
+    0x08003264   0x0000001c   Code   RO          797    i._Z33USBD_FS_ManufacturerStrDescriptor17USBD_SpeedTypeDefPt  usbd_desc.o
+    0x08003280   0x0000000c   Code   RO          405    i._Z38USBD_CUSTOM_HID_GetDeviceQualifierDescPt  usbd_customhid.o
+    0x0800328c   0x00000024   Code   RO         1189    i._Z5Blinki         led.o
+    0x080032b0   0x00000010   Code   RO         1191    i._Z6LedOffv        led.o
+    0x080032c0   0x0000017c   Code   RO         1275    i._Z7RF_InitP19__SPI_HandleTypeDefP14RF_InitTypeDef  nrf24l01.o
+    0x0800343c   0x0000001c   Code   RO         1276    i._Z8RF_FlushP19__SPI_HandleTypeDefh  nrf24l01.o
+    0x08003458   0x00000010   Code   RO         1192    i._Z9LedTogglev     led.o
+    0x08003468   0x00000010   Code   RO         1277    i._Z9RF_CE_LOWv     nrf24l01.o
+    0x08003478   0x00000006   Code   RO         1278    i._Z9RF_StatusP19__SPI_HandleTypeDef  nrf24l01.o
+    0x0800347e   0x0000000e   Code   RO         3379    i.__scatterload_copy  mc_w.l(handlers.o)
+    0x0800348c   0x00000002   Code   RO         3380    i.__scatterload_null  mc_w.l(handlers.o)
+    0x0800348e   0x0000000e   Code   RO         3381    i.__scatterload_zeroinit  mc_w.l(handlers.o)
+    0x0800349c   0x00000200   Code   RO          562    i.main              main.o
+    0x0800369c   0x00000010   Data   RO            8    .constdata          system_stm32f1xx.o
+    0x080036ac   0x00000020   Data   RO         3377    Region$$Table       anon$$obj.o
 
 
     Execution Region RW_IRAM1 (Base: 0x20000000, Size: 0x00000f88, Max: 0x00005000, ABSOLUTE)
@@ -2400,7 +2400,7 @@ Image component sizes
       Code (inc. data)   RO Data    RW Data    ZI Data      Debug   Object Name
 
        124         18          0          4          0       2921   led.o
-      1184         60          0         12        456      37623   main.o
+      1196         62          0         12        456      37603   main.o
        926         22          0          0          0      14683   nrf24l01.o
         76          0          0          0          0       1542   spilib.o
         36          8        236          0       1024        764   startup_stm32f103xb.o
@@ -2428,7 +2428,7 @@ Image component sizes
        132          0          0          0          0       4324   usbd_ioreq.o
 
     ----------------------------------------------------------------------
-     13374        534        284        288       3684     632958   Object Totals
+     13386        536        284        288       3684     632938   Object Totals
          0          0         32          0          0          0   (incl. Generated)
         36          0          0         12          0          0   (incl. Padding)
 
@@ -2473,15 +2473,15 @@ Image component sizes
 
       Code (inc. data)   RO Data    RW Data    ZI Data      Debug   
 
-     13732        560        284        292       3684     624774   Grand Totals
-     13732        560        284        292       3684     624774   ELF Image Totals
-     13732        560        284        292          0          0   ROM Totals
+     13744        562        284        292       3684     624754   Grand Totals
+     13744        562        284        292       3684     624754   ELF Image Totals
+     13744        562        284        292          0          0   ROM Totals
 
 ==============================================================================
 
-    Total RO  Size (Code + RO Data)                14016 (  13.69kB)
+    Total RO  Size (Code + RO Data)                14028 (  13.70kB)
     Total RW  Size (RW Data + ZI Data)              3976 (   3.88kB)
-    Total ROM Size (Code + RO Data + RW Data)      14308 (  13.97kB)
+    Total ROM Size (Code + RO Data + RW Data)      14320 (  13.98kB)
 
 ==============================================================================
 

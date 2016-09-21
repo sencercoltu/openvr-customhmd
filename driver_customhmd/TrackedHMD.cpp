@@ -597,7 +597,7 @@ void CTrackedHMD::PoseUpdate(USBPacket *pPacket, HmdVector3d_t *pCenterEuler, Hm
 				euler.v[0] = euler.v[0] + pCenterEuler->v[0];
 				euler.v[1] = euler.v[1] + pCenterEuler->v[1];
 				euler.v[2] = euler.v[2] + pCenterEuler->v[2];
-				m_HMDData.Pose.qRotation = Quaternion::FromEuler(euler).UnitQuaternion();
+				m_HMDData.Pose.qRotation = Quaternion::FromEuler(euler).UnitQuaternion();				
 				m_HMDData.PoseUpdated = true;
 				memcpy(pRelativePos, m_HMDData.Pose.vecPosition, sizeof(HmdVector3d_t)); //to server driver
 			}
@@ -605,6 +605,9 @@ void CTrackedHMD::PoseUpdate(USBPacket *pPacket, HmdVector3d_t *pCenterEuler, Hm
 			case POSITION_DATA:
 			{
 				m_HMDData.LastState.Position = pPacket->Position;
+				for (auto i=0; i<3; i++)
+					m_HMDData.Pose.vecPosition[i] = m_HMDData.LastState.Position.Position[i];
+				m_HMDData.PoseUpdated = true;
 			}
 			break;
 			case COMMAND_DATA:
