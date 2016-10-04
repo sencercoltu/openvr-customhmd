@@ -145,18 +145,17 @@ void CServerDriver::Run()
 
 	USBCalibrationData calibrationData[3] = { 0 };
 	for (auto i = 0; i < 3; i++)
-	{
-		calibrationData[i].SensorMask = SENSOR_ACCEL | SENSOR_GYRO | SENSOR_MAG;
+	{	
 		char sectionName[32];
-		sprintf_s(sectionName, "offsetAccX_%d", i); calibrationData[i].OffsetAccel[0] = (int16_t) m_pSettings->GetInt32("driver_customhmd", sectionName, 0);
-		sprintf_s(sectionName, "offsetAccY_%d", i); calibrationData[i].OffsetAccel[1] = (int16_t)m_pSettings->GetInt32("driver_customhmd", sectionName, 0);
-		sprintf_s(sectionName, "offsetAccZ_%d", i); calibrationData[i].OffsetAccel[2] = (int16_t)m_pSettings->GetInt32("driver_customhmd", sectionName, 0);
-		sprintf_s(sectionName, "offsetGyroX_%d", i); calibrationData[i].OffsetGyro[0] = (int16_t)m_pSettings->GetInt32("driver_customhmd", sectionName, 0);
-		sprintf_s(sectionName, "offsetGyroY_%d", i); calibrationData[i].OffsetGyro[1] = (int16_t)m_pSettings->GetInt32("driver_customhmd", sectionName, 0);
-		sprintf_s(sectionName, "offsetGyroZ_%d", i); calibrationData[i].OffsetGyro[2] = (int16_t)m_pSettings->GetInt32("driver_customhmd", sectionName, 0);
-		sprintf_s(sectionName, "offsetMagX_%d", i); calibrationData[i].OffsetMag[0] = (int16_t)m_pSettings->GetInt32("driver_customhmd", sectionName, 0);
-		sprintf_s(sectionName, "offsetMagY_%d", i); calibrationData[i].OffsetMag[1] = (int16_t)m_pSettings->GetInt32("driver_customhmd", sectionName, 0);
-		sprintf_s(sectionName, "offsetMagZ_%d", i); calibrationData[i].OffsetMag[2] = (int16_t)m_pSettings->GetInt32("driver_customhmd", sectionName, 0);
+		//sprintf_s(sectionName, "offsetAccX_%d", i); calibrationData[i].OffsetAccel[0] = (int16_t) m_pSettings->GetInt32("driver_customhmd", sectionName, 0);
+		//sprintf_s(sectionName, "offsetAccY_%d", i); calibrationData[i].OffsetAccel[1] = (int16_t)m_pSettings->GetInt32("driver_customhmd", sectionName, 0);
+		//sprintf_s(sectionName, "offsetAccZ_%d", i); calibrationData[i].OffsetAccel[2] = (int16_t)m_pSettings->GetInt32("driver_customhmd", sectionName, 0);
+		//sprintf_s(sectionName, "offsetGyroX_%d", i); calibrationData[i].OffsetGyro[0] = (int16_t)m_pSettings->GetInt32("driver_customhmd", sectionName, 0);
+		//sprintf_s(sectionName, "offsetGyroY_%d", i); calibrationData[i].OffsetGyro[1] = (int16_t)m_pSettings->GetInt32("driver_customhmd", sectionName, 0);
+		//sprintf_s(sectionName, "offsetGyroZ_%d", i); calibrationData[i].OffsetGyro[2] = (int16_t)m_pSettings->GetInt32("driver_customhmd", sectionName, 0);
+		//sprintf_s(sectionName, "offsetMagX_%d", i); calibrationData[i].OffsetMag[0] = (int16_t)m_pSettings->GetInt32("driver_customhmd", sectionName, 0);
+		//sprintf_s(sectionName, "offsetMagY_%d", i); calibrationData[i].OffsetMag[1] = (int16_t)m_pSettings->GetInt32("driver_customhmd", sectionName, 0);
+		//sprintf_s(sectionName, "offsetMagZ_%d", i); calibrationData[i].OffsetMag[2] = (int16_t)m_pSettings->GetInt32("driver_customhmd", sectionName, 0);
 	}
 
 
@@ -178,24 +177,25 @@ void CServerDriver::Run()
 		else
 		{ 
 			DWORD now = GetTickCount();
-			if (now - lastCalibSend >= 3000)
-			{
-				//send calibration data for each device every 9 seconds 
-				USBPacket *pPacket = new USBPacket();
-				ZeroMemory(pPacket, sizeof(USBPacket));
-				pPacket->Header.Type = calibDeviceIndex | COMMAND_DATA;
-				pPacket->Header.Crc8 = 0;
-				pPacket->Header.Sequence = (uint16_t)GetTickCount(); //put timestamp as sequence to hopefully prevent duplicates on target
-				pPacket->Command.Command = CMD_CALIBRATE;
-				pPacket->Command.Data.Calibration = calibrationData[calibDeviceIndex];
-				SetPacketCrc(pPacket);
-				SendUSBCommand(pPacket);
+			//if (now - lastCalibSend >= 3000)
+			//{
+			//	//send calibration data for each device every 9 seconds 
+			// calibrationData[i].SensorMask = SENSOR_ACCEL | SENSOR_GYRO | SENSOR_MAG;
+			//	USBPacket *pPacket = new USBPacket();
+			//	ZeroMemory(pPacket, sizeof(USBPacket));
+			//	pPacket->Header.Type = calibDeviceIndex | COMMAND_DATA;
+			//	pPacket->Header.Crc8 = 0;
+			//	pPacket->Header.Sequence = (uint16_t)GetTickCount(); //put timestamp as sequence to hopefully prevent duplicates on target
+			//	pPacket->Command.Command = CMD_CALIBRATE;
+			//	pPacket->Command.Data.Calibration = calibrationData[calibDeviceIndex];
+			//	SetPacketCrc(pPacket);
+			//	SendUSBCommand(pPacket);
 
-				calibDeviceIndex++;
-				if (calibDeviceIndex > 2) //hmd=0, left = 1, right = 2
-					calibDeviceIndex = 0;
-				lastCalibSend = now;
-			}
+			//	calibDeviceIndex++;
+			//	if (calibDeviceIndex > 2) //hmd=0, left = 1, right = 2
+			//		calibDeviceIndex = 0;
+			//	lastCalibSend = now;
+			//}
 
 			if (m_CommandQueue.size() > 0)
 			{	

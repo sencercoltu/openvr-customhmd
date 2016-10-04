@@ -49,7 +49,8 @@ extern "C" {
 
 #define SENSOR_ACCEL	0x01
 #define SENSOR_GYRO		0x02
-#define SENSOR_MAG		0x04
+#define SENSOR_MAG		0x03
+//#define SENSOR_POSACCEL	0x08
 
 struct USBDataHeader
 {
@@ -97,7 +98,7 @@ struct USBAxisData
 
 struct USBRawData
 {
-	uint8_t State; //1 for enable, 0 for disable (set by driver)
+	uint8_t State; //1 for enable, 0 for disable (set by driver), 2 for filtered
 	int16_t Accel[3];
 	int16_t Gyro[3];
 	int16_t Mag[3];	
@@ -110,16 +111,18 @@ struct USBTriggerData
 };
 
 // 2/65535 ( 0.00003052 to 2.0)
-#define TO_CALIB_SCALE(x) ((uint16_t)((float)x * 32768.0f))
-#define FROM_CALIB_SCALE(x) ((float)((float)x / 32768.0f))
+//#define TO_CALIB_SCALE(x) ((uint16_t)((float)x * 32768.0f))
+//#define FROM_CALIB_SCALE(x) ((float)((float)x / 32768.0f))
 
 struct USBCalibrationData
 {
-	uint8_t SensorMask;	
-	int16_t OffsetAccel[3];	
-	uint16_t ScaleAccel[3]; 
-	int16_t OffsetGyro[3];
-	int16_t OffsetMag[3];
+	uint8_t Sensor;	
+	int16_t PosScale[3];
+	int16_t NegScale[3];
+	//int16_t OffsetAccel[3];	
+	//uint16_t ScaleAccel[3]; //sil bunu
+	//int16_t OffsetGyro[3];
+	//int16_t OffsetMag[3];	
 };
 
 struct USBVibrationData

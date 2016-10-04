@@ -7,6 +7,15 @@ using System.Threading.Tasks;
 
 namespace monitor_customhmd
 {
+    public enum DebugModes
+    {
+        Off,
+        Raw,
+        Filtered,        
+        Compensated,
+        Vectors
+    }
+
     public static class UsbPacketDefs
     {
         public const byte HMD_SOURCE = 0x00;
@@ -38,40 +47,42 @@ namespace monitor_customhmd
 
         public const byte SENSOR_ACCEL = 0x01;
         public const byte SENSOR_GYRO = 0x02;
-        public const byte SENSOR_MAG = 0x04;
+        public const byte SENSOR_MAG = 0x03;
+        //public const byte SENSOR_POSACCEL = 0x08;
 
 
         public const int CUSTOM_HID_EPIN_SIZE = 32;
         public const int CUSTOM_HID_EPOUT_SIZE = 32;
         public const int USB_CUSTOM_HID_DESC_SIZ = 34;
 
+        public interface IUSBData { }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
         public struct USBDataHeader
         {
-            public static int Size { get { return Marshal.SizeOf(typeof(USBDataHeader)); } }
-            public byte Type; //source & data
-            public ushort Sequence; //source & data
-            public byte Crc8; //source & data
+            public static int Size { get { return 4; } }
+            public byte Type; //source & data 1
+            public ushort Sequence; //source & data 2
+            public byte Crc8; //source & data 1
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
-        public struct USBPositionData
+        public struct USBPositionData : IUSBData
         {
-            public static int Size { get { return Marshal.SizeOf(typeof(USBPositionData)); } }
+            public static int Size { get { return 12; } }
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = 3, ArraySubType = UnmanagedType.R4)]
             public float[] Position;
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
-        public struct USBSyncData
+        public struct USBSyncData : IUSBData
         {
             public static int Size { get { return Marshal.SizeOf(typeof(USBSyncData)); } }
             public ulong SyncTime;
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
-        public struct USBRotationData
+        public struct USBRotationData : IUSBData
         {
             public static int Size { get { return Marshal.SizeOf(typeof(USBRotationData)); } }
             public float w;
@@ -81,7 +92,7 @@ namespace monitor_customhmd
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
-        public struct USBAxisData
+        public struct USBAxisData : IUSBData
         {
             public static int Size { get { return Marshal.SizeOf(typeof(USBAxisData)); } }
             public float x;
@@ -89,7 +100,7 @@ namespace monitor_customhmd
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
-        public struct USBRawData
+        public struct USBRawData : IUSBData
         {
             public static int Size { get { return Marshal.SizeOf(typeof(USBRawData)); } }
             public byte State; //1 for enable, 0 for disable (set by driver)
@@ -102,7 +113,7 @@ namespace monitor_customhmd
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
-        public struct USBTriggerData
+        public struct USBTriggerData : IUSBData
         {
             public static int Size { get { return Marshal.SizeOf(typeof(USBTriggerData)); } }
             public ushort Digital;
@@ -110,34 +121,23 @@ namespace monitor_customhmd
             public USBAxisData[] Analog;
         }
 
-        // 2/65535 ( 0.00003052 to 2.0)
-        public static ushort TO_CALIB_SCALE(float x)
-        {
-            return (ushort)(x * 32768.0f);
-        }
-
-        public static float FROM_CALIB_SCALE(ushort x)
-        {
-            return x / 32768.0f;
-        }
-
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
-        public struct USBCalibrationData
+        public struct USBCalibrationData : IUSBData
         {
             public static int Size { get { return Marshal.SizeOf(typeof(USBCalibrationData)); } }
-            public byte SensorMask;
+            public byte Sensor;
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = 3, ArraySubType = UnmanagedType.I2)]
-            public short[] OffsetAccel;
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 3, ArraySubType = UnmanagedType.U2)]
-            public ushort[] ScaleAccel;
+            public short[] PosScale;
+            //[MarshalAs(UnmanagedType.ByValArray, SizeConst = 3, ArraySubType = UnmanagedType.U2)]
+            //public ushort[] ScaleAccel;
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = 3, ArraySubType = UnmanagedType.I2)]
-            public short[] OffsetGyro;
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 3, ArraySubType = UnmanagedType.I2)]
-            public short[] OffsetMag;
+            public short[] NegScale;
+            //[MarshalAs(UnmanagedType.ByValArray, SizeConst = 3, ArraySubType = UnmanagedType.I2)]
+            //public short[] OffsetMag;
         };
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
-        public struct USBVibrationData
+        public struct USBVibrationData : IUSBData
         {
             public static int Size { get { return Marshal.SizeOf(typeof(USBVibrationData)); } }
             public uint Axis;
@@ -145,52 +145,60 @@ namespace monitor_customhmd
         };
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
-        public struct USBStatusData
+        public struct USBStatusData : IUSBData
         {
             public static int Size { get { return Marshal.SizeOf(typeof(USBStatusData)); } }
             public byte CalibrationMask;
         }
 
-
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
-        public struct USBCommandData
+        public struct USBCommandData : IUSBData
         {
-            public static int Size { get { return Marshal.SizeOf(typeof(USBCommandData)); } }
+            public static int Size { get { return 26; } }
             public byte Command;
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = 25, ArraySubType = UnmanagedType.U1)]
             public byte[] Data;
 
-            private USBVibrationData? _vibration; //6
-            public USBVibrationData? Vibration { get { return _vibration.HasValue ? _vibration : (Command == 0x01) ? (USBVibrationData?)null : StructFromBytes<USBVibrationData>(Data); } }
+            public static USBCommandData Create(byte command, IUSBData packet)
+            {
+                var p = new USBCommandData
+                {
+                    Command = command,
+                    Data = new byte[25]
+                };
+                var d = StructToBytes(packet);
+                Array.Copy(d, p.Data, Math.Min(d.Length, 25));
+                return p;
+            }
 
-            private USBSyncData? _sync; //8
-            public USBSyncData? Sync { get { return _sync.HasValue ? _sync : (Command == 0x02) ? (USBSyncData?)null : StructFromBytes<USBSyncData>(Data); } }
+            public void ParseFields()
+            {
+                switch (Command)
+                {
+                    case CMD_VIBRATE:
+                        Vibration = StructFromBytes<USBVibrationData>(Data);
+                        break;
+                    case CMD_CALIBRATE:
+                        Calibration = StructFromBytes<USBCalibrationData>(Data);
+                        break;
+                    case CMD_SYNC:
+                        Sync = StructFromBytes<USBSyncData>(Data);
+                        break;
+                    case CMD_RAW_DATA:
+                        Raw = StructFromBytes<USBRawData>(Data);
+                        break;
+                    case CMD_STATUS:
+                        Status = StructFromBytes<USBStatusData>(Data);
+                        break;
+                }
+            }
 
-            private USBCalibrationData? _calibration; //25
-            public USBCalibrationData? Calibration { get { return _calibration.HasValue ? _calibration.Value : (Command == 0x03) ? (USBCalibrationData?)null : StructFromBytes<USBCalibrationData>(Data); } }
-
-            private USBRawData? _raw; //19
-            public USBRawData? Raw { get { return _raw.HasValue ? _raw : (Command == 0x04) ? (USBRawData?)null : StructFromBytes<USBRawData>(Data); } }
-
-            private USBStatusData? _status; //1
-            public USBStatusData? Status { get { return _status.HasValue ? _status : (Command == 0x05) ? (USBStatusData?)null : StructFromBytes<USBStatusData>(Data); } }
+            public USBVibrationData Vibration;
+            public USBSyncData Sync;
+            public USBCalibrationData Calibration;
+            public USBRawData Raw;
+            public USBStatusData Status;
         }
-
-        //[StructLayout(LayoutKind.Explicit, CharSet = CharSet.Ansi, Pack = 1)]
-        //public struct USBData
-        //{
-        //    public static int Size { get { return Marshal.SizeOf(typeof(USBData)); } }
-        //    private byte[] Data;
-
-        //    [FieldOffset(0)]
-        //    public USBPositionData Position;
-        //    [FieldOffset(0)]
-        //    public USBRotationData Rotation;
-        //    [FieldOffset(0)]
-        //    public USBTriggerData Trigger;
-        //    [FieldOffset(0)]
-        //    public USBCommandData Command;
-        //}
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
         public struct USBDataCache //used at ps side/server only
@@ -203,54 +211,117 @@ namespace monitor_customhmd
 
 
         //private const int reservedSize = 1; // UsbPacket.CUSTOM_HID_EPOUT_SIZE - (Marshal.SizeOf(typeof(USBData)) + Marshal.SizeOf(typeof(USBDataHeader)));
-
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
         public struct USBPacket
         {
-            public static int Size { get { return Marshal.SizeOf(typeof(USBPacket)); } }
+            public static USBPacket Create(byte type, ushort sequence, IUSBData packet)
+            {
+                var p = new USBPacket
+                {
+                    Header = {
+                        Sequence = sequence,
+                        Type = type
+                    },
+                    Data = new byte[28]
+                    //Reserved = new byte[8],
+                };
+                var d = StructToBytes(packet);
+                Array.Copy(d, p.Data, Math.Min(d.Length, 28)); // 20 data + 8 reserved
+                return p;
+            }
+
+
+            public static int Size { get { return 32; } }
             public USBDataHeader Header;
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 20, ArraySubType = UnmanagedType.U1)]
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 28, ArraySubType = UnmanagedType.U1)]
             private byte[] Data;
+            //            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 8, ArraySubType = UnmanagedType.U1)]
+            //            private byte[] Reserved;
 
-            private USBPositionData? _position { get; set; }            
-            public USBPositionData? Position {  get { return _position.HasValue? _position : ((Header.Type & 0xf0) != 0x10)? (USBPositionData?) null :  StructFromBytes<USBPositionData>(Data); } }
+            public void ParseFields()
+            {
+                switch (Header.Type & 0xf0)
+                {
+                    case ROTATION_DATA:
+                        Rotation = StructFromBytes<USBRotationData>(Data);
+                        break;
+                    case POSITION_DATA:
+                        Position = StructFromBytes<USBPositionData>(Data);
+                        break;
+                    case TRIGGER_DATA:
+                        Trigger = StructFromBytes<USBTriggerData>(Data);
+                        break;
+                    case COMMAND_DATA:
+                        Command = StructFromBytes<USBCommandData>(Data);
+                        Command.ParseFields();
+                        break;
+                }
+            }
 
-            private USBRotationData? _rotation { get; set; }
-            public USBRotationData? Rotation { get { return _rotation.HasValue ? _rotation : ((Header.Type & 0xf0) != 0x20) ? (USBRotationData?)null : StructFromBytes<USBRotationData>(Data); } }
 
-            private USBTriggerData? _trigger { get; set; }
-            public USBTriggerData? Trigger { get { return _trigger.HasValue ? _trigger : ((Header.Type & 0xf0) != 0x40) ? (USBTriggerData?)null : StructFromBytes<USBTriggerData>(Data); } }
-
-            private USBCommandData? _command { get; set; }
-            public USBCommandData? Command { get { return _command.HasValue ? _command : ((Header.Type & 0xf0) != 0x80) ? (USBCommandData?)null : StructFromBytes<USBCommandData>(Data); } }
-
-
-            //public USBData Data;
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 8, ArraySubType = UnmanagedType.U1)]
-            private byte[] Reserved;
+            public USBRotationData Rotation;
+            public USBPositionData Position;
+            public USBTriggerData Trigger;
+            public USBCommandData Command;
         }
 
-        public static void SetPacketCrc(ref USBPacket pPacket) { }
-        public static byte GetPacketCrc(ref USBPacket pPacket) { return 0; }
-        public static byte CheckPacketCrc(ref USBPacket pPacket) { return 0; }
+        public static void SetPacketCrc(ref byte[] data)
+        {
+            data[3] = 0;
+            byte crc = 0;
+            for (int i = 0; i < USBPacket.Size; i++)
+                crc ^= data[i];
+            data[3] = crc;
+            var d = new byte[USBPacket.Size + 1];
+            Array.Copy(data, 0, d, 1, USBPacket.Size);
+            data = d;
+        }
+
+
+        public static byte GetPacketCrc(byte[] data, int idx)
+        {
+            byte crcTemp = data[3];
+            data[3] = 0;
+            byte crc = 0;
+            for (int i = idx; i < idx + USBPacket.Size; i++)
+                crc ^= data[i];
+            data[3] = crcTemp;
+            return crc;
+        }
+
+        public static bool CheckPacketCrc(byte[] data, int idx)
+        {
+            return data[3] == GetPacketCrc(data, idx);
+        }
+
+        public static ushort TO_CALIB_SCALE(float x)
+        {
+            return (ushort)(x * 32768.0f);
+        }
+
+        public static float FROM_CALIB_SCALE(ushort x)
+        {
+            return x / 32768.0f;
+        }
 
         public static T StructFromBytes<T>(byte[] bytes, int index = 0)
         {
             var handle = GCHandle.Alloc(bytes, GCHandleType.Pinned);
-            var ret = (T)Marshal.PtrToStructure(handle.AddrOfPinnedObject()+index, typeof(T));
+            var ret = (T)Marshal.PtrToStructure(handle.AddrOfPinnedObject() + index, typeof(T));
             handle.Free();
             return ret;
         }
 
         public static byte[] StructToBytes(object obj)
         {
-            var packetSize = Marshal.SizeOf(obj.GetType());
+            var packetSize = Marshal.SizeOf(obj);
             var packet = new byte[packetSize];
             var packetHandle = GCHandle.Alloc(packet, GCHandleType.Pinned);
             Marshal.StructureToPtr(obj, packetHandle.AddrOfPinnedObject(), false);
             packetHandle.Free();
             return packet;
         }
+
 
     }
 

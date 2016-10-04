@@ -40,6 +40,7 @@
 #define RF_TX_FIFO_EMPTY_Bit		(1<<4)
 #define RF_RX_FIFO_FULL_Bit			(1<<1)
 #define RF_TX_FIFO_FULL_Bit			(1<<5)
+#define RF_TX_STATUS_FULL_Bit			(1<<0)
 
 /* NRF24l01 commands define */
 #define RF_SendPayload_CMD      0xA0
@@ -166,6 +167,10 @@ typedef struct
 #define RF_MAX_RT_IRQ_CLEAR			0x10
 
 uint8_t RF_Init(SPI_HandleTypeDef* SPIx, RF_InitTypeDef* RF_InitStruct);
+
+uint8_t RF_DisableTransmit(SPI_HandleTypeDef* SPIx);
+uint8_t RF_EnableTransmit(SPI_HandleTypeDef* SPIx);
+
 uint8_t RF_SendPayload(SPI_HandleTypeDef* SPIx, uint8_t* data, uint8_t DataLen);
 uint8_t RF_ReceivePayload(SPI_HandleTypeDef* SPIx, uint8_t* Data, uint8_t Dala_Len);
 

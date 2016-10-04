@@ -29,7 +29,7 @@ uint8_t RF_TransmitMode(SPI_HandleTypeDef* SPIx, uint8_t *address)
 	//flush
 	//RF_Flush(SPIx, RF_Flush_TX_CMD);
 	RF_CE_HIGH();
-	HAL_Delay(1);
+	HAL_MicroDelay(10);
 	return tmp;
 }
 
@@ -45,7 +45,7 @@ uint8_t RF_ReceiveMode(SPI_HandleTypeDef* SPIx, uint8_t *address)
 	//flush
 	//RF_Flush(SPIx, RF_Flush_TX_CMD);	
 	RF_CE_HIGH();
-	HAL_Delay(1);
+	HAL_MicroDelay(10);
 	return tmp;
 }
 
@@ -101,19 +101,33 @@ unsigned char RF_Init(SPI_HandleTypeDef* SPIx, RF_InitTypeDef* RF_InitStruct)		 
 	return tmp;			 
 }
 
+uint8_t RF_DisableTransmit(SPI_HandleTypeDef* SPIx)
+{
+	RF_CE_LOW();
+	return RF_SUCCESS;
+}
+
+uint8_t RF_EnableTransmit(SPI_HandleTypeDef* SPIx)
+{
+	RF_CE_HIGH();
+	HAL_MicroDelay(50);
+	return RF_SUCCESS;
+}
+
+
 unsigned char RF_SendPayload(SPI_HandleTypeDef* SPIx, unsigned char * data, unsigned char DataLen)
 {
-  RF_CE_LOW();
-  RF_NSS_LOW();
-  SPI_SendByte(SPIx, RF_SendPayload_CMD);
-  while(DataLen) 
-  {
-    SPI_SendByte(SPIx, *data++);
-    DataLen--;
-  }
-  RF_NSS_HIGH();
-  RF_CE_HIGH();
-  return RF_SUCCESS;
+	RF_DisableTransmit(SPIx);
+	RF_NSS_LOW();
+	SPI_SendByte(SPIx, RF_SendPayload_CMD);
+	while(DataLen) 
+	{
+		SPI_SendByte(SPIx, *data++);
+		DataLen--;
+	}
+	RF_NSS_HIGH();
+	RF_EnableTransmit(SPIx);
+	return RF_SUCCESS;
 }
 
 

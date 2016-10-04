@@ -221,7 +221,7 @@ int main(int argc, char* argv[])
 						break;
 				}
 
-				printf("\t");
+				printf(" %d\t", xxx->Header.Sequence);
 
 				switch (type)
 				{

@@ -1,10 +1,10 @@
 #include "bmx055.h"
 
 uint8_t Gscale = GFS55_500DPS;       // set gyro full scale  
-uint8_t GODRBW = G55_400Hz47Hz;      // set gyro ODR and bandwidth 
+uint8_t GODRBW = G55_1000Hz116Hz; //G55_2000Hz523Hz;      // set gyro ODR and bandwidth 
 uint8_t Ascale = AFS_2G;           // set accel full scale  
 uint8_t ACCBW  = 0x08 | ABW_1000Hz;  // Choose bandwidth for accelerometer, need bit 3 = 1 to enable bandwidth choice in enum
-uint8_t Mmode  = lowPower;          // Choose magnetometer operation mode
+uint8_t Mmode  = highAccuracy;          // Choose magnetometer operation mode
 //uint8_t MODR   = MODR_10Hz;        // set magnetometer data rate 
 uint8_t MODR   = MODR_30Hz;        // set magnetometer data rate 
 
@@ -12,7 +12,7 @@ int16_t magMaxX = -32000, magMinX = 32000;
 int16_t magMaxY = -32000, magMinY = 32000;
 int16_t magMaxZ = -32000, magMinZ = 32000;
 
-int16_t AccelOffsets[3] = {0};
+int16_t AccelRange[3] = {0};
 
 bool checkBMX055()
 {
@@ -116,6 +116,7 @@ void selfTestBMX055()
 {
 	i2c_writeRegisterByte(BMX055_ACC_ADDRESS,  BMX055_ACC_BGW_SOFTRESET, 0xB6);  // reset accelerometer
 	HAL_Delay(100); // Wait for all registers to reset    
+	i2c_writeRegisterByte(BMX055_ACC_ADDRESS, BMX055_ACC_OFC_SETTING, 0x00);  // set offset targets to 0, 0, and +1 g for x, y, z axes
 	i2c_writeRegisterByte(BMX055_ACC_ADDRESS, BMX055_ACC_PMU_LPW, 0x00); //normal mode
 	i2c_writeRegisterByte(BMX055_ACC_ADDRESS, BMX055_ACC_PMU_RANGE, AFS_2G); // Set accelerometer full range
 	
@@ -126,12 +127,12 @@ void selfTestBMX055()
 	i2c_writeRegisterByte(BMX055_ACC_ADDRESS, BMX055_ACC_PMU_SELF_TEST, 0x05); // x positive
 	HAL_Delay(100);  	
 	readBMX055DataAccel(data);
-	posData[1] = data[1];
+	posData[0] = data[0];
 	
 	i2c_writeRegisterByte(BMX055_ACC_ADDRESS, BMX055_ACC_PMU_SELF_TEST, 0x06); // y positive
 	HAL_Delay(100);  
 	readBMX055DataAccel(data);
-	posData[0] = data[0];
+	posData[1] = data[1];
 	
 	i2c_writeRegisterByte(BMX055_ACC_ADDRESS, BMX055_ACC_PMU_SELF_TEST, 0x07); // z positive
 	HAL_Delay(100);  
@@ -141,12 +142,12 @@ void selfTestBMX055()
 	i2c_writeRegisterByte(BMX055_ACC_ADDRESS, BMX055_ACC_PMU_SELF_TEST, 0x01); // x negative
 	HAL_Delay(100);
 	readBMX055DataAccel(data);
-	negData[1] = data[1];
+	negData[0] = data[0];
 	
 	i2c_writeRegisterByte(BMX055_ACC_ADDRESS, BMX055_ACC_PMU_SELF_TEST, 0x02); // y negative
 	HAL_Delay(100);
 	readBMX055DataAccel(data);
-	negData[0] = data[0];
+	negData[1] = data[1];
 	
 	i2c_writeRegisterByte(BMX055_ACC_ADDRESS, BMX055_ACC_PMU_SELF_TEST, 0x03); // z negative
 	HAL_Delay(100); 
@@ -155,15 +156,15 @@ void selfTestBMX055()
 	
 	i2c_writeRegisterByte(BMX055_ACC_ADDRESS, BMX055_ACC_PMU_SELF_TEST, 0x00); // disable
 	
-	AccelOffsets[0] = -((posData[0] - negData[0]) / 2);
-	AccelOffsets[1] = -((posData[1] - negData[1]) / 2);
-	AccelOffsets[2] = -((posData[2] - negData[2]) / 2);
+	AccelRange[0] = posData[0] - negData[0];
+	AccelRange[1] = posData[1] - negData[1];
+	AccelRange[2] = posData[2] - negData[2];
 }
 
 void initBMX055()
 {
-   selfTestBMX055();
-   HAL_Delay(100); // Wait for all registers to reset    
+   //selfTestBMX055();
+   //HAL_Delay(10); // Wait for all registers to reset    
 	
    i2c_writeRegisterByte(BMX055_ACC_ADDRESS,  BMX055_ACC_BGW_SOFTRESET, 0xB6);  // reset accelerometer
    HAL_Delay(100); // Wait for all registers to reset    
@@ -174,34 +175,34 @@ void initBMX055()
    i2c_writeRegisterByte(BMX055_ACC_ADDRESS, BMX055_ACC_PMU_BW, ACCBW & 0x0F);     // Set accelerometer bandwidth
    i2c_writeRegisterByte(BMX055_ACC_ADDRESS, BMX055_ACC_D_HBW, 0x00);              // Use filtered data	
 	
-	HAL_Delay(100); 
+	HAL_Delay(10); 
 	
 	i2c_writeRegisterByte(BMX055_ACC_ADDRESS, BMX055_ACC_OFC_CTRL, 0x80); // set all accel offset compensation registers to zero
 	i2c_writeRegisterByte(BMX055_ACC_ADDRESS, BMX055_ACC_OFC_SETTING, 0x20);  // set offset targets to 0, 0, and +1 g for x, y, z axes
 	
-	HAL_Delay(100); 
+	HAL_Delay(10); 
 	
     i2c_writeRegisterByte(BMX055_GYRO_ADDRESS, BMX055_GYRO_RANGE, Gscale);  // set GYRO FS range
     i2c_writeRegisterByte(BMX055_GYRO_ADDRESS, BMX055_GYRO_BW, GODRBW);     // set GYRO ODR and Bandwidth
 	
-	HAL_Delay(100); 
+	HAL_Delay(10); 
 	
 	i2c_writeRegisterByte(BMX055_MAG_ADDRESS, BMX055_MAG_PWR_CNTL1, 0x82);  // Softreset magnetometer, ends up in sleep mode	
-	HAL_Delay(100);
+	HAL_Delay(10);
 	
 	i2c_writeRegisterByte(BMX055_MAG_ADDRESS, BMX055_MAG_PWR_CNTL1, 0x01); // Wake up magnetometer
-	HAL_Delay(100);
+	HAL_Delay(10);
 
 	i2c_writeRegisterByte(BMX055_MAG_ADDRESS, BMX055_MAG_PWR_CNTL2, MODR << 3); // Normal mode	
 		
-	HAL_Delay(100); // Wait for all registers to reset 
+	HAL_Delay(50); // Wait for all registers to reset 
 		
 	i2c_writeRegisterByte(BMX055_MAG_ADDRESS, BMX055_MAG_REP_XY, 23);  //  2x+1 = 47 sample avg for XY-axis
 	i2c_writeRegisterByte(BMX055_MAG_ADDRESS, BMX055_MAG_REP_Z, 41);  // 2x+1 = 83 sample avg for Z-axis
 	//i2c_writeRegisterByte(BMX055_MAG_ADDRESS, BMX055_MAG_REP_XY, 1 /*23*/);  //  3 samples // 2x+1 = 47 sample avg for XY-axis
 	//i2c_writeRegisterByte(BMX055_MAG_ADDRESS, BMX055_MAG_REP_Z, 2 /*41*/);  // 3 samples //2x+1 = 83 sample avg for Z-axis
 
-	HAL_Delay(100); // Wait for all registers to reset 
+	HAL_Delay(10); // Wait for all registers to reset 
 	
 	trimBMX055();
 }
@@ -225,12 +226,12 @@ float getBMX055resGyro() {
   return 0.0f;
 }
 
-float getBMX055resAccel() {
+float getBMX055resAccel() {	
   switch (Ascale)
   {
  	// Possible accelerometer scales (and their register bit settings) are:
 	// 2 Gs (0011), 4 Gs (0101), 8 Gs (1000), and 16 Gs  (1100). 
-        // BMX055 ACC data is signed 12 bit
+        // BMX055 ACC data is signed 12 bit	  
     case AFS_2G:
           return 1.0/2048.0;          
     case AFS_4G:
@@ -252,9 +253,12 @@ bool readBMX055DataAccel(int16_t *destination)
 {
 	uint8_t rawData[6];  // x/y/z accel register data stored here
 	i2c_readData(BMX055_ACC_ADDRESS, BMX055_ACC_D_X_LSB, rawData, 6);  // Read the six raw data registers into data array
-	destination[1] = -((int16_t)((rawData[1] << 8) | rawData[0]) / 8) + AccelOffsets[1];  // Turn the MSB and LSB into a signed 12-bit value
-	destination[0] = ((int16_t)((rawData[3] << 8) | rawData[2]) / 8) + AccelOffsets[0];  
-	destination[2] = ((int16_t)((rawData[5] << 8) | rawData[4]) / 8) + AccelOffsets[2]; 
+	destination[0] = ((int16_t)((rawData[1] << 8) | rawData[0]) / 8);  // Turn the MSB and LSB into a signed 12-bit value
+	destination[1] = ((int16_t)((rawData[3] << 8) | rawData[2]) / 8);  
+	destination[2] = ((int16_t)((rawData[5] << 8) | rawData[4]) / 8); 
+
+	//destination[0] = destination[1] = 0;
+	//destination[2] = (int16_t)(1024);
 	return true;
 }
 
@@ -262,9 +266,10 @@ bool readBMX055DataGyro(int16_t *destination)
 {
 	uint8_t rawData[6];  // x/y/z gyro register data stored here
 	i2c_readData(BMX055_GYRO_ADDRESS, BMX055_GYRO_RATE_X_LSB, rawData, 6);  // Read the six raw data registers sequentially into data array
-	destination[1] = -(int16_t) (((int16_t)rawData[1] << 8) | rawData[0]);   // Turn the MSB and LSB into a signed 16-bit value
-	destination[0] = (int16_t) (((int16_t)rawData[3] << 8) | rawData[2]);  
+	destination[0] = (int16_t) (((int16_t)rawData[1] << 8) | rawData[0]);   // Turn the MSB and LSB into a signed 16-bit value
+	destination[1] = (int16_t) (((int16_t)rawData[3] << 8) | rawData[2]);  
 	destination[2] = (int16_t) (((int16_t)rawData[5] << 8) | rawData[4]); 
+	//destination[0] = destination[1] = destination[2] = 0;
 	return true;
 }
 
@@ -284,9 +289,12 @@ bool readBMX055DataMag(int16_t *destination)
 		
 		data_r = (uint16_t) (((uint16_t)rawData[7] << 8) | rawData[6]) >> 2;  // 14-bit unsigned integer for Hall resistance
 
-		destination[0] = -compensate_BMX055_X(mdata_x, data_r);
-		destination[1] = -compensate_BMX055_Y(mdata_y, data_r);
-		destination[2] = -compensate_BMX055_Z(mdata_z, data_r);
+		destination[1] = compensate_BMX055_X(mdata_x, data_r);
+		destination[0] = -compensate_BMX055_Y(mdata_y, data_r);
+		destination[2] = compensate_BMX055_Z(mdata_z, data_r);
+		
+		//destination[0] = destination[1] = destination[2] = 0;
+		
 		
 		//auto offset calibration
 		/*

@@ -2,48 +2,201 @@
 #include <stdint.h>
 #include <math.h>
 #include "Quaternion.h"
+#include "Kalman.h"
+#include "Filters.h"
 
-#pragma pack(push)
-#pragma pack(1)
-typedef struct
+struct Sensor
 {
+	Sensor()
+	{
+		Gain = 1;
+		Noise = 0;
+		Resolution = 1;	
+		for(int i=0; i<3; i++)
+		{	
+			PosScale[i] = 
+			NegScale[i] = 
+			Deviation[i] = 1.0f;
+			
+			Raw[i] = 
+			LastRaw[i] = 0;
+			Filtered[i] = 0.0f;
+		}		
+	}
+	
+	void SetResolution(float res)
+	{
+		Resolution = res;
+	}
+
+	void SetNoise(float noise)
+	{
+		Noise = noise;
+	}
+
+	void SetGain(float gain)
+	{
+		Gain = gain;
+		if (Gain > 1) Gain = 1;
+		if (Gain < 0) Gain = 0;			
+	}
+	
+	float Gain;
+	float Noise;
+	float Resolution;
+	float PosScale[3]; 
+	float NegScale[3];
+	float Deviation[3];
+
+	int16_t Raw[3]; 
+	int16_t LastRaw[3];
+	//float Max[3];
+	//float Min[3];
+	float Filtered[3]; 
+	float Compensated[3];	
+	float Converted[3];	
+
+	void ProcessNew()
+	{
+		for (int i=0; i<3; i++)
+		{
+			float rawDiff = LastRaw[i] - Raw[i];
+			rawDiff  = fabs(rawDiff);
+			if (rawDiff > Noise)
+				rawDiff = Noise; 
+			Deviation[i] = Deviation[i] * (0.9f) + rawDiff * (0.1f);
+			Compensated[i] = Raw[i] * ((Raw[i] > 0) ? PosScale[i] : NegScale[i]);
+			LastRaw[i] = Raw[i];			
+			if (fabs(Filtered[i] - Compensated[i]) > Deviation[i])
+				Filtered[i] = Compensated[i];
+			else
+				Filtered[i] = Filtered[i] * (1.0f - Gain) +  Compensated[i] * Gain;			
+			Converted[i] = Filtered[i] * Resolution;
+		}
+	}
+	
+//	float FixScale(float val, float pos, float neg)
+//	{
+//		if (val > 0)
+//			return val * pos;
+//		else if (val < 0)
+//			return val * neg;
+//		return 0;
+//	}	
+};
+
+struct SensorData
+{
+//	SensorData()
+//	{
+//		for(int i=0; i<3; i++)
+//		{
+//			PosScaleAccel[i] = 
+//			NegScaleAccel[i] = 
+//			PosScaleGyro[i] = 
+//			NegScaleGyro[i] = 
+//			PosScaleMag[i] = 
+//			NegScaleMag[i] = 1;		
+//			
+//			Accel[i] = 
+//			Gyro[i] = 
+//			Mag[i] = 0;
+//			
+//			AccelFiltered[i] = 
+//			GyroFiltered[i] = 
+//			MagFiltered[i] = 0;
+//		}
+//	}
+	
+	void Setup(float aRes, float gRes, float mRes)
+	{
+		Accel.SetResolution(aRes);
+		Accel.SetNoise(30);
+		Accel.SetGain(0.7);
+		Gyro.SetResolution(gRes);
+		Gyro.SetGain(0.7);		
+		Gyro.SetNoise(100);
+		Mag.SetResolution(mRes);
+	}
+	
 	float TimeElapsed; 
-	int16_t Accel[3]; 
-	int16_t Gyro[3];
-	int16_t Mag[3];
 	
-	int16_t OffsetAccel[3]; 
-	float ScaleAccel[3];
-	int16_t OffsetGyro[3];
-	int16_t OffsetMag[3];	
+	Sensor Accel;
+	Sensor Gyro;
+	Sensor Mag;
 	
-} SensorData; 
-#pragma pack(pop)
+//	int16_t Accel[3]; 
+//	float AccelMax[3];
+//	float AccelMin[3];
+//	float AccelFiltered[3]; 
+//	float PosScaleAccel[3]; 
+//	float NegScaleAccel[3]; 	
+//	
+//	
+//	
+//	int16_t Gyro[3];
+//	int16_t Mag[3];
+//	
+//	float PosScaleGyro[3];
+//	float NegScaleGyro[3];	
+//	float PosScaleMag[3];
+//	float NegScaleMag[3];		
+//	
+//	
+//	
+//	float GyroFiltered[3];
+//	float MagFiltered[3];
+	
+	
+	
+	//KalmanSingle KalmanAccel[3];
+	//KalmanSingle KalmanVelocity[3];
+	//KalmanSingle KalmanPosition[3];
+	
+//	float FixScale(float val, float pos, float neg)
+//	{
+//		if (val > 0)
+//			return val * pos;
+//		else if (val < 0)
+//			return val * neg;
+//		return 0;
+//	}
+
+//	KalmanSingle KalmanVelocity[3];
+	
+//	Filter HighPassPosition[3];
+//	Filter HighPassVelocity[3];
+}; 
 
 
 //#define SF_GyroMeasError M_PI * (40.0f / 180.0f)       // gyroscope measurement error in rads/s (shown as 40 deg/s)
-#define SF_GyroMeasError M_PI * (20.0f / 180.0f)       // gyroscope measurement error in rads/s (shown as 40 deg/s)
-#define SF_GyroMeasDrift M_PI * (0.2f / 180.0f)      // gyroscope measurement drift in rad/s/s (shown as 0.0 deg/s/s)
-#define SF_Beta sqrt(3.0f / 4.0f) * SF_GyroMeasError // compute beta
-#define SF_Zeta sqrt(3.0f / 4.0f) * SF_GyroMeasDrift // compute zeta
-#define SF_Kp 2.0f * 5.0f // these are the free parameters in the Mahony filter and fusion scheme, Kp for proportional feedback, Ki for integral
-#define SF_Ki 0.005f
+//#define SF_GyroMeasError M_PI * (40.0f / 180.0f)       // gyroscope measurement error in rads/s (shown as 40 deg/s)
+//#define SF_GyroMeasDrift M_PI * (0.1f / 180.0f)      // gyroscope measurement drift in rad/s/s (shown as 0.0 deg/s/s)
+//#define SF_Beta sqrt(3.0f / 4.0f) * SF_GyroMeasError // compute beta
+//#define SF_Beta 0.2f //1.3f
+//#define SF_Zeta sqrt(3.0f / 4.0f) * SF_GyroMeasDrift // compute zeta
+//#define SF_Kp 2.0f * 5.0f // these are the free parameters in the Mahony filter and fusion scheme, Kp for proportional feedback, Ki for integral
+//#define SF_Ki 0.001f
 #define RAD(a) (a*M_PI/180.0)
 
 class CSensorFusion
 {
 public:
-	CSensorFusion(float aR, float gR, float mR);
+	CSensorFusion(float beta);
 	~CSensorFusion();
-	Quaternion Fuse(SensorData *pData);
+	Quaternion FuseOrient(SensorData *pData);
+	Quaternion FuseGrav(SensorData *pData);
 	Quaternion m_RotQuat;	
-	static Quaternion Fix(const Quaternion &quat);    
+//	static Quaternion Fix(const Quaternion &quat);    
 private:
+	float m_Beta;
 	float m_aR, m_mR, m_gR;
 	float exInt, eyInt, ezInt;
 	float iq0, iq1, iq2, iq3;	
-	void MadgwickQuaternionUpdate(float deltat, float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz);
+	void MadgwickQuaternionUpdateAHRS(float deltat, float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz);
+	void MadgwickQuaternionUpdateIMU(float deltat, float ax, float ay, float az, float gx, float gy, float gz);	
 };
 
+extern float invSqrt(float x);
 extern void SmoothSensorData(float *newData, float *oldData, float mag);
 
