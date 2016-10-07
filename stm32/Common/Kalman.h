@@ -10,7 +10,7 @@ struct KalmanSingle
 	float r; //measurement noise covariance
 	float x; //value
 	float p; //estimation error covariance
-	float k; //kalman gain
+	float k; //kalman gain	
 	
 	KalmanSingle()
 	{

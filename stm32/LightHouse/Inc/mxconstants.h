@@ -43,20 +43,18 @@
 
 #define LED_Pin GPIO_PIN_13
 #define LED_GPIO_Port GPIOC
-#define STEPPER1_A_Pin GPIO_PIN_1
-#define STEPPER1_A_GPIO_Port GPIOA
-#define STEPPER1_B_Pin GPIO_PIN_2
-#define STEPPER1_B_GPIO_Port GPIOA
-#define STEPPER1_C_Pin GPIO_PIN_3
-#define STEPPER1_C_GPIO_Port GPIOA
-#define STEPPER1_D_Pin GPIO_PIN_4
-#define STEPPER1_D_GPIO_Port GPIOA
-#define TEST_Pin GPIO_PIN_9
-#define TEST_GPIO_Port GPIOA
-#define IR_SYNC_Pin GPIO_PIN_8
-#define IR_SYNC_GPIO_Port GPIOB
-#define IR_RCV_Pin GPIO_PIN_9
-#define IR_RCV_GPIO_Port GPIOB
+#define SERVO_VERT_Pin GPIO_PIN_0
+#define SERVO_VERT_GPIO_Port GPIOA
+#define SERVO_HORZ_Pin GPIO_PIN_1
+#define SERVO_HORZ_GPIO_Port GPIOA
+#define LASER_VERT_Pin GPIO_PIN_2
+#define LASER_VERT_GPIO_Port GPIOA
+#define LASER_HORZ_Pin GPIO_PIN_3
+#define LASER_HORZ_GPIO_Port GPIOA
+#define SYNC_SEND_Pin GPIO_PIN_8
+#define SYNC_SEND_GPIO_Port GPIOA
+#define SYNC_RECV_Pin GPIO_PIN_9
+#define SYNC_RECV_GPIO_Port GPIOA
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */

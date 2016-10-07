@@ -137,6 +137,11 @@ void HAL_MicroDelay(uint64_t delay)
 	}
 }
 
+inline uint8_t sgn(float n)
+{
+	return (n<0?-1:1);
+}
+
 volatile uint16_t DigitalValues = 0;
 uint16_t DigitalCache = 0;
 
@@ -277,7 +282,7 @@ int main(void)
 		HAL_Delay(100);
 	}
 	//bool sensorWarmup = false;
-	int extraDelay = ctlSource>HMD_SOURCE? 8:3;
+	int extraDelay = ctlSource>HMD_SOURCE? 15:10;
 	bool isCalibrated = false;
 	bool hasRotationData = false;
 	bool hasPositionData = false;
@@ -342,6 +347,7 @@ int main(void)
 	uint8_t readyToReceive = 0;
 	
 	Quaternion orientQuat;
+	Quaternion gravQuat;
 	Quaternion positionQuat;
 	//Quaternion gravQuat(0, 0, 0, 1);
 	//RF_ReceiveMode(&hspi2, NULL); //default to receive mode			
@@ -368,7 +374,7 @@ int main(void)
 //	float GyroReadings[3] = {0};
 //	float MagReadings[3] = {0};
 	
-	KalmanSingle VelocityFilter[3] = {
+	KalmanSingle AccelFilter[3] = {
 		KalmanSingle(0.125,32,1,0),
 		KalmanSingle(0.125,32,1,0),
 		KalmanSingle(0.125,32,1,0)
@@ -436,13 +442,14 @@ int main(void)
 				tSensorData.Gyro.ProcessNew();
 				tSensorData.Mag.ProcessNew();
 				
-				//gravQuat = gravFuse.FuseGrav(&tSensorData);
-
 				tSensorData.TimeElapsed = elapsedTime;
 				lastRotationUpdate = now;	
 				orientQuat = orientFuse.FuseOrient(&tSensorData);						
+
 				//gravQuat = orientQuat;
-				//now = HAL_GetMicros();			
+//				gravQuat.w = 0; gravQuat.x = 0; gravQuat.y = 0; gravQuat.z = 0;
+//				gravQuat = (orientQuat * gravQuat) * orientQuat.conjugate();
+
 				if (hasPositionData | (isCalibrated && (now >= 10000000)))
 				{
 					//float elapsedPositionTime = (float)(now - lastPositionIntegrateTime) / 1000000.0f;
@@ -451,29 +458,26 @@ int main(void)
 						GravityVector[0] = 2.0f * (orientQuat.x * orientQuat.z - orientQuat.w * orientQuat.y);
 						GravityVector[1] = 2.0f * (orientQuat.w * orientQuat.x + orientQuat.y * orientQuat.z);
 						GravityVector[2] = orientQuat.w * orientQuat.w - orientQuat.x * orientQuat.x - orientQuat.y * orientQuat.y + orientQuat.z * orientQuat.z;
-					
+						
 						for (int i=0; i<3; i++)
 						{
 							float prevAccel = CompAccelVector[i];
 							float prevVelocity = VelocityVector[i];																									
+							float newAccel = tSensorData.Accel.Converted[i] - GravityVector[i];
+							float newVelocity = ((prevAccel + newAccel) / 2.0f) * 9.81f * elapsedTime;		
+							float prevPosition = position.Position[i];
+							
+							//if velocity changes direction hold for a moment
+//							if (sgn(prevVelocity) != sgn(newVelocity))
+//							{
+//								newVelocity = prevVelocity = 0;
+//								//newAccel = 0;
+//							}
 							
 							
-							CompAccelVector[i] = tSensorData.Accel.Converted[i] - GravityVector[i];	
-							float newVelocity = ((prevAccel + CompAccelVector[i]) / 2.0f) * 9.81f * elapsedTime;
-//							if ((CompAccelVector[i] > 0 && prevAccel < 0) || (CompAccelVector[i] < 0 && prevAccel > 0))
-//								VelocityVector[i] = (VelocityVector[i] / 2.0f) + newVelocity;	
-//							else 
-							if (fabs(CompAccelVector[i]) < 0.01f)
-								VelocityVector[i] *= 0.9f;
-							else
-								VelocityVector[i] = VelocityVector[i] + newVelocity;
-								
-								
-							
-							position.Position[i] = position.Position[i] + (prevVelocity + ((VelocityVector[i] - prevVelocity) / 2.0f)) * elapsedTime * 10;				
-							
-							//if (fabs(VelocityVector[i] - prevVelocity) < 0.05f)
-							//	VelocityVector[i] *= 0.9f;
+							position.Position[i] = prevPosition + ((prevVelocity + newVelocity) / 2.0f) * elapsedTime * 10.0f;											
+							CompAccelVector[i] = newAccel;
+							VelocityVector[i] = prevVelocity + newVelocity;							
 						}	
 						
 						//if (now - lastPositionSend >= 20000) //50 ms
