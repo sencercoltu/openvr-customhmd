@@ -184,8 +184,7 @@ int main(void)
 	
 	while (true)
 	{		
-		Blink(1000);
-		
+		Blink(1000);	
 		
 		//forward
 		HAL_Delay(100); //
