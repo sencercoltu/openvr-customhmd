@@ -1,16 +1,43 @@
 #include "led.h"
 
-uint32_t led_ticks = 0;
+uint32_t _ledTicks = 0;
+GPIO_PinState _ledState = GPIO_PIN_SET;
+float _ledIntensity = 100;
 
-	
+void HAL_SYSTICK_Callback(void)
+{
+	if (_ledIntensity == 0)
+		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET); //turn off
+	else if (_ledIntensity == 100)
+		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, _ledState); //turn off
+	else
+	{
+		uint32_t isOff = HAL_GetTick() % (uint32_t)(100.0f / _ledIntensity);
+		if (isOff)
+			HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET); //turn off
+		else
+			HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, _ledState); //turn off
+		
+	}
+}
+
+void LedIntensity(float i)
+{
+	if (i<0) _ledIntensity = 0;
+	else if (i>100) _ledIntensity = 100;
+	else _ledIntensity = i;
+}
+
 void LedOn()
 {
-	HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET); //ters çalisiyo led
+	_ledState = GPIO_PIN_RESET;
+	//HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET); //ters calisiyo led
 }
 
 void LedOff()
 {
-	HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET); //ters çalisiyo led
+	_ledState = GPIO_PIN_SET;
+	//HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET); //ters calisiyo led
 }
 
 void BlinkRease(int count)
@@ -37,16 +64,20 @@ void BlinkRease(int count, bool reverse)
 
 void LedToggle()
 {
-	HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+	if (_ledState == GPIO_PIN_RESET)
+		_ledState = GPIO_PIN_SET;
+	else
+		_ledState = GPIO_PIN_RESET;
+	//HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
 }
 
 uint8_t Blink(int delay = 100)
 {
 	uint32_t ticks = HAL_GetTick();
-	if (ticks - led_ticks >= delay)
+	if (ticks - _ledTicks >= delay)
 	{
 		LedToggle();
-		led_ticks = ticks;
+		_ledTicks = ticks;
 	}
 	return 1;
 }

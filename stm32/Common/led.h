@@ -11,3 +11,4 @@ extern uint8_t Blink(int delay);
 extern void BlinkDelay(int count, int delay);
 extern void BlinkRease(int count);
 extern void BlinkRease(int count, bool reverse);
+extern void LedIntensity(float i);

@@ -83,63 +83,133 @@ void HAL_MicroDelay(uint64_t delay)
 }
 
 volatile int step = 0;
-#define SYNC_MAGIC 0xD300
-volatile uint16_t syncMark = 0;
-volatile bool gotSync = false;
+#define SYNC_MARK 0xD3
+#define VERT 0x21
+#define HORZ 0x41
+#define REVERSE 0x08
+#define PULSE_WIDTH 600
+
+volatile bool selfSync = false; 
+
+
+uint16_t SyncData = 0;
+uint8_t SyncBits = 0;
+uint64_t LastSyncBitTime = 0;
+uint8_t LastSyncBit = 0;
+uint32_t SyncElapsedTime = 0;
+uint8_t SyncElapsedPulses = 0;
+uint8_t SyncCurrBit = 0;
+volatile uint8_t SyncCommand = 0;
+
+uint32_t NextTurn = 0;
+
+uint16_t SyncDebug[16] = {0};
+uint8_t SyncDebugIdx = 0;
+
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-	
+	if (selfSync) return; //prevent self sync signal process
+	if (GPIO_Pin == SYNC_RECV_Pin)
+	{	
+		uint64_t now = HAL_GetMicros();
+		//interrupt on up and down edges
+		SyncCurrBit = (HAL_GPIO_ReadPin(SYNC_RECV_GPIO_Port, SYNC_RECV_Pin) == GPIO_PIN_RESET)? 1 : 0;
+		if (SyncCurrBit)
+		{			
+			SyncElapsedTime = (uint32_t)(now - LastSyncBitTime);			
+			SyncElapsedPulses = (uint8_t)(((float)SyncElapsedTime / (float)PULSE_WIDTH) + 0.5f) ;						
+			if (SyncElapsedPulses == 1)
+			{
+				SyncData = (SyncData << 1);	// 0
+				SyncBits++;
+			}
+			else if (SyncElapsedPulses == 3)				
+			{
+				SyncData = (SyncData << 1) | 1;	// 1			
+				SyncBits++;
+			}
+			else
+			{
+				SyncBits = 0;
+				SyncData = 0;
+				SyncCommand = 0;
+				//LedOff();
+			}
+			
+			if (SyncBits == 16)
+			{
+				if (((SyncData >> 8) & SYNC_MARK) == SYNC_MARK)
+				{
+					SyncCommand = (uint8_t)(SyncData & 0xff);
+					SyncDebug[SyncDebugIdx] = SyncData;
+					SyncDebugIdx++;
+					if (SyncDebugIdx == 16) SyncDebugIdx = 0;
+				}
+				else
+				{
+					SyncCommand = 0;
+				}
+				SyncBits = 0;
+				SyncData = 0;
+				//LedOn();
+			}
+		}
+		LastSyncBitTime = now;
+	}
 }
-
-//void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-//{	
-//	if (htim->Instance == TIM1)
-//	{
-//		HAL_GPIO_TogglePin(TEST_GPIO_Port, TEST_Pin);
-//		syncMark = syncMark << 1;
-//		syncMark |= (HAL_GPIO_ReadPin(IR_SYNC_GPIO_Port, IR_SYNC_Pin) == GPIO_PIN_RESET);
-//		if ((syncMark & 0xFF00) == SYNC_MAGIC)
-//			gotSync = true;
-//	}
-//}
 
 uint32_t delay = 0;
 int pwm = 0;
 
-void SendIRByte(uint8_t data)
+
+
+void SendIREndMark()
+{
+	TIM1->CCR1 = 38; //set %50 duty
+	HAL_MicroDelay(PULSE_WIDTH);
+	TIM1->CCR1 = 0; //set %0 duty
+	HAL_MicroDelay(PULSE_WIDTH);		
+	selfSync = false;	
+}
+
+uint32_t SendIRByte(uint8_t data)
 {	
+	uint32_t pulses = 0;
+	selfSync = true;
 	for (int i=0; i<8; i++)
-	{
-		
+	{		
 		if ((data & 0x80) == 0x80)			
 		{
-			//HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
-			//TIM1->BDTR |= TIM_BDTR_MOE;
-			
-			HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
-			HAL_MicroDelay(600);
-			HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_1);
-			HAL_MicroDelay(600*2);
-			
+			TIM1->CCR1 = 38; //set %50 duty
+			HAL_MicroDelay(PULSE_WIDTH);
+			TIM1->CCR1 = 0; //set %0 duty
+			HAL_MicroDelay(PULSE_WIDTH*3);
+			pulses += 4;
 		}
 		else
 		{
-			//HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_1);		
-			//TIM1->BDTR &= ~TIM_BDTR_MOE;
-			HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
-			HAL_MicroDelay(600);
-			HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_1);
-			HAL_MicroDelay(600);
-
+			TIM1->CCR1 = 38; //set %50 duty
+			HAL_MicroDelay(PULSE_WIDTH);
+			TIM1->CCR1 = 0; //set %0 duty
+			HAL_MicroDelay(PULSE_WIDTH);
+			pulses += 2;
 		}
-		data = data << 1;
-				
+		data = data << 1;				
 	}
-	//TIM1->BDTR &= ~TIM_BDTR_MOE; 
-	//HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_1);		
+	return (32 - pulses) * PULSE_WIDTH;
 }
 
+void SetLedDuty(float x)
+{	
+	
+	
+	if (x < 0) x = 0.0f;
+	if (x > 100) x = 100.0f;
+	TIM3->CCR4 = (uint32_t)(((float)(TIM3->ARR) / 100.0f) * x);
+	
+}
+#define SERVO_90 130
 /* USER CODE END 0 */
 
 int main(void)
@@ -169,8 +239,7 @@ int main(void)
   MX_TIM2_Init();
 
   /* USER CODE BEGIN 2 */
-	HAL_TIM_Base_Start(&htim1) ;
-	//HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);		
+	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);		
 	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);		
 	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);		
 	
@@ -178,54 +247,59 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-
-
 	
+	uint32_t extraDelay;
+	uint8_t direction = 0;
+	uint32_t angle = 2000;
+	
+	uint8_t lightHouseId = (GPIO_PIN_SET == HAL_GPIO_ReadPin(LH_ID_GPIO_Port, LH_ID_Pin)? 0x10 : 0x00); 
+	//uint32_t lastCommandTime = HAL_GetTick();
+	
+	if (!lightHouseId) SyncCommand = HORZ;
+	TIM1->CCR1 = 0; //set %0 duty
 	
 	while (true)
 	{		
-		Blink(1000);	
+		uint32_t now = HAL_GetTick();
+		if (now > NextTurn) SyncCommand = HORZ;			
+		if (SyncCommand == 0) continue;
+		if ((SyncCommand & HORZ) == HORZ)
+		{				
+			//lastCommandTime = now;
+			if (angle == 2000)
+				angle = 1000;
+			else
+				angle = 2000;			
+			direction = (angle == 1000)? 0: REVERSE;				
+			
+			HAL_Delay(SERVO_90); // wait until remote finish
+			LedOn();
+			
+			extraDelay = SendIRByte(SYNC_MARK); //send sync magic
+			extraDelay += SendIRByte(VERT | lightHouseId | direction);	//send sync info
+			HAL_GPIO_WritePin(LASER_VERT_GPIO_Port, LASER_VERT_Pin, GPIO_PIN_SET); //turn on vert laser
+			SendIREndMark();
+			//21 ms total  = 34 * 600 = 21400microsec
+			if (extraDelay) HAL_MicroDelay(extraDelay);		
+			TIM2->CCR1 = angle; //move vert to 0
+			HAL_Delay(SERVO_90); // wait until finish
+			HAL_GPIO_WritePin(LASER_VERT_GPIO_Port, LASER_VERT_Pin, GPIO_PIN_RESET); //turn off vert laser		
+			
+			
+			extraDelay = SendIRByte(SYNC_MARK); //send sync magic
+			extraDelay += SendIRByte(HORZ | lightHouseId | direction);	//send sync info
+			HAL_GPIO_WritePin(LASER_HORZ_GPIO_Port, LASER_HORZ_Pin, GPIO_PIN_SET); //turn on horz laser
+			SendIREndMark();
+			if (extraDelay) HAL_MicroDelay(extraDelay);
+			TIM2->CCR2 = angle; 
+			HAL_Delay(SERVO_90); //wait fin
+			HAL_GPIO_WritePin(LASER_HORZ_GPIO_Port, LASER_HORZ_Pin, GPIO_PIN_RESET); //turn off horz laser
+			
+			LedOff();	
+			NextTurn = HAL_GetTick() + ((SERVO_90 + 21) * 2) + 10;
+		}
+		SyncCommand = 0;
 		
-		//forward
-		HAL_Delay(100); //
-		HAL_GPIO_WritePin(LASER_VERT_GPIO_Port, LASER_VERT_Pin, GPIO_PIN_SET); //turn on vert laser
-		SendIRByte(0xD3); //send sync magic
-		SendIRByte(0x11);	//send sync info
-		TIM2->CCR1 = 1000; //move vert to 0
-		HAL_Delay(150); // wait until finish
-		HAL_GPIO_WritePin(LASER_VERT_GPIO_Port, LASER_VERT_Pin, GPIO_PIN_RESET); //turn off vert laser
-		HAL_GPIO_WritePin(LASER_HORZ_GPIO_Port, LASER_HORZ_Pin, GPIO_PIN_SET); //turn on horz laser
-		SendIRByte(0xD3); //send sync magic
-		SendIRByte(0x12);	//send sync info
-		TIM2->CCR2 = 1000; 
-		HAL_Delay(150); //wait fin
-		HAL_GPIO_WritePin(LASER_HORZ_GPIO_Port, LASER_HORZ_Pin, GPIO_PIN_RESET); //turn off horz laser
-		//done forward
-		HAL_Delay(100); //wait for remote
-		HAL_Delay(25); //wait for remote sync
-		HAL_Delay(150); //wait remote vert
-		HAL_Delay(25); //wait for remote sync
-		HAL_Delay(150); //wait remote horz
-		
-		//reverse
-		HAL_GPIO_WritePin(LASER_VERT_GPIO_Port, LASER_VERT_Pin, GPIO_PIN_SET); //turn on vert laser
-		SendIRByte(0xD3); //send sync magic
-		SendIRByte(0x21);	//send sync info
-		TIM2->CCR1 = 2000; 
-		HAL_Delay(150);
-		HAL_GPIO_WritePin(LASER_VERT_GPIO_Port, LASER_VERT_Pin, GPIO_PIN_RESET); //turn off vert laser
-		HAL_GPIO_WritePin(LASER_HORZ_GPIO_Port, LASER_HORZ_Pin, GPIO_PIN_SET); //turn on horz laser
-		SendIRByte(0xD3); //send sync magic
-		SendIRByte(0x22);	//send sync info
-		TIM2->CCR2 = 2000;
-		HAL_GPIO_WritePin(LASER_HORZ_GPIO_Port, LASER_HORZ_Pin, GPIO_PIN_RESET); //turn off horz laser
-		//done reverse
-		HAL_Delay(100); //wait for remote
-		HAL_Delay(25); //wait for remote sync
-		HAL_Delay(150); //wait remote vert
-		HAL_Delay(25); //wait for remote sync
-		HAL_Delay(150); //wait remote horz
-
 	}
   /* USER CODE END WHILE */
 
@@ -326,7 +400,7 @@ static void MX_TIM1_Init(void)
     Error_Handler();
   }
 
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
   if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig) != HAL_OK)
   {
@@ -431,9 +505,10 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, LASER_VERT_Pin|LASER_HORZ_Pin, GPIO_PIN_RESET);
@@ -455,6 +530,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(SYNC_RECV_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : LH_ID_Pin */
+  GPIO_InitStruct.Pin = LH_ID_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  HAL_GPIO_Init(LH_ID_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
