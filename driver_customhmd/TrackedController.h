@@ -27,7 +27,7 @@ public:
 	
 	EVRInitError Activate(uint32_t unObjectId) override;
 	void Deactivate() override;
-	void PowerOff() override;
+	//void PowerOff() override;
 	void * GetComponent(const char * pchComponentNameAndVersion) override;
 	void DebugRequest(const char * pchRequest, char * pchResponseBuffer, uint32_t unResponseBufferSize) override;
 	DriverPose_t GetPose() override;

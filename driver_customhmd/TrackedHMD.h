@@ -32,7 +32,7 @@ public:
 	void GetProjectionRaw(EVREye eEye, float * pfLeft, float * pfRight, float * pfTop, float * pfBottom) override;
 	DistortionCoordinates_t ComputeDistortion(EVREye eEye, float fU, float fV) override;
 	DriverPose_t GetPose() override;
-	void PowerOff() override;
+	//void PowerOff() override;
 
 	/*
 	void CreateSwapTextureSet(uint32_t unPid, uint32_t unFormat, uint32_t unWidth, uint32_t unHeight, void *(*pSharedTextureHandles)[3]) override;

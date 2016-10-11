@@ -23,9 +23,9 @@ EVRInitError CServerDriver::Init(IDriverLog * pDriverLog, IServerDriverHost * pD
 	m_Relative = { 0 };
 	if (m_pSettings)
 	{
-		m_Align.v[0] = m_pSettings->GetFloat("driver_customhmd", "eoX", 0.0f);
-		m_Align.v[1] = m_pSettings->GetFloat("driver_customhmd", "eoY", 0.0f);
-		m_Align.v[2] = m_pSettings->GetFloat("driver_customhmd", "eoZ", 0.0f);		
+		m_Align.v[0] = m_pSettings->GetFloat("driver_customhmd", "eoX");
+		m_Align.v[1] = m_pSettings->GetFloat("driver_customhmd", "eoY");
+		m_Align.v[2] = m_pSettings->GetFloat("driver_customhmd", "eoZ");		
 	}
 	
 	m_TrackedDevices.push_back(new CTrackedHMD("HMD", this)); //only add hmd
@@ -146,7 +146,7 @@ void CServerDriver::Run()
 	USBCalibrationData calibrationData[3] = { 0 };
 	for (auto i = 0; i < 3; i++)
 	{	
-		char sectionName[32];
+		//char sectionName[32];
 		//sprintf_s(sectionName, "offsetAccX_%d", i); calibrationData[i].OffsetAccel[0] = (int16_t) m_pSettings->GetInt32("driver_customhmd", sectionName, 0);
 		//sprintf_s(sectionName, "offsetAccY_%d", i); calibrationData[i].OffsetAccel[1] = (int16_t)m_pSettings->GetInt32("driver_customhmd", sectionName, 0);
 		//sprintf_s(sectionName, "offsetAccZ_%d", i); calibrationData[i].OffsetAccel[2] = (int16_t)m_pSettings->GetInt32("driver_customhmd", sectionName, 0);

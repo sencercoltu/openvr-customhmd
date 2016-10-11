@@ -53,7 +53,7 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 		m_HMDData.DirectMode = m_pSettings->GetBool("steamvr", "directMode", false);
 
 		value[0] = 0;
-		m_pSettings->GetString("driver_customhmd", "monitor", value, sizeof(value), "SNYD602");
+		m_pSettings->GetString("driver_customhmd", "monitor", value, sizeof(value));
 		if (value[0])
 		{
 			std::string basic_string(value);
@@ -62,7 +62,7 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 			_LOG("Using model %S for detection...", m_HMDData.Model);
 		}
 
-		m_HMDData.SuperSample = m_pSettings->GetFloat("driver_customhmd", "supersample", 1.0f);
+		m_HMDData.SuperSample = m_pSettings->GetFloat("driver_customhmd", "supersample");
 	}
 
 	m_HMDData.Logger = m_pLog;
@@ -76,7 +76,7 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 	}
 
 	char desiredCamera[128] = { 0 };
-	m_pSettings->GetString("driver_customhmd", "camera", desiredCamera, sizeof(desiredCamera), "USB HD Camera");
+	m_pSettings->GetString("driver_customhmd", "camera", desiredCamera, sizeof(desiredCamera));
 	m_Camera.Options.Name = desiredCamera;
 	m_Camera.Options.Width = 320;
 	m_Camera.Options.Height = 240;
@@ -99,7 +99,7 @@ EVRInitError CTrackedHMD::Activate(uint32_t unObjectId)
 {
 	_LOG(__FUNCTION__" idx: %d", unObjectId);
 	m_unObjectId = unObjectId;
-	m_HMDData.IPDValue = m_pSettings->GetFloat("driver_customhmd", "IPD", 0.05f);
+	m_HMDData.IPDValue = m_pSettings->GetFloat("driver_customhmd", "IPD");
 	return VRInitError_None;
 }
 
@@ -443,11 +443,6 @@ void CTrackedHMD::Present(void *hSyncTexture)
 }
 
 */
-
-void CTrackedHMD::PowerOff()
-{
-	_LOG(__FUNCTION__);
-}
 
 void CTrackedHMD::RunFrame(DWORD currTick)
 {

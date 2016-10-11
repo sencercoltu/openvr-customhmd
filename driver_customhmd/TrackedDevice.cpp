@@ -227,3 +227,7 @@ uint32_t CTrackedDevice::GetStringTrackedDeviceProperty(ETrackedDeviceProperty p
 	return 0;
 }
 
+void CTrackedDevice::EnterStandby()
+{
+	_LOG(__FUNCTION__" %s", m_DisplayName.c_str());
+}

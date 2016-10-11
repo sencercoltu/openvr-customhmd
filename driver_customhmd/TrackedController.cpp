@@ -64,12 +64,6 @@ void CTrackedController::Deactivate()
 	m_unObjectId = k_unTrackedDeviceIndexInvalid;
 }
 
-void CTrackedController::PowerOff()
-{
-	_LOG(__FUNCTION__);		
-	// m_pServer->RemoveTrackedDevice(this); no DriverHost->TrackedDeviceRemoved function present :((
-}
-
 void *CTrackedController::GetComponent(const char * pchComponentNameAndVersion)
 {
 	_LOG(__FUNCTION__);

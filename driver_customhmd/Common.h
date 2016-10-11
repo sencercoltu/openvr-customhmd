@@ -197,7 +197,7 @@ struct ControllerData : TrackerData
 	USBDataCache LastState;
 };
 
-
+void CreateDefaultSettings();
 BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData);
 
 class CDummyLog : public IDriverLog

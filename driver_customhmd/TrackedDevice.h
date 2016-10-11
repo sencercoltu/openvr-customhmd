@@ -21,7 +21,7 @@ public:
 	
 	//std::string m_Id;
 	virtual void RunFrame(DWORD currTick) {}
-
+	void EnterStandby() override;
 private:
 	uint32_t GetStringTrackedDeviceProperty(ETrackedDeviceProperty prop, char * pchValue, uint32_t unBufferSize, ETrackedPropertyError * pError) override;
 	bool GetBoolTrackedDeviceProperty(vr::ETrackedDeviceProperty prop, vr::ETrackedPropertyError *pError) override;

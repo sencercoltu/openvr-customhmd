@@ -9,6 +9,7 @@ CClientDriver g_ClientDriver;
 
 HMD_DLL_EXPORT void* HmdDriverFactory(const char* interface_name, int* return_code)
 {
+	CreateDefaultSettings();
 	if (return_code) {
 		*return_code = vr::VRInitError_None;
 	}
@@ -26,6 +27,52 @@ HMD_DLL_EXPORT void* HmdDriverFactory(const char* interface_name, int* return_co
 	}
 
 	return NULL;
+}
+
+void CreateDefaultSettings()
+{
+	char dllPath[MAX_PATH];
+	HMODULE hm = NULL;
+	if (!GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCSTR)&CreateDefaultSettings, &hm))
+		return;
+	GetModuleFileNameA(hm, dllPath, sizeof(dllPath));
+	PathRemoveFileSpecA(dllPath);
+
+
+
+	char filename[MAX_PATH];
+	sprintf_s(filename, "%s\\..\\..\\resources\\settings\\default.vrsettings", dllPath);
+		
+	struct stat buffer;
+	if (stat(filename, &buffer) == 0) return;
+	
+	sprintf_s(filename, "%s\\..\\..\\resources", dllPath);
+	CreateDirectoryA(filename, NULL);
+	sprintf_s(filename, "%s\\..\\..\\resources\\settings", dllPath);
+	CreateDirectoryA(filename, NULL);
+	sprintf_s(filename, "%s\\..\\..\\resources\\settings\\default.vrsettings", dllPath);
+
+	FILE *fp = nullptr;
+	fopen_s(&fp, filename, "w");
+	if (fp != nullptr)
+	{
+		fprintf_s(fp, 
+"{\n \
+	\"driver_customhmd\": \
+	{\n \
+		\"IPD\" : 0.05,\n \
+		\"camera\":\"Webcam C170\",\n \
+		\"camera2\":\"USB HD Camera\",\n \
+		\"eoX\":0.0,\n \
+		\"eoY\":0.0,\n \
+		\"eoZ\":0.0,\n \
+		\"monitor\":\"SNYD602\",\n \
+		\"supersample\":1.0\n \
+	}\n \
+}");
+		fclose(fp);
+		fp = nullptr;
+	}
 }
 
 BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
