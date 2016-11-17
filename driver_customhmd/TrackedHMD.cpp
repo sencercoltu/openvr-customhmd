@@ -48,11 +48,9 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 
 	if (m_pSettings)
 	{
-		char value[128];
-
 		m_HMDData.DirectMode = m_pSettings->GetBool("steamvr", "directMode", false);
 
-		value[0] = 0;
+		char value[128] = {};		
 		m_pSettings->GetString("driver_customhmd", "monitor", value, sizeof(value));
 		if (value[0])
 		{
@@ -69,7 +67,6 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 
 	if (!m_HMDData.DirectMode)
 	{
-
 		_LOG("HMD: Enumerating monitors...");
 		EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, (LPARAM)&m_HMDData);
 		_LOG("HMD: Monitor detection finished.");

@@ -187,20 +187,6 @@ void DMA1_Channel1_IRQHandler(void)
 }
 
 /**
-* @brief This function handles DMA1 channel5 global interrupt.
-*/
-void DMA1_Channel5_IRQHandler(void)
-{
-  /* USER CODE BEGIN DMA1_Channel5_IRQn 0 */
-
-  /* USER CODE END DMA1_Channel5_IRQn 0 */
-  
-  /* USER CODE BEGIN DMA1_Channel5_IRQn 1 */
-
-  /* USER CODE END DMA1_Channel5_IRQn 1 */
-}
-
-/**
 * @brief This function handles EXTI line[9:5] interrupts.
 */
 void EXTI9_5_IRQHandler(void)

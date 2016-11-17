@@ -156,8 +156,11 @@
     <ClCompile Include="escapi\capturedevice.cpp" />
     <ClCompile Include="escapi\videobufferlock.cpp" />
     <ClCompile Include="hid.c" />
+    <ClCompile Include="liquidvr_hack.cpp" />
     <ClCompile Include="Quaternion.cpp" />
     <ClCompile Include="ServerDriver.cpp" />
+    <ClCompile Include="simplejson\JSON.cpp" />
+    <ClCompile Include="simplejson\JSONValue.cpp" />
     <ClCompile Include="TrackedController.cpp" />
     <ClCompile Include="TrackedDevice.cpp" />
     <ClCompile Include="TrackedHMD.cpp" />
@@ -171,6 +174,8 @@
     <ClInclude Include="escapi\videobufferlock.h" />
     <ClInclude Include="hidapi.h" />
     <ClInclude Include="Quaternion.h" />
+    <ClInclude Include="simplejson\JSON.h" />
+    <ClInclude Include="simplejson\JSONValue.h" />
     <ClInclude Include="TrackedController.h" />
     <ClInclude Include="TrackedDevice.h" />
     <ClInclude Include="TrackedHMD.h" />

@@ -14,6 +14,10 @@
 #include "escapi/capturedevice.h"
 #include "..\stm32\Common\usb.h"
 
+#include "LiquidVR.h"
+
+extern bool IsD2DConnected(uint16_t edid);
+
 #define _LOG(f, ...) m_pLog->Log(f, __VA_ARGS__)
 
 #define HMD_DLL_EXPORT extern "C" __declspec(dllexport)
@@ -128,6 +132,7 @@ private:
 //};
 //
 //#pragma pack(pop)
+
 
 struct TrackerData
 {
