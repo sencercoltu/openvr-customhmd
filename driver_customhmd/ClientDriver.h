@@ -17,7 +17,7 @@ public:
 	virtual HiddenAreaMesh_t GetHiddenAreaMesh(EVREye eEye, EHiddenAreaMeshType type) override;
 	virtual uint32_t GetMCImage(uint32_t * pImgWidth, uint32_t * pImgHeight, uint32_t * pChannels, void * pDataBuffer, uint32_t unBufferLen) override;	
 private:	
-	//IVRSettings *m_pSettings;
+	IVRSettings *m_pSettings;
 	CDriverLog* m_pLog;
 	IClientDriverHost* m_pDriverHost;
 	std::string m_UserDriverConfigDir;

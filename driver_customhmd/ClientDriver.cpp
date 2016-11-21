@@ -12,7 +12,7 @@ EVRInitError CClientDriver::Init(EClientDriverMode eDriverMode, IDriverLog *pDri
 	m_pDriverHost = pDriverHost;
 	m_UserDriverConfigDir = pchUserDriverConfigDir;
 	m_DriverInstallDir = pchDriverInstallDir;
-	//m_pSettings = m_pDriverHost->GetSettings(IVRSettings_Version);
+	m_pSettings = (IVRSettings *) m_pDriverHost->GetGenericInterface(IVRSettings_Version);
 	return VRInitError_None;
 }
 
@@ -38,8 +38,7 @@ const JSONValue *GetJson(const JSONObject object, const wchar_t *section, const 
 }
 
 bool CClientDriver::BIsHmdPresent(const char *pchUserConfigDir)
-{
-	
+{	
 	auto ret = true;
 	//check usb
 	hid_init();
@@ -95,18 +94,16 @@ bool CClientDriver::BIsHmdPresent(const char *pchUserConfigDir)
 					}
 					if (!monData.DirectMode)
 					{
-						//check extendedmode if monitor is connected
-						wcscpy_s(monData.Model, L"SNYD602");						
+						//check extendedmode if monitor is connected						
+						monData.Model[0] = 0;
+
 						value = GetJson(json->AsObject(), L"driver_customhmd", L"monitor");
-						
+
 						if (value && value->IsString())
-						{							
-							//std::string basic_string(value);
-							//std::wstring wchar_value(basic_string.begin(), basic_string.end());
-							//wcscpy_s(monData.Model, wchar_value.c_str());
 							wcscpy_s(monData.Model, value->AsString().c_str());
-						}
-						EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, (LPARAM)&monData);
+
+						if (monData.Model[0])
+							EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, (LPARAM)&monData);
 						ret &= monData.IsConnected;
 					}
 				}

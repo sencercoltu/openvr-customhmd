@@ -177,8 +177,9 @@ struct CameraData
 struct HMDData : TrackerData
 {
 	WCHAR DisplayName[CCHDEVICENAME];
-	WCHAR Model[128];
+	WCHAR Model[128];	
 	bool IsConnected;
+	bool Windowed;
 	bool DirectMode;
 	bool FakePackDetected;
 	int PosX;

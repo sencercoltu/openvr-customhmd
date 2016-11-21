@@ -18,6 +18,7 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 
 	ZeroMemory(&m_HMDData, sizeof(m_HMDData));
 
+	m_HMDData.Windowed = false;
 	m_HMDData.IPDValue = 0.05f;
 	m_HMDData.PosX = 0;
 	m_HMDData.PosY = 0;
@@ -32,7 +33,7 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 	m_HMDData.hPoseLock = CreateMutex(NULL, FALSE, L"PoseLock");
 
 	//wcscpy_s(m_HMDData.Port, L"\\\\.\\COM3");
-	wcscpy_s(m_HMDData.Model, L"SNYD602");
+	wcscpy_s(m_HMDData.Model, L"");
 
 	m_HMDData.Pose.willDriftInYaw = false;
 	m_HMDData.Pose.shouldApplyHeadModel = false;
@@ -70,8 +71,20 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 		_LOG("HMD: Enumerating monitors...");
 		EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, (LPARAM)&m_HMDData);
 		_LOG("HMD: Monitor detection finished.");
-	}
 
+		vr::EVRSettingsError error;
+
+		//if any value is set tread as windowed
+		error = VRSettingsError_None; int x = m_pSettings->GetInt32("driver_customhmd", "windowX", &error);
+		if (error == VRSettingsError_None) { m_HMDData.PosX = x; m_HMDData.Windowed = true; }
+		error = VRSettingsError_None; int y = m_pSettings->GetInt32("driver_customhmd", "windowY", &error);
+		if (error == VRSettingsError_None) { m_HMDData.PosY = x; m_HMDData.Windowed = true; }
+		error = VRSettingsError_None; int w = m_pSettings->GetInt32("driver_customhmd", "windowW", &error);
+		if (error == VRSettingsError_None) { m_HMDData.ScreenWidth = w; m_HMDData.Windowed = true; }
+		error = VRSettingsError_None; int h = m_pSettings->GetInt32("driver_customhmd", "windowH", &error);
+		if (error == VRSettingsError_None) { m_HMDData.ScreenHeight = h; m_HMDData.Windowed = true; }
+
+	}
 	char desiredCamera[128] = { 0 };
 	m_pSettings->GetString("driver_customhmd", "camera", desiredCamera, sizeof(desiredCamera));
 	m_Camera.Options.Name = desiredCamera;
@@ -146,8 +159,8 @@ bool CTrackedHMD::IsDisplayOnDesktop()
 
 bool CTrackedHMD::IsDisplayRealDisplay()
 {
-	_LOG(__FUNCTION__" returning 1");
-	return true;
+	_LOG(__FUNCTION__" returning %d", !m_HMDData.Windowed);
+	return !m_HMDData.Windowed;
 }
 
 void CTrackedHMD::GetRecommendedRenderTargetSize(uint32_t * pnWidth, uint32_t * pnHeight)
@@ -211,41 +224,21 @@ void CTrackedHMD::GetEyeOutputViewport(EVREye eEye, uint32_t * pnX, uint32_t * p
 
 void CTrackedHMD::GetProjectionRaw(EVREye eEye, float * pfLeft, float * pfRight, float * pfTop, float * pfBottom)
 {
-	if (m_HMDData.FakePackDetected)
+	auto k = m_HMDData.FakePackDetected ? m_HMDData.AspectRatio : (1.0f / m_HMDData.AspectRatio);
+	switch (eEye)
 	{
-		switch (eEye)
-		{
-		case EVREye::Eye_Left:
-			*pfLeft = -1.0f;
-			*pfRight = 1.0f;
-			*pfTop = -1.0f * m_HMDData.AspectRatio;
-			*pfBottom = 1.0f * m_HMDData.AspectRatio;
-			break;
-		case EVREye::Eye_Right:
-			*pfLeft = -1.0f;
-			*pfRight = 1.0f;
-			*pfTop = -1.0f * m_HMDData.AspectRatio;
-			*pfBottom = 1.0f * m_HMDData.AspectRatio;
-			break;
-		}
-	}
-	else
-	{
-		switch (eEye)
-		{
-		case EVREye::Eye_Left:
-			*pfLeft = -1.0f;
-			*pfRight = 1.0f;
-			*pfTop = -1.0f / m_HMDData.AspectRatio;
-			*pfBottom = 1.0f / m_HMDData.AspectRatio;
-			break;
-		case EVREye::Eye_Right:
-			*pfLeft = -1.0f;
-			*pfRight = 1.0f;
-			*pfTop = -1.0f / m_HMDData.AspectRatio;
-			*pfBottom = 1.0f / m_HMDData.AspectRatio;
-			break;
-		}
+	case EVREye::Eye_Left:
+		*pfLeft = -1.0f;
+		*pfRight = 1.0f;
+		*pfTop = -1.0f * k;
+		*pfBottom = 1.0f * k;
+		break;
+	case EVREye::Eye_Right:
+		*pfLeft = -1.0f;
+		*pfRight = 1.0f;
+		*pfTop = -1.0f * k;
+		*pfBottom = 1.0f * k;
+		break;
 	}
 	_LOG(__FUNCTION__" Eye: %d, l: %f, r: %f, t: %f, b: %f", eEye, *pfLeft, *pfRight, *pfTop, *pfBottom);
 }
