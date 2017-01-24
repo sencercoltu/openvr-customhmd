@@ -1,4 +1,4 @@
-trackeddevice\system_stm32f1xx_1.o: ../Drivers/CMSIS/Device/ST/STM32F1xx/Source/Templates/system_stm32f1xx.c
+trackeddevice\system_stm32f1xx_1.o: ../Src/system_stm32f1xx.c
 trackeddevice\system_stm32f1xx_1.o: ../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h
 trackeddevice\system_stm32f1xx_1.o: ../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h
 trackeddevice\system_stm32f1xx_1.o: ../Drivers/CMSIS/Include/core_cm3.h

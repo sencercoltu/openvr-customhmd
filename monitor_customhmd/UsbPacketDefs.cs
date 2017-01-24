@@ -45,6 +45,7 @@ namespace monitor_customhmd
         public const byte BUTTON_2 = 0x04;
         public const byte BUTTON_3 = 0x08;
 
+        public const byte SENSOR_NONE = 0x00;
         public const byte SENSOR_ACCEL = 0x01;
         public const byte SENSOR_GYRO = 0x02;
         public const byte SENSOR_MAG = 0x03;

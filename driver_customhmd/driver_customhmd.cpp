@@ -95,7 +95,7 @@ BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMoni
 			if (pMonData->Logger) pMonData->Logger->Log("Checking %S...", ddMon.DeviceID);
 			if (ddMon.StateFlags & DISPLAY_DEVICE_ACTIVE && !(ddMon.StateFlags & DISPLAY_DEVICE_MIRRORING_DRIVER))
 			{
-				wsprintf(DeviceID, L"%s", ddMon.DeviceID);
+				wsprintf(DeviceID, L"%S", ddMon.DeviceID);
 				wchar_t *pStart = wcschr(DeviceID, L'\\');
 				if (pStart)
 				{

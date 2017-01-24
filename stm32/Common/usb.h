@@ -47,6 +47,7 @@ extern "C" {
 #define BUTTON_2 0x04
 #define BUTTON_3 0x08
 
+#define SENSOR_NONE		0x00
 #define SENSOR_ACCEL	0x01
 #define SENSOR_GYRO		0x02
 #define SENSOR_MAG		0x03
@@ -114,6 +115,8 @@ struct USBTriggerData
 //#define TO_CALIB_SCALE(x) ((uint16_t)((float)x * 32768.0f))
 //#define FROM_CALIB_SCALE(x) ((float)((float)x / 32768.0f))
 
+#define VALID_EEPROM_MAGIC	0x3DD3D33D
+
 struct USBCalibrationData
 {
 	uint8_t Sensor;	
@@ -124,6 +127,16 @@ struct USBCalibrationData
 	//int16_t OffsetGyro[3];
 	//int16_t OffsetMag[3];	
 };
+
+struct CalibrationCacheData
+{
+	uint32_t Magic;
+	struct USBCalibrationData Accel;
+	struct USBCalibrationData Gyro;
+	struct USBCalibrationData Mag;
+	uint8_t Reserved;
+};
+
 
 struct USBVibrationData
 {

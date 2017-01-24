@@ -16,6 +16,7 @@
 CCaptureDevice::ConverterDef ConverterFunctions[] = 
 {	
 	{ MFVideoFormat_YUY2, MFVideoFormat_NV12, CCaptureDevice::YUY2toNV12 },
+	{ MFVideoFormat_YUY2, MFVideoFormat_RGB24, CCaptureDevice::YUY2toRGB24 },
 	{ MFVideoFormat_RGB24, MFVideoFormat_NV12, CCaptureDevice::RGB24toNV12 }
 };
 
@@ -165,6 +166,8 @@ bool CCaptureDevice::Start()
 				//MFT converters are shit, use own
 				if (!(pfCurrentConverter = GetConverter(subtype, m_pOptions->MediaFormat)))
 					continue;
+				if (pfBestConverter && pfCurrentConverter == CCaptureDevice::NullConverter)
+					continue; 
 				bestIndex = i;
 				frameRateMax = frameRate;
 				pfBestConverter = pfCurrentConverter;
@@ -480,5 +483,44 @@ void CCaptureDevice::RGB24toNV12(uint8_t *inputBuffer, uint8_t *outputBuffer, in
 		I_L -= inPadding;
 		Y_H += outPadding;
 		Y_L += outPadding;
+	}	
+}
+
+// Clamp out of range values
+#define CLAMP(t) (((t)>255)?255:(((t)<0)?0:(t)))
+// Color space conversion for RGB
+#define GET_R_FROM_YUV(y, u, v) ((298*y+409*v+128)>>8)
+#define GET_G_FROM_YUV(y, u, v) ((298*y-100*u-208*v+128)>>8)
+#define GET_B_FROM_YUV(y, u, v) ((298*y+516*u+128)>>8)
+
+void CCaptureDevice::YUY2toRGB24(uint8_t *inputBuffer, uint8_t *outputBuffer, int width, int height, int inStride, int outStride)
+//void YUV422toRGB888(unsigned char *d,
+//	unsigned char *s,
+//	unsigned int   width,
+//	unsigned int   height)
+{
+	//auto out_ysize = outStride * height;
+	//auto inPadding = inStride + (inStride - (width << 1));
+	//auto outPadding = outStride + (outStride - width);
+
+	for (int i = 0; i < height*(width / 2); i++)
+	{
+		int y1 = *inputBuffer+ - 16;
+		int u = *inputBuffer++ - 128;
+		int y2 = *inputBuffer++ - 16;
+		int v = *inputBuffer++ - 128;
+
+		// BGR
+		*outputBuffer++ = CLAMP(GET_B_FROM_YUV(y1, u, v));
+		*outputBuffer++ = CLAMP(GET_G_FROM_YUV(y1, u, v));
+		*outputBuffer++ = CLAMP(GET_R_FROM_YUV(y1, u, v));
+
+		// BGR
+		*outputBuffer++ = CLAMP(GET_B_FROM_YUV(y2, u, v));
+		*outputBuffer++ = CLAMP(GET_G_FROM_YUV(y2, u, v));
+		*outputBuffer++ = CLAMP(GET_R_FROM_YUV(y2, u, v));
+
+		
 	}
 }
+

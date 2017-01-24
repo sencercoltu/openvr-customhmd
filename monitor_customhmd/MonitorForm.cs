@@ -84,6 +84,7 @@ namespace monitor_customhmd
             {
                 HIDDev _usb = null;
                 var data = new byte[33];
+                DateTime lastOutgoing = DateTime.MinValue;
                 while (_running)
                 {
                     if (_usb == null)
@@ -98,10 +99,11 @@ namespace monitor_customhmd
                     try
                     {
                         if (_usb != null)
-                        {
+                        {                            
                             lock (_outgoing)
-                                if (_outgoing.Count > 0)
+                                if (_outgoing.Count > 0 && (DateTime.Now - lastOutgoing).TotalMilliseconds >= 100)
                                 {
+                                    lastOutgoing = DateTime.Now;
                                     var p = _outgoing.Dequeue();
                                     var d = StructToBytes(p);
                                     SetPacketCrc(ref d);
@@ -404,6 +406,13 @@ namespace monitor_customhmd
             var packet = USBPacket.Create(COMMAND_DATA | HMD_SOURCE, (ushort)(DateTime.Now.Ticks / 1000), command);
             lock (_outgoing)
                 _outgoing.Enqueue(packet);
+                        
+            calibData.Sensor = SENSOR_NONE;
+            command = USBCommandData.Create(CMD_CALIBRATE, calibData);
+            packet = USBPacket.Create(COMMAND_DATA | HMD_SOURCE, (ushort)(DateTime.Now.Ticks / 1000), command);
+            lock (_outgoing)
+                _outgoing.Enqueue(packet);
+
         }
 
         Pen axisPen = new Pen(Color.LightGray, 2);

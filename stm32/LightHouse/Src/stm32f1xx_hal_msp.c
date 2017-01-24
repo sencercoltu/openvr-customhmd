@@ -38,7 +38,6 @@ extern void Error_Handler(void);
 /* USER CODE BEGIN 0 */
 
 /* USER CODE END 0 */
-
 /**
   * Initializes the Global MSP.
   */
@@ -196,7 +195,7 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef* htim)
     PA0-WKUP     ------> TIM2_CH1
     PA1     ------> TIM2_CH2 
     */
-    GPIO_InitStruct.Pin = SERVO_VERT_Pin|SERVO_HORZ_Pin;
+    GPIO_InitStruct.Pin = STEPPER_VERT_Pin|STEPPER_HORZ_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);

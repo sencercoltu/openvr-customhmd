@@ -102,6 +102,7 @@ public:
 
 	static void NullConverter(uint8_t *inputBuffer, uint8_t *outputBuffer, int width, int height, int inStride, int outStride);
 	static void YUY2toNV12(uint8_t *inputBuffer, uint8_t *outputBuffer, int width, int height, int inStride, int outStride);
+	static void YUY2toRGB24(uint8_t *inputBuffer, uint8_t *outputBuffer, int width, int height, int inStride, int outStride);
 	static void RGB24toNV12(uint8_t *inputBuffer, uint8_t *outputBuffer, int width, int height, int inStride, int outStride);
 	static pfConverterFunction GetConverter(GUID &from, GUID&to);
 private:

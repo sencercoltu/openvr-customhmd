@@ -10,7 +10,7 @@
       <TargetName>LightHouse</TargetName>
       <ToolsetNumber>0x4</ToolsetNumber>
       <ToolsetName>ARM-ADS</ToolsetName>
-      <pCCUsed>5060300::V5.06 update 3 (build 300)::ARMCC</pCCUsed>
+      <pCCUsed>5060422::V5.06 update 4 (build 422)::ARMCC</pCCUsed>
       <TargetOption>
         <TargetCommonOption>
           <Device>STM32F103C8</Device>
@@ -335,7 +335,7 @@
               <MiscControls>--C99  --cpp</MiscControls>
               <Define>USE_HAL_DRIVER,STM32F103xB</Define>
               <Undefine></Undefine>
-              <IncludePath>../Inc;                                                                                                                                 ../Drivers/STM32F1xx_HAL_Driver/Inc;                                                                                                                                 ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy;                                                                                                                                 ../Drivers/CMSIS/Include;                                                                                                                                 ../Drivers/CMSIS/Device/ST/STM32F1xx/Include</IncludePath>
+              <IncludePath>../Inc;                                                                                                                                  ../Drivers/STM32F1xx_HAL_Driver/Inc;                                                                                                                                  ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy;                                                                                                                                  ../Drivers/CMSIS/Include;                                                                                                                                  ../Drivers/CMSIS/Device/ST/STM32F1xx/Include</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -382,7 +382,7 @@
             <File>
               <FileName>system_stm32f1xx.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Drivers/CMSIS//Device/ST/STM32F1xx/Source/Templates/system_stm32f1xx.c</FilePath>
+              <FilePath>../Src/system_stm32f1xx.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -418,6 +418,11 @@
               <FileName>led.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\Common\led.c</FilePath>
+            </File>
+            <File>
+              <FileName>eeprom_flash.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\Common\eeprom_flash.cpp</FilePath>
             </File>
           </Files>
         </Group>

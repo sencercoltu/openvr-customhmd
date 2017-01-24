@@ -1,0 +1,10 @@
+{
+	"alwaysActivate": false,
+	"name" : "customhmd",
+	"directory" : "",
+	"resourceOnly" : false,
+	"hmd_presence" :
+    [
+        "1974.0001"
+    ]
+}

@@ -9,7 +9,6 @@
 
   <project>
     <PathAndName>.\BaseStation\MDK-ARM\BaseStation.uvprojx</PathAndName>
-    <NodeIsExpanded>1</NodeIsExpanded>
   </project>
 
   <project>
@@ -20,7 +19,6 @@
 
   <project>
     <PathAndName>.\LightHouse\MDK-ARM\LightHouse.uvprojx</PathAndName>
-    <NodeIsExpanded>1</NodeIsExpanded>
   </project>
 
 </ProjectWorkspace>

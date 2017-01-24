@@ -96,7 +96,7 @@ int32_t CTrackedDevice::GetInt32TrackedDeviceProperty(ETrackedDeviceProperty pro
 		{
 			case Prop_DeviceClass_Int32:			
 				SET_ERROR(TrackedProp_Success);
-				return TrackedDeviceClass_Other;
+				return TrackedDeviceClass_Invalid;
 			default:
 				SET_ERROR(TrackedProp_UnknownProperty);
 				break;

@@ -10,7 +10,7 @@
       <TargetName>BaseStation</TargetName>
       <ToolsetNumber>0x4</ToolsetNumber>
       <ToolsetName>ARM-ADS</ToolsetName>
-      <pCCUsed>5060300::V5.06 update 3 (build 300)::ARMCC</pCCUsed>
+      <pCCUsed>5060422::V5.06 update 4 (build 422)::ARMCC</pCCUsed>
       <TargetOption>
         <TargetCommonOption>
           <Device>STM32F103C8</Device>
@@ -478,6 +478,11 @@
               <FileName>spilib.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\Common\spilib.c</FilePath>
+            </File>
+            <File>
+              <FileName>eeprom_flash.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\Common\eeprom_flash.cpp</FilePath>
             </File>
           </Files>
         </Group>

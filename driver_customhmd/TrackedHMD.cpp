@@ -91,6 +91,7 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 	m_Camera.Options.Width = 320;
 	m_Camera.Options.Height = 240;
 	m_Camera.Options.MediaFormat = MFVideoFormat_NV12;
+	m_Camera.StreamFormat = CVS_FORMAT_NV12; //default
 	m_Camera.Options.pfCallback = CameraFrameUpdateCallback;
 	m_Camera.Options.pUserData = this;
 
@@ -165,18 +166,8 @@ bool CTrackedHMD::IsDisplayRealDisplay()
 
 void CTrackedHMD::GetRecommendedRenderTargetSize(uint32_t * pnWidth, uint32_t * pnHeight)
 {
-	if (m_HMDData.FakePackDetected)
-	{
-		*pnWidth = m_HMDData.ScreenWidth;
-		*pnHeight = (m_HMDData.ScreenHeight - 30) / 2;
-	}
-	else
-	{
-		*pnWidth = m_HMDData.ScreenWidth;
-		*pnHeight = m_HMDData.ScreenHeight;
-	}
-	*pnWidth = uint32_t(*pnWidth * m_HMDData.SuperSample);
-	*pnHeight = uint32_t(*pnHeight * m_HMDData.SuperSample);
+	*pnWidth = uint32_t(m_HMDData.ScreenWidth * m_HMDData.SuperSample);
+	*pnHeight = uint32_t((m_HMDData.FakePackDetected? (m_HMDData.ScreenHeight - 30) / 2 : m_HMDData.ScreenHeight) * m_HMDData.SuperSample);
 	_LOG(__FUNCTION__" w: %d, h: %d", *pnWidth, *pnHeight);
 }
 
@@ -345,7 +336,7 @@ uint64_t CTrackedHMD::GetUint64Property(ETrackedDeviceProperty prop, ETrackedPro
 		return 2;
 	case Prop_CameraFirmwareVersion_Uint64:
 		SET_ERROR(TrackedProp_Success);
-		return 8590262285;
+		return 8590262295;
 	case Prop_PreviousUniverseId_Uint64:
 		SET_ERROR(TrackedProp_Success);
 		return 0;
@@ -360,7 +351,7 @@ uint64_t CTrackedHMD::GetUint64Property(ETrackedDeviceProperty prop, ETrackedPro
 		return 1048584;
 	case Prop_DisplayFirmwareVersion_Uint64:
 		SET_ERROR(TrackedProp_Success);
-		return 2097432;
+		return 2097504;
 	case Prop_DisplayHardwareVersion_Uint64:
 		SET_ERROR(TrackedProp_Success);
 		return 19;

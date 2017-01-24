@@ -4,7 +4,7 @@
   * Description        : Main program body
   ******************************************************************************
   *
-  * COPYRIGHT(c) 2016 STMicroelectronics
+  * COPYRIGHT(c) 2017 STMicroelectronics
   *
   * Redistribution and use in source and binary forms, with or without modification,
   * are permitted provided that the following conditions are met:
@@ -43,6 +43,7 @@
 #include "..\\..\\Common\\gy8x.h"
 #include "..\\..\\Common\\nrf24l01.h"
 #include "..\\..\\Common\\usb.h"
+#include "..\\..\\Common\\eeprom_flash.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -201,6 +202,10 @@ uint32_t nextSend = 0;
 
 uint32_t sndCounter = 0;
 uint32_t rcvCounter = 0;
+
+CalibrationCacheData calibrationCache = {0};
+bool isCalibrated = false;
+bool isPositionReady = false;
 /* USER CODE END 0 */
 
 int main(void)
@@ -244,6 +249,40 @@ int main(void)
 		HAL_Delay(250);
 	}
 
+	//load eeprom calibration data	
+	char *eepromData = (char *)&calibrationCache;	
+	int addr = 0;
+	for (int i=0; i<sizeof(calibrationCache); i+=sizeof(uint32_t))
+	{
+		*((uint32_t *)(&eepromData[i])) = readEEPROMWord(addr);
+		addr += sizeof(uint32_t);
+	}
+	
+	
+	if (calibrationCache.Magic == VALID_EEPROM_MAGIC)	
+	{		
+		for(int i=0; i<3; i++)
+		{
+			if (calibrationCache.Accel.Sensor == SENSOR_ACCEL)
+			{
+				tSensorData.Accel.PosScale[i] = (1.0f / aRes) / (float)calibrationCache.Accel.PosScale[i];
+				tSensorData.Accel.NegScale[i] = (1.0f / aRes) / (float)calibrationCache.Accel.NegScale[i];
+			}
+			if (calibrationCache.Gyro.Sensor == SENSOR_GYRO)
+			{
+				tSensorData.Gyro.PosScale[i] = calibrationCache.Gyro.PosScale[i];
+				tSensorData.Gyro.NegScale[i] = 0;
+			}
+			if (calibrationCache.Mag.Sensor == SENSOR_MAG)
+			{
+				tSensorData.Mag.PosScale[i] = (1.0f / mRes) / (float)calibrationCache.Mag.PosScale[i];
+				tSensorData.Mag.NegScale[i] = (1.0f / mRes) / (float)calibrationCache.Mag.NegScale[i];
+			}
+		}		
+		isCalibrated = true;
+	}
+	
+	
 //	GPIO_InitTypeDef GPIO_InitStruct;
 //	GPIO_InitStruct.Pin = I2C_SCL_Pin;
 //	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
@@ -282,8 +321,7 @@ int main(void)
 		HAL_Delay(100);
 	}
 	//bool sensorWarmup = false;
-	int extraDelay = ctlSource>HMD_SOURCE? 15:10;
-	bool isCalibrated = false;
+	int extraDelay = ctlSource>HMD_SOURCE? 15:10;	
 	bool hasRotationData = false;
 	bool hasPositionData = false;
 	uint8_t buttonRetransmit = 0;
@@ -450,7 +488,7 @@ int main(void)
 //				gravQuat.w = 0; gravQuat.x = 0; gravQuat.y = 0; gravQuat.z = 0;
 //				gravQuat = (orientQuat * gravQuat) * orientQuat.conjugate();
 
-				if (hasPositionData | (isCalibrated && (now >= 10000000)))
+				if (isPositionReady && (hasPositionData || (isCalibrated && (now >= 10000000))))
 				{
 					//float elapsedPositionTime = (float)(now - lastPositionIntegrateTime) / 1000000.0f;
 					//if (elapsedPositionTime >= 0.001f) // integrate every 2 ms
@@ -531,30 +569,58 @@ int main(void)
 								break;
 							case CMD_CALIBRATE:
 								//manually set sensor offsets
-								for (int i=0; i<3; i++)
+								int sensorId = pUSBCommandPacket->Command.Data.Calibration.Sensor;								
+								if (sensorId == SENSOR_NONE)
 								{
-									position.Position[i] = 0;
-									VelocityVector[i] = 0;
-									//AccelVector[i] = 0;
-									CompAccelVector[i] = 0;
-									if (pUSBCommandPacket->Command.Data.Calibration.Sensor == SENSOR_ACCEL)
+									isCalibrated = true;
+									calibrationCache.Magic = VALID_EEPROM_MAGIC;
+									enableEEPROMWriting();
+									char *eepromData = (char *)&calibrationCache;	
+									int addr = 0;
+									for (int i=0; i<sizeof(calibrationCache); i+=sizeof(uint32_t))
 									{
-										tSensorData.Accel.PosScale[i] = (1.0f / aRes) / (float)pUSBCommandPacket->Command.Data.Calibration.PosScale[i];
-										tSensorData.Accel.NegScale[i] = (1.0f / aRes) / (float)pUSBCommandPacket->Command.Data.Calibration.NegScale[i];
+										writeEEPROMWord(addr, *((uint32_t *)(&eepromData[i])));
+										addr += sizeof(uint32_t);
 									}
-									if (pUSBCommandPacket->Command.Data.Calibration.Sensor == SENSOR_GYRO)
-									{
-										tSensorData.Gyro.PosScale[i] = pUSBCommandPacket->Command.Data.Calibration.PosScale[i];
-										tSensorData.Gyro.NegScale[i] = 0;
-									}
-									
-									if (pUSBCommandPacket->Command.Data.Calibration.Sensor == SENSOR_MAG)
-									{
-										tSensorData.Mag.PosScale[i] = (1.0f / mRes) / (float)pUSBCommandPacket->Command.Data.Calibration.PosScale[i];
-										tSensorData.Mag.NegScale[i] = (1.0f / mRes) / (float)pUSBCommandPacket->Command.Data.Calibration.NegScale[i];
-									}
+									disableEEPROMWriting();
 								}
-								isCalibrated = true;
+								else
+								{									
+									for (int i=0; i<3; i++)
+									{
+										position.Position[i] = 0;
+										VelocityVector[i] = 0;
+										//AccelVector[i] = 0;
+										CompAccelVector[i] = 0;
+									}
+									if (sensorId == SENSOR_ACCEL)
+									{
+										for (int i=0; i<3; i++)
+										{
+											tSensorData.Accel.PosScale[i] = (1.0f / aRes) / (float)pUSBCommandPacket->Command.Data.Calibration.PosScale[i];
+											tSensorData.Accel.NegScale[i] = (1.0f / aRes) / (float)pUSBCommandPacket->Command.Data.Calibration.NegScale[i];
+										}
+										calibrationCache.Accel = pUSBCommandPacket->Command.Data.Calibration;
+									}
+									else if (sensorId == SENSOR_GYRO)
+									{
+										for (int i=0; i<3; i++)
+										{
+											tSensorData.Gyro.PosScale[i] = pUSBCommandPacket->Command.Data.Calibration.PosScale[i];
+											tSensorData.Gyro.NegScale[i] = 0;
+										}
+										calibrationCache.Gyro = pUSBCommandPacket->Command.Data.Calibration;
+									}
+									else if (sensorId == SENSOR_MAG)
+									{
+										for (int i=0; i<3; i++)
+										{
+											tSensorData.Mag.PosScale[i] = (1.0f / mRes) / (float)pUSBCommandPacket->Command.Data.Calibration.PosScale[i];
+											tSensorData.Mag.NegScale[i] = (1.0f / mRes) / (float)pUSBCommandPacket->Command.Data.Calibration.NegScale[i];
+										}
+										calibrationCache.Mag = pUSBCommandPacket->Command.Data.Calibration;
+									}									
+								}
 								//lastPositionIntegrateTime = 
 								//lastPositionSend = now;
 								break;
@@ -672,10 +738,10 @@ int main(void)
 					USBDataPacket.Header.Type = ctlSource | ROTATION_DATA;
 					USBDataPacket.Header.Sequence++;
 					//remap				
-					USBDataPacket.Rotation.w = 1; //orientQuat.w;
-					USBDataPacket.Rotation.x = 0; //orientQuat.x;
-					USBDataPacket.Rotation.y = 0; //orientQuat.z;
-					USBDataPacket.Rotation.z = 0; //-orientQuat.y;					
+					USBDataPacket.Rotation.w = orientQuat.w;
+					USBDataPacket.Rotation.x = orientQuat.x;
+					USBDataPacket.Rotation.y = orientQuat.z;
+					USBDataPacket.Rotation.z = -orientQuat.y;					
 					SetPacketCrc(&USBDataPacket);				
 					RF_SendPayload(&hspi2, (uint8_t*)&USBDataPacket, sizeof(USBPacket));
 					//rfStatus = RF_FifoStatus(&hspi2); readyToSend = (rfStatus & RF_TX_FIFO_FULL_Bit) == 0x00 ? 1 : 0;	
@@ -793,7 +859,7 @@ static void MX_ADC1_Init(void)
   hadc1.Init.ScanConvMode = ADC_SCAN_ENABLE;
   hadc1.Init.ContinuousConvMode = ENABLE;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
-  hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+  hadc1.Init.ExternalTrigConv = ADC_EXTERNALTRIGCONV_T1_CC1;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
   hadc1.Init.NbrOfConversion = 3;
   if (HAL_ADC_Init(&hadc1) != HAL_OK)

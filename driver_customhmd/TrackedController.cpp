@@ -6,11 +6,11 @@ CTrackedController::CTrackedController(ETrackedControllerRole role, std::string 
 	_LOG(__FUNCTION__);
 	m_Role = role;
 
-	Prop_TrackingSystemName = "Nunchuck Controller";
-	Prop_ModelNumber = "Nunchuck";
+	Prop_TrackingSystemName = "Custom Controller";
+	Prop_ModelNumber = "Custom";
 	Prop_SerialNumber = std::string(role == TrackedControllerRole_LeftHand ? "L" : "R").append("CTR-1244244");
 	Prop_RenderModelName = "vr_controller_vive_1_5";
-	Prop_ManufacturerName = "Wii";
+	Prop_ManufacturerName = "Senc";
 	Prop_AllWirelessDongleDescriptions = std::string(role == TrackedControllerRole_LeftHand ? "L" : "R").append("CTR-None");
 	Prop_ConnectedWirelessDongle = std::string(role == TrackedControllerRole_LeftHand ? "L" : "R").append("CTR-None");
 	Prop_Firmware_ProgrammingTarget = std::string(role == TrackedControllerRole_LeftHand ? "L" : "R").append("CTR-Multi");
@@ -455,9 +455,9 @@ void CTrackedController::PoseUpdate(USBPacket *pPacket, HmdVector3d_t *pCenterEu
 				uint64_t ulChangedTouched = newState.ulButtonTouched ^ m_ControllerData.State.ulButtonTouched;
 				uint64_t ulChangedPressed = newState.ulButtonPressed ^ m_ControllerData.State.ulButtonPressed;
 
-				SendButtonUpdates(&vr::IServerDriverHost::TrackedDeviceButtonTouched, ulChangedTouched & newState.ulButtonTouched);
+				//SendButtonUpdates(&vr::IServerDriverHost::TrackedDeviceButtonTouched, ulChangedTouched & newState.ulButtonTouched);
 				SendButtonUpdates(&vr::IServerDriverHost::TrackedDeviceButtonPressed, ulChangedPressed & newState.ulButtonPressed);
-				SendButtonUpdates(&vr::IServerDriverHost::TrackedDeviceButtonUnpressed, ulChangedPressed & ~newState.ulButtonPressed);
+				//SendButtonUpdates(&vr::IServerDriverHost::TrackedDeviceButtonUnpressed, ulChangedPressed & ~newState.ulButtonPressed);
 				SendButtonUpdates(&vr::IServerDriverHost::TrackedDeviceButtonUntouched, ulChangedTouched & ~newState.ulButtonTouched);
 
 				if (newState.rAxis[1].x != m_ControllerData.State.rAxis[1].x)
