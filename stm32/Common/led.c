@@ -1,5 +1,6 @@
 #include "led.h"
 
+
 uint32_t _ledTicks = 0;
 GPIO_PinState _ledState = GPIO_PIN_SET;
 float _ledIntensity = 100;
@@ -28,13 +29,13 @@ void LedIntensity(float i)
 	else _ledIntensity = i;
 }
 
-void LedOn()
+void LedOn(void)
 {
 	_ledState = GPIO_PIN_RESET;
 	//HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET); //ters calisiyo led
 }
 
-void LedOff()
+void LedOff(void)
 {
 	_ledState = GPIO_PIN_SET;
 	//HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET); //ters calisiyo led
@@ -62,7 +63,7 @@ void BlinkRease(int count, bool reverse)
 		}
 }
 
-void LedToggle()
+void LedToggle(void)
 {
 	if (_ledState == GPIO_PIN_RESET)
 		_ledState = GPIO_PIN_SET;
@@ -90,3 +91,4 @@ void BlinkDelay(int count, int delay)
 		HAL_Delay(delay);
 	}
 }
+

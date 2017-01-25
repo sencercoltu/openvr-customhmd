@@ -3,13 +3,13 @@
 /*
  * Must call this first to enable writing
  */
-void enableEEPROMWriting() {
+void enableEEPROMWriting(void) {
     HAL_StatusTypeDef status = HAL_FLASH_Unlock();
     FLASH_PageErase(EEPROM_START_ADDRESS); // required to re-write
     CLEAR_BIT(FLASH->CR, FLASH_CR_PER); // Bug fix: bit PER has been set in Flash_PageErase(), must clear it here
 }
 
-void disableEEPROMWriting() {
+void disableEEPROMWriting(void) {
     HAL_FLASH_Lock();
 }
 
