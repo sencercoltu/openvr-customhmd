@@ -1,8 +1,7 @@
 /**
   ******************************************************************************
-  * @file           : USB_DEVICE  
-  * @version        : v1.0_Cube
-  * @brief          : This file implements the USB Device 
+  * File Name          : main.h
+  * Description        : This file contains the common defines of the application
   ******************************************************************************
   *
   * Copyright (c) 2017 STMicroelectronics International N.V. 
@@ -40,38 +39,43 @@
   * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   *
   ******************************************************************************
-*/
+  */
+/* Define to prevent recursive inclusion -------------------------------------*/
+#ifndef __MAIN_H
+#define __MAIN_H
+  /* Includes ------------------------------------------------------------------*/
 
-/* Includes ------------------------------------------------------------------*/
+/* USER CODE BEGIN Includes */
 
-#include "usb_device.h"
-#include "usbd_core.h"
-#include "usbd_desc.h"
-#include "usbd_customhid.h"
-#include "usbd_custom_hid_if.h"
+/* USER CODE END Includes */
 
-/* USB Device Core handle declaration */
-USBD_HandleTypeDef hUsbDeviceFS;
+/* Private define ------------------------------------------------------------*/
 
-/* init function */				        
-void MX_USB_DEVICE_Init(void)
-{
-  /* Init Device Library,Add Supported Class and Start the library*/
-  USBD_Init(&hUsbDeviceFS, &FS_Desc, DEVICE_FS);
+#define LED_Pin GPIO_PIN_13
+#define LED_GPIO_Port GPIOC
+#define SPI_SCK_Pin GPIO_PIN_5
+#define SPI_SCK_GPIO_Port GPIOA
+#define SPI_MISO_Pin GPIO_PIN_6
+#define SPI_MISO_GPIO_Port GPIOA
+#define SPI_MOSI_Pin GPIO_PIN_7
+#define SPI_MOSI_GPIO_Port GPIOA
+#define IR_SYNC_Pin GPIO_PIN_12
+#define IR_SYNC_GPIO_Port GPIOB
+#define SPI_RF_NSS_Pin GPIO_PIN_6
+#define SPI_RF_NSS_GPIO_Port GPIOB
+#define SPI_RF_CE_Pin GPIO_PIN_7
+#define SPI_RF_CE_GPIO_Port GPIOB
+/* USER CODE BEGIN Private defines */
 
-  USBD_RegisterClass(&hUsbDeviceFS, &USBD_CUSTOM_HID);
+/* USER CODE END Private defines */
 
-  USBD_CUSTOM_HID_RegisterInterface(&hUsbDeviceFS, &USBD_CustomHID_fops_FS);
-
-  USBD_Start(&hUsbDeviceFS);
-
-}
 /**
   * @}
-  */
+  */ 
 
 /**
   * @}
-  */
+*/ 
 
+#endif /* __MAIN_H */
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
