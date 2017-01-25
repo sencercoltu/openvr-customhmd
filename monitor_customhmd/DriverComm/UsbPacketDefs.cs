@@ -211,10 +211,12 @@ namespace monitor_customhmd
         }
 
 
-        //private const int reservedSize = 1; // UsbPacket.CUSTOM_HID_EPOUT_SIZE - (Marshal.SizeOf(typeof(USBData)) + Marshal.SizeOf(typeof(USBDataHeader)));
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
         public struct USBPacket
         {
+            public USBDataHeader Header;
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 28, ArraySubType = UnmanagedType.U1)]
+            private byte[] Data;
             public static USBPacket Create(byte type, ushort sequence, IUSBData packet)
             {
                 var p = new USBPacket
@@ -230,15 +232,7 @@ namespace monitor_customhmd
                 Array.Copy(d, p.Data, Math.Min(d.Length, 28)); // 20 data + 8 reserved
                 return p;
             }
-
-
             public static int Size { get { return 32; } }
-            public USBDataHeader Header;
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 28, ArraySubType = UnmanagedType.U1)]
-            private byte[] Data;
-            //            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 8, ArraySubType = UnmanagedType.U1)]
-            //            private byte[] Reserved;
-
             public void ParseFields()
             {
                 switch (Header.Type & 0xf0)
@@ -258,8 +252,6 @@ namespace monitor_customhmd
                         break;
                 }
             }
-
-
             public USBRotationData Rotation;
             public USBPositionData Position;
             public USBTriggerData Trigger;
@@ -277,7 +269,6 @@ namespace monitor_customhmd
             Array.Copy(data, 0, d, 1, USBPacket.Size);
             data = d;
         }
-
 
         public static byte GetPacketCrc(byte[] data, int idx)
         {

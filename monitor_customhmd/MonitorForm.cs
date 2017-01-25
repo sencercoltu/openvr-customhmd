@@ -1,4 +1,5 @@
 ﻿using Mighty.HID;
+using monitor_customhmd.DriverComm;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -6,6 +7,7 @@ using System.Data;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,13 +19,20 @@ namespace monitor_customhmd
 {
     public partial class MonitorForm : Form
     {
-        //private CVRSystem _vrSystem;
-
+        private NotifyIcon _trayIcon;
+        private ContextMenu _trayMenu;
+        //private CVRSystem _vrSystem;        
         private Thread _thread;
         private bool _running;
 
-        private Queue<USBPacket> _incoming = new Queue<USBPacket>();
-        private Queue<USBPacket> _outgoing = new Queue<USBPacket>();
+        private CommState State = CommState.Disconnected;
+
+        private Dictionary<CommState, Icon> StateIcons;
+
+        private List<USBPacket> _inPacketMonitor = new List<USBPacket>();
+        private List<USBPacket> _outPacketMonitor = new List<USBPacket>();
+
+        private Queue<byte[]> _outgoingPackets = new Queue<byte[]>();
 
         private DataGridViewRow InfoRow;
         private DataGridViewRow AccelRow;
@@ -42,17 +51,53 @@ namespace monitor_customhmd
         public MonitorForm()
         {
             InitializeComponent();
+
+            Icon = Properties.Resources.HeadSetWire;
+
+            StateIcons = new Dictionary<CommState, Icon>()
+            {
+                { CommState.Disconnected, Properties.Resources.HeadSetWire},
+                { CommState.Connected, Properties.Resources.HeadSetWhite},
+                { CommState.Active, Properties.Resources.HeadSetActive}
+            };
+
+
+            Visible = false;
+            _trayMenu = new ContextMenu();
+            _trayMenu.MenuItems.Add("Exit", ExitApp);
+
+            _trayIcon = new NotifyIcon();
+            _trayIcon.Text = "Custom HMD Monitor";
+            _trayIcon.DoubleClick += _trayIcon_DoubleClick;
+            _trayIcon.ContextMenu = _trayMenu;
+            SetTrayIcon();
+            _trayIcon.Visible = true;
         }
 
-        //private float axisScale = 1;
+        private void SetTrayIcon()
+        {
+            var ico = StateIcons[State];
+            if (_trayIcon.Icon != ico)
+                _trayIcon.Icon = ico;
+        }
+
+        private void _trayIcon_DoubleClick(object sender, EventArgs e)
+        {
+            Show();
+            Focus();
+        }
+
+        private void ExitApp(object sender, EventArgs e)
+        {
+            Close();
+        }
 
         private void MonitorForm_Load(object sender, EventArgs e)
         {
             //var err = EVRInitError.Driver_Failed;
             //_vrSystem = OpenVR.Init(ref err, EVRApplicationType.VRApplication_Overlay);
             //OpenVR.GetGenericInterface(OpenVR.IVRCompositor_Version, ref err);
-            //OpenVR.GetGenericInterface(OpenVR.IVROverlay_Version, ref err);
-
+            //OpenVR.GetGenericInterface(OpenVR.IVROverlay_Version, ref err);            
             axis = new Axes(100);
             axis.Center = new Point3d((pb.Width) / 2, (pb.Height) / 2, 0);
             cam.Location = new Point3d(axis.Center.X, axis.Center.Y, -500);
@@ -63,7 +108,7 @@ namespace monitor_customhmd
             testSensor.MaxPoints = pb.Width - 10;
 
             InfoRow = dgData.Rows[dgData.Rows.Add()]; InfoRow.Cells[0].Value = "Info";
-            RotationRow = dgData.Rows[dgData.Rows.Add()]; RotationRow.Cells[0].Value = "Rotation";  RotationRow.Tag = axis;
+            RotationRow = dgData.Rows[dgData.Rows.Add()]; RotationRow.Cells[0].Value = "Rotation"; RotationRow.Tag = axis;
             PositionRow = dgData.Rows[dgData.Rows.Add()]; PositionRow.Cells[0].Value = "Position"; PositionRow.Tag = RotationRow.Tag;
             AccelRow = dgData.Rows[dgData.Rows.Add()]; AccelRow.Cells[0].Value = "Accel/Gravity"; AccelRow.Tag = new KalmanGroup(pb.Width - 10, 2, 2, 0, 0f);
             AccelOffsetRow = dgData.Rows[dgData.Rows.Add()]; AccelOffsetRow.Cells[0].Value = "Averages"; AccelOffsetRow.Tag = new float[3];
@@ -80,58 +125,102 @@ namespace monitor_customhmd
             }
 
 
-            _thread = new Thread(() =>
-            {
-                HIDDev _usb = null;
-                var data = new byte[33];
-                DateTime lastOutgoing = DateTime.MinValue;
-                while (_running)
-                {
-                    if (_usb == null)
-                    {
-                        var hd = HIDBrowse.Browse().FirstOrDefault(h => h.Vid == 0x1974 && h.Pid == 0x001);
-                        if (hd != null)
-                        {
-                            _usb = new HIDDev();
-                            _usb.Open(hd);
-                        }
-                    }
-                    try
-                    {
-                        if (_usb != null)
-                        {                            
-                            lock (_outgoing)
-                                if (_outgoing.Count > 0 && (DateTime.Now - lastOutgoing).TotalMilliseconds >= 100)
-                                {
-                                    lastOutgoing = DateTime.Now;
-                                    var p = _outgoing.Dequeue();
-                                    var d = StructToBytes(p);
-                                    SetPacketCrc(ref d);
-                                    _usb.Write(d);
-                                }
-                            _usb.Read(data);
-                            if (CheckPacketCrc(data, 1))
-                            {
-                                var packet = StructFromBytes<USBPacket>(data, 1);
-                                packet.ParseFields();
-                                lock (_incoming)
-                                    _incoming.Enqueue(packet);
-                            }
-                        }
-                    }
-                    catch
-                    {
-                        _usb.Close();
-                        _usb.Dispose();
-                        _usb = null;
-                        Thread.Sleep(100);
-                    }
-                }
-            })
-            { IsBackground = true };
+            _thread = new Thread(USBProcessor);
             _running = true;
             _thread.Start();
         }
+
+        private void MonitorForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            _running = false;
+            _thread.Join();
+            _thread = null;
+            _trayIcon.Dispose();
+            _trayIcon = null;
+            //if (ulMainHandle != 0)
+            //    OpenVR.Overlay.DestroyOverlay(ulMainHandle);
+            //OpenVR.Shutdown();
+        }
+
+        private void USBProcessor()
+        {
+            var _sharedMem = new ShMem();
+            List<byte[]> outgoingPackets = null;
+            HIDDev _usb = null;
+            var data = new byte[33];
+            DateTime lastOutgoing = DateTime.MinValue;
+            while (_running)
+            {
+                if (_usb == null)
+                {
+                    var hd = HIDBrowse.Browse().FirstOrDefault(h => h.Vid == 0x1974 && h.Pid == 0x001);
+                    if (hd != null)
+                    {
+                        _usb = new HIDDev();
+                        _usb.Open(hd);
+                        State = CommState.Connected;
+                        _sharedMem.SetState(State);
+                    }
+                }
+                try
+                {
+                    if (_usb != null)
+                    {
+                        outgoingPackets = _sharedMem.ReadOutgoingPackets();
+                        if (outgoingPackets != null)
+                            lock (_outgoingPackets)
+                                foreach (var item in outgoingPackets)
+                                    _outgoingPackets.Enqueue(item);
+                        lock (_outgoingPackets)
+                            if (_outgoingPackets.Count > 0 && (DateTime.Now - lastOutgoing).TotalMilliseconds >= 100)
+                            {
+                                lastOutgoing = DateTime.Now;
+                                var d = _outgoingPackets.Dequeue();
+                                _usb.Write(d);
+                                var packet = StructFromBytes<USBPacket>(d, 0);
+                                packet.ParseFields();
+                                lock (_outPacketMonitor)
+                                    _outPacketMonitor.Add(packet);
+                            }
+
+                        _usb.Read(data);
+                        if (CheckPacketCrc(data, 1))
+                        {
+                            _sharedMem.WriteIncomingPacket(data);
+                            //var x = Marshal.SizeOf(typeof(USBPacket));
+                            var packet = StructFromBytes<USBPacket>(data, 1);
+                            packet.ParseFields();
+                            lock (_inPacketMonitor)
+                                _inPacketMonitor.Add(packet);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    if (_usb != null)
+                    {
+                        _usb.Close();
+                        _usb.Dispose();
+                    }
+                    _usb = null;
+                    State = CommState.Disconnected;
+                    _sharedMem.SetState(CommState.Disconnected);
+
+                    Thread.Sleep(100);
+                }
+            }
+            if (_usb != null)
+            {
+                _usb.Close();
+                _usb.Dispose();
+            }
+            _usb = null;
+            State = CommState.Disconnected;
+            _sharedMem.SetState(CommState.Disconnected);
+            _sharedMem.Dispose();
+        }
+
+        //private float axisScale = 1;
 
         //ulong ulMainHandle;
 
@@ -149,36 +238,52 @@ namespace monitor_customhmd
             //err = overlay.ShowOverlay(ulMainHandle);
         }
 
-        private void MonitorForm_FormClosing(object sender, FormClosingEventArgs e)
-        {
-            _running = false;
-            _thread.Join();
-            _thread = null;
-
-            //if (ulMainHandle != 0)
-            //    OpenVR.Overlay.DestroyOverlay(ulMainHandle);
-            //OpenVR.Shutdown();
-        }
-
         private void tmrConsumer_Tick(object sender, EventArgs e)
         {
-            bool done = false;
-            bool last = false;
-            USBPacket packet = default(USBPacket);
+            SetTrayIcon();
+            //bool done = false;
+            //bool last = false;            
 
-            while (!done)
+            IList<USBPacket> packets = null;
+            lock (_inPacketMonitor)
             {
-                lock (_incoming)
+                if (_inPacketMonitor.Count > 0)
                 {
-                    last = true;
-                    done = _incoming.Count == 0;
-                    last &= _incoming.Count == 1;
-                    if (!done)
-                        packet = _incoming.Dequeue();
+                    packets = _inPacketMonitor;
+                    _inPacketMonitor = new List<USBPacket>();
                 }
-                if (!done)
-                    OnReceivePacket(ref packet, last);
             }
+
+            if (packets != null)
+            {
+                State = CommState.Active;
+                foreach (var p in packets)
+                {
+                    var packet = p;
+                    OnReceivePacket(0, ref packet);
+                }
+            }
+
+            packets = null;
+            lock (_outPacketMonitor)
+            {
+                if (_outPacketMonitor.Count > 0)
+                {
+                    packets = _outPacketMonitor;
+                    _outPacketMonitor = new List<USBPacket>();
+                }
+            }
+
+            if (packets != null)
+            {
+                State = CommState.Active;
+                foreach (var p in packets)
+                {
+                    var packet = p;
+                    OnReceivePacket(1, ref packet);
+                }
+            }
+
             if (dgData.SelectedRows != null && dgData.SelectedRows[0].Tag != null)
                 pb.Invalidate();
         }
@@ -188,18 +293,19 @@ namespace monitor_customhmd
 
         SensorTest testSensor = new SensorTest();
 
-        private void OnReceivePacket(ref USBPacket packet, bool last)
+        private void OnReceivePacket(int dir, ref USBPacket packet)
         {
+            if (dir == 1) return;
             if (packet.Header.Sequence != lastSequence + 1 && lastSequence > 0)
             {
                 seqErrors += (packet.Header.Sequence - lastSequence);
-                if (last)
-                {
+                //if (last)
+                //{
                     InfoRow.Cells[1].Value = "Missed: " + (packet.Header.Sequence - lastSequence);
                     InfoRow.Cells[2].Value = "Total: " + seqErrors;
                     InfoRow.Cells[3].Value = "Last: " + packet.Header.Sequence;
                     InfoRow.Cells[4].Value = "Current: " + lastSequence;
-                }
+                //}
             }
             lastSequence = packet.Header.Sequence;
 
@@ -207,7 +313,7 @@ namespace monitor_customhmd
             switch (packet.Header.Type & 0xf0)
             {
                 case POSITION_DATA:
-                    if (last)
+                    //if (last)
                     {
                         PositionRow.Cells[1].Value = packet.Header.Sequence;
                         PositionRow.Cells[3].Value = packet.Position.Position[0].ToString("N3");
@@ -216,7 +322,7 @@ namespace monitor_customhmd
                     }
                     break;
                 case ROTATION_DATA:
-                    if (last)
+                    //if (last)
                     {
                         RotationRow.Cells[1].Value = packet.Header.Sequence;
                         RotationRow.Cells[2].Value = packet.Rotation.w.ToString("N6");
@@ -237,7 +343,7 @@ namespace monitor_customhmd
                     if (packet.Command.Command == CMD_RAW_DATA)
                     {
                         KalmanGroup group;
-                        if (last)
+                        //if (last)
                         {
                             AccelRow.Cells[1].Value = packet.Header.Sequence;
                             AccelRow.Cells[3].Value = packet.Command.Raw.Accel[0];
@@ -252,7 +358,7 @@ namespace monitor_customhmd
                         group = AccelRow.Tag as KalmanGroup;
                         group.Process(new float[] { ToGravity(packet.Command.Raw.Accel[0]), ToGravity(packet.Command.Raw.Accel[1]), ToGravity(packet.Command.Raw.Accel[2]) });
 
-                        if (last)
+                        //if (last)
                         {
                             GyroRow.Cells[1].Value = packet.Header.Sequence;
                             GyroRow.Cells[3].Value = packet.Command.Raw.Gyro[0];
@@ -262,7 +368,7 @@ namespace monitor_customhmd
                         group = GyroRow.Tag as KalmanGroup;
                         group.Process(new float[] { ToDegree(packet.Command.Raw.Gyro[0]), ToDegree(packet.Command.Raw.Gyro[1]), ToDegree(packet.Command.Raw.Gyro[2]) });
 
-                        if (last)
+                        //if (last)
                         {
                             MagRow.Cells[1].Value = packet.Header.Sequence;
                             MagRow.Cells[3].Value = packet.Command.Raw.Mag[0];
@@ -280,7 +386,7 @@ namespace monitor_customhmd
                             for (int i = 0; i < 3; i++)
                             {
                                 offsets[i] = (offsets[i] * 0.99f) + (0.01f * packet.Command.Raw.Accel[i]);
-                                if (last)
+                                //if (last)
                                     AccelOffsetRow.Cells[3 + i].Value = (int)offsets[i];
                             }
 
@@ -289,7 +395,7 @@ namespace monitor_customhmd
                             for (int i = 0; i < 3; i++)
                             {
                                 offsets[i] = (offsets[i] * 0.99f) + (0.01f * packet.Command.Raw.Gyro[i]);
-                                if (last)
+                                //if (last)
                                     GyroOffsetRow.Cells[3 + i].Value = (int)offsets[i];
                             }
 
@@ -297,7 +403,7 @@ namespace monitor_customhmd
                             for (int i = 0; i < 3; i++)
                             {
                                 offsets[i] = (offsets[i] * 0.99f) + (0.01f * packet.Command.Raw.Mag[i]);
-                                if (last)
+                                //if (last)
                                     MagOffsetRow.Cells[3 + i].Value = (int)offsets[i];
                             }
                         }
@@ -362,8 +468,10 @@ namespace monitor_customhmd
             rawData.State = (byte)comboBox1.SelectedIndex;
             var command = USBCommandData.Create(CMD_RAW_DATA, rawData);
             var packet = USBPacket.Create(COMMAND_DATA | HMD_SOURCE, (ushort)(DateTime.Now.Ticks / 1000), command);
-            lock (_outgoing)
-                _outgoing.Enqueue(packet);
+            var d = StructToBytes(packet);
+            SetPacketCrc(ref d);
+            lock (_outgoingPackets)
+                _outgoingPackets.Enqueue(d);
         }
 
         private void button3_Click(object sender, EventArgs e)
@@ -379,15 +487,15 @@ namespace monitor_customhmd
 
             var calibData = new USBCalibrationData();
 
-            //if (AccelOffsetRow.Selected)
+            if (AccelOffsetRow.Selected)
                 calibData.Sensor = SENSOR_ACCEL;
-            //else if (GyroOffsetRow.Selected)
-            //    calibData.Sensor = SENSOR_GYRO;
-            //else if (MagOffsetRow.Selected)
-            //    calibData.Sensor = SENSOR_MAG;
-            //else
-            //    return;
-            
+            else if (GyroOffsetRow.Selected)
+                calibData.Sensor = SENSOR_GYRO;
+            else if (MagOffsetRow.Selected)
+                calibData.Sensor = SENSOR_MAG;
+            else
+                return;
+
             var posScales = new short[3];
             short.TryParse(txtPosX.Text, out posScales[0]);
             short.TryParse(txtPosY.Text, out posScales[1]);
@@ -404,14 +512,20 @@ namespace monitor_customhmd
 
             var command = USBCommandData.Create(CMD_CALIBRATE, calibData);
             var packet = USBPacket.Create(COMMAND_DATA | HMD_SOURCE, (ushort)(DateTime.Now.Ticks / 1000), command);
-            lock (_outgoing)
-                _outgoing.Enqueue(packet);
-                        
+            var d = StructToBytes(packet);
+            SetPacketCrc(ref d);
+            lock (_outgoingPackets)
+                _outgoingPackets.Enqueue(d);
+
+
             calibData.Sensor = SENSOR_NONE;
             command = USBCommandData.Create(CMD_CALIBRATE, calibData);
-            packet = USBPacket.Create(COMMAND_DATA | HMD_SOURCE, (ushort)(DateTime.Now.Ticks / 1000), command);
-            lock (_outgoing)
-                _outgoing.Enqueue(packet);
+            packet = USBPacket.Create(COMMAND_DATA | HMD_SOURCE, (ushort)((DateTime.Now.Ticks / 1000) + 1), command);
+
+            d = StructToBytes(packet);
+            SetPacketCrc(ref d);
+            lock (_outgoingPackets)
+                _outgoingPackets.Enqueue(d);
 
         }
 
@@ -486,13 +600,13 @@ namespace monitor_customhmd
                 }
                 return;
             }
-            
+
             var axis = dgData.SelectedRows[0].Tag as Axes;
             if (axis != null)
             {
                 e.Graphics.Clear(Color.Black);
                 grav.Draw(e.Graphics, cam);
-                axis.Draw(e.Graphics, cam);                
+                axis.Draw(e.Graphics, cam);
             }
 
         }
@@ -544,6 +658,10 @@ namespace monitor_customhmd
         private void btnResetScale_Click(object sender, EventArgs e)
         {
             //axisScale = 1;
+        }
+
+        private void MonitorForm_FormClosed(object sender, FormClosedEventArgs e)
+        {
         }
     }
 }
