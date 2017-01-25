@@ -224,6 +224,7 @@ int main(void)
 	bool readyToReceive = false;
 	bool readyToSend = false;
 	uint32_t now;
+	uint16_t ChannelStateFlags = 0;
 	
 	srand(HAL_GetTick());
 	
@@ -238,16 +239,16 @@ int main(void)
 			uint8_t channelIndex = pUSBCommandPacket->Header.Type & 0x0F; 			
 			if (channelIndex < MAX_SOURCE)
 			{
-				CommChannel *pChannel = &Channels[channelIndex];
-			
+				CommChannel *pChannel = &Channels[channelIndex];			
 				//only send if active more than 1 sec
 				if (now - pChannel->lastReceive <= 1000)
 				{			
 					//got packet from usb, forward to trackeddevice
 					memcpy(&pChannel->lastCommand, pUSBCommandPacket, sizeof(USBPacket));			
 					//send same packet a few times
-					pChannel->remainingTransmits = 2;			
+					pChannel->remainingTransmits = 5;			
 					pChannel->nextTransmit = now;
+					ChannelStateFlags |= 1 << channelIndex;
 				}
 				memset(pUSBCommandPacket, 0, sizeof(USBPacket)); //clear incoming
 			}
@@ -279,9 +280,26 @@ int main(void)
 			}
 		}
 
-		for (uint8_t idx=0; idx<MAX_SOURCE; idx++)
+		for (uint8_t channelIndex=0; channelIndex<MAX_SOURCE; channelIndex++)
 		{
-			CommChannel *pChannel = &Channels[idx];
+			if (!(ChannelStateFlags & (1 << channelIndex))) 
+				continue; // skip if channel is empty			
+			CommChannel *pChannel = &Channels[channelIndex];
+			if (!pChannel->remainingTransmits) 
+			{
+				// skip if no more to transmit. unlikely to enter here
+				memset(&pChannel->lastCommand, 0, sizeof(USBPacket));																				
+				ChannelStateFlags &= ~(1 << channelIndex); //clear flags
+				continue;
+			}
+			if (now - pChannel->lastReceive > 10000)
+			{
+				// skip if timedout. (powered off controller etc)
+				memset(&pChannel->lastCommand, 0, sizeof(USBPacket));																				
+				ChannelStateFlags &= ~(1 << channelIndex); //clear flags
+				continue;
+			}
+			
 			if (!readyToSend)
 			{
 				rfStatus = RF_FifoStatus(&hspi1);
@@ -296,8 +314,11 @@ int main(void)
 				RF_SendPayload(&hspi1, (uint8_t *)&pChannel->lastCommand, sizeof(USBPacket));
 				do { rfStatus = RF_FifoStatus(&hspi1); } while ((rfStatus & RF_TX_FIFO_EMPTY_Bit) != RF_TX_FIFO_EMPTY_Bit); //wait for send complete
 				pChannel->remainingTransmits--;
-				if (!pChannel->remainingTransmits)					
-					memset(&pChannel->lastCommand, 0, sizeof(USBPacket));																
+				if (!pChannel->remainingTransmits)	
+				{				
+					memset(&pChannel->lastCommand, 0, sizeof(USBPacket));																					
+					ChannelStateFlags &= ~(1 << channelIndex); //clear flags
+				}
 				RF_ReceiveMode(&hspi1, RF_InitStruct.RF_RX_Adress_Pipe0);
 				break; //send single packet only
 			}
