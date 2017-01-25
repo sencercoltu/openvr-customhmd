@@ -1,5 +1,5 @@
 #include "ClientDriver.h"
-#include "hidapi.h"
+#include "ShMem.h"
 #include "simplejson\JSONValue.h"
 
 //EVRInitError CClientDriver::Init(IDriverLog * pDriverLog, IClientDriverHost * pDriverHost, const char * pchUserDriverConfigDir, const char * pchDriverInstallDir)
@@ -38,16 +38,18 @@ const JSONValue *GetJson(const JSONObject object, const wchar_t *section, const 
 }
 
 bool CClientDriver::BIsHmdPresent(const char *pchUserConfigDir)
-{	
-	auto ret = true;
+{		
+	CShMem mem;
 	//check usb
-	hid_init();
-	hid_device *handle = hid_open(0x1974, 0x0001, NULL);
-	if (!handle)
-		ret = false;
-	else
-		hid_close(handle);
-	hid_exit();
+	//hid_init();
+	//hid_device *handle = hid_open(0x1974, 0x0001, NULL);
+	//if (!handle)
+	//	ret = false;
+	//else
+	//	hid_close(handle);
+	//hid_exit();
+
+	auto ret = mem.GetState() != CommState::Disconnected;
 
 	if (ret)
 	{

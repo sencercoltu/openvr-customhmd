@@ -457,8 +457,8 @@ void CTrackedController::PoseUpdate(USBPacket *pPacket, HmdVector3d_t *pCenterEu
 
 				//SendButtonUpdates(&vr::IServerDriverHost::TrackedDeviceButtonTouched, ulChangedTouched & newState.ulButtonTouched);
 				SendButtonUpdates(&vr::IServerDriverHost::TrackedDeviceButtonPressed, ulChangedPressed & newState.ulButtonPressed);
-				//SendButtonUpdates(&vr::IServerDriverHost::TrackedDeviceButtonUnpressed, ulChangedPressed & ~newState.ulButtonPressed);
-				SendButtonUpdates(&vr::IServerDriverHost::TrackedDeviceButtonUntouched, ulChangedTouched & ~newState.ulButtonTouched);
+				SendButtonUpdates(&vr::IServerDriverHost::TrackedDeviceButtonUnpressed, ulChangedPressed & ~newState.ulButtonPressed);
+				//SendButtonUpdates(&vr::IServerDriverHost::TrackedDeviceButtonUntouched, ulChangedTouched & ~newState.ulButtonTouched);
 
 				if (newState.rAxis[1].x != m_ControllerData.State.rAxis[1].x)
 					m_pDriverHost->TrackedDeviceAxisUpdated(m_unObjectId, 1, newState.rAxis[1]);

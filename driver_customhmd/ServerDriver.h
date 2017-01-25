@@ -2,7 +2,7 @@
 #define ServerDriver_H
 
 #include "Common.h"	
-#include "hidapi.h"
+//#include "hidapi.h"
 #include <deque>
 
 using namespace vr;
@@ -38,8 +38,8 @@ private:
 	bool m_IsRunning;
 	unsigned int static WINAPI ProcessThread(void *p);
 	void Run();
-	void OpenUSB(hid_device **ppHandle);
-	void CloseUSB(hid_device **ppHandle);
+	//void OpenUSB(hid_device **ppHandle);
+	//void CloseUSB(hid_device **ppHandle);
 	DWORD m_LastTick, m_CurrTick;
 	bool m_HMDAdded, m_RightCtlAdded, m_LeftCtlAdded;
 	std::deque<USBPacket*> m_CommandQueue;

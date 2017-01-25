@@ -3,7 +3,7 @@
 	"name" : "customhmd",
 	"directory" : "",
 	"resourceOnly" : false,
-	"hmd_presence" :
+	"xhmd_presence" :
     [
         "1974.0001"
     ]
