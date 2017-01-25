@@ -1,6 +1,6 @@
 [PreviousGenFiles]
-HeaderPath=D:/Projects/STM32/SteamVR/LightHouse/Inc
-SourcePath=D:/Projects/STM32/SteamVR/LightHouse/Src
+HeaderPath=D:/Projects/Windows/SteamVR/stm32/LightHouse/Inc
+SourcePath=D:/Projects/Windows/SteamVR/stm32/LightHouse/Src
 SourceFiles=usb_device.h;usbd_conf.h;usbd_desc.h;usbd_custom_hid_if.h;stm32f1xx_it.h;stm32f1xx_hal_conf.h;mxconstants.h;usb_device.c;usbd_conf.c;usbd_desc.c;usbd_custom_hid_if.c;stm32f1xx_it.c;stm32f1xx_hal_msp.c;main.c;gpio.h;i2c.h;spi.h;gpio.c;i2c.c;spi.c;main.h;
 HeaderFiles=usb_device.h;usbd_conf.h;usbd_desc.h;usbd_custom_hid_if.h;stm32f1xx_it.h;stm32f1xx_hal_conf.h;mxconstants.h;gpio.h;i2c.h;spi.h;main.h;
 
