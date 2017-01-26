@@ -7,13 +7,13 @@ using System.Threading.Tasks;
 
 namespace monitor_customhmd
 {
-    public enum DebugModes
+    public enum RawModes
     {
         Off,
         Raw,
         Filtered,        
         Compensated,
-        Vectors
+        DRVectors
     }
 
     public static class UsbPacketDefs
@@ -149,7 +149,7 @@ namespace monitor_customhmd
         public struct USBStatusData : IUSBData
         {
             public static int Size { get { return Marshal.SizeOf(typeof(USBStatusData)); } }
-            public byte CalibrationMask;
+            public Int32 HeartBeat;
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]

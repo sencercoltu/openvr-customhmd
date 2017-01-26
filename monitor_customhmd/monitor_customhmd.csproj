@@ -79,7 +79,6 @@
     <Compile Include="Drawing3d\Shape3d.cs" />
     <Compile Include="Drawing3d\Vector3d.cs" />
     <Compile Include="DriverComm\ShMem.cs" />
-    <Compile Include="KalmanSingle.cs" />
     <Compile Include="MonitorForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -88,8 +87,13 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SensorTest.cs" />
     <Compile Include="DriverComm\UsbPacketDefs.cs" />
+    <Compile Include="TrackedDevice.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="TrackedDevice.Designer.cs">
+      <DependentUpon>TrackedDevice.cs</DependentUpon>
+    </Compile>
     <EmbeddedResource Include="MonitorForm.resx">
       <DependentUpon>MonitorForm.cs</DependentUpon>
     </EmbeddedResource>
@@ -103,6 +107,9 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
+    <EmbeddedResource Include="TrackedDevice.resx">
+      <DependentUpon>TrackedDevice.cs</DependentUpon>
+    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
