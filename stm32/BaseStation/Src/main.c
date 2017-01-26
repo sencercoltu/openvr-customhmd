@@ -63,6 +63,8 @@ struct CommChannel
 	uint8_t remainingTransmits;
 	uint32_t lastReceive;
 	uint32_t nextTransmit;
+	uint16_t lastInSequence;
+	uint16_t lastOutSequence;
 	USBPacket lastCommand;	
 };
 
@@ -164,15 +166,18 @@ void HAL_MicroDelay(uint64_t delay)
 	}
 }
 
-
+uint16_t stationSequence = 0;
+USBPacket HeartBeatPacket = {0};
 USBPacket SyncPacket = {0};
+
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 	if (GPIO_Pin == IR_SYNC_Pin)
 	{
+		SyncPacket.Header.Sequence = ++stationSequence;
 		SyncPacket.Command.Data.Sync.SyncTime = HAL_GetMicros();
 		SetPacketCrc(&SyncPacket);
-		int8_t res = USBD_CUSTOM_HID_SendReport_FS((uint8_t*)&SyncPacket,(uint16_t)sizeof(USBPacket)); //forward incoming					
+		USBD_CUSTOM_HID_SendReport_FS((uint8_t*)&SyncPacket,(uint16_t)sizeof(USBPacket)); //forward incoming					
 		LedToggle();
 	}
 }
@@ -185,14 +190,6 @@ int main(void)
 	uint16_t usbDescLen = 0;
 	uint8_t *usbDesc = USBD_CUSTOM_HID.GetFSConfigDescriptor(&usbDescLen);
 	usbDesc[33] = usbDesc[40] = 1;	//1 ms poll interval
-
-	
-	SyncPacket.Header.Type = BASESTATION_SOURCE | COMMAND_DATA;
-	SyncPacket.Header.Sequence = 1;
-	SyncPacket.Header.Crc8 = 0;
-	SyncPacket.Command.Command = CMD_SYNC;
-	SyncPacket.Command.Data.Sync.SyncTime = HAL_GetMicros();
-	
 	
   /* USER CODE END 1 */
 
@@ -210,6 +207,20 @@ int main(void)
   MX_SPI1_Init();
 
   /* USER CODE BEGIN 2 */
+
+	HeartBeatPacket.Header.Type = BASESTATION_SOURCE | COMMAND_DATA;
+	HeartBeatPacket.Header.Sequence = 0;
+	HeartBeatPacket.Header.Crc8 = 0;
+	HeartBeatPacket.Command.Command = CMD_STATUS;
+	HeartBeatPacket.Command.Data.Status.HeartBeat = 0;
+	
+	
+	SyncPacket.Header.Type = BASESTATION_SOURCE | COMMAND_DATA;
+	SyncPacket.Header.Sequence = 0;
+	SyncPacket.Header.Crc8 = 0;
+	SyncPacket.Command.Command = CMD_SYNC;
+	SyncPacket.Command.Data.Sync.SyncTime = HAL_GetMicros();
+
 	BlinkRease(80);
 	
 	LedOff();		
@@ -234,20 +245,33 @@ int main(void)
 		Blink(blinkDelay);
 		blinkDelay = 1000;
 
+		if (now - HeartBeatPacket.Command.Data.Status.HeartBeat >= 1000)
+		{
+			HeartBeatPacket.Command.Data.Status.HeartBeat = now;
+			HeartBeatPacket.Header.Sequence = ++stationSequence;
+			SetPacketCrc(&HeartBeatPacket);
+			USBD_CUSTOM_HID_SendReport_FS((uint8_t*)&HeartBeatPacket,(uint16_t)sizeof(USBPacket)); 
+		}
+		
 		if (((pUSBCommandPacket->Header.Type & 0xF0) == COMMAND_DATA) && (pUSBCommandPacket->Command.Command != CMD_NONE))
 		{		
-			uint8_t channelIndex = pUSBCommandPacket->Header.Type & 0x0F; 			
-			if (channelIndex < MAX_SOURCE)
+			uint8_t channelIndex = pUSBCommandPacket->Header.Type & 0x0F; 
+			if (channelIndex == BASESTATION_SOURCE)			
+			{
+				//process command or whatever
+			}
+			else if (channelIndex < MAX_SOURCE)
 			{
 				CommChannel *pChannel = &Channels[channelIndex];			
 				//only send if active more than 1 sec
-				if (now - pChannel->lastReceive <= 1000)
+				if (pChannel->lastOutSequence != pUSBCommandPacket->Header.Sequence && now - pChannel->lastReceive <= 1000)
 				{			
 					//got packet from usb, forward to trackeddevice
 					memcpy(&pChannel->lastCommand, pUSBCommandPacket, sizeof(USBPacket));			
 					//send same packet a few times
 					pChannel->remainingTransmits = 5;			
 					pChannel->nextTransmit = now;
+					pChannel->lastOutSequence = pUSBCommandPacket->Header.Sequence;
 					ChannelStateFlags |= 1 << channelIndex;
 				}
 				memset(pUSBCommandPacket, 0, sizeof(USBPacket)); //clear incoming
@@ -272,14 +296,20 @@ int main(void)
 					uint8_t channelIndex = USBBypassPacket.Header.Type & 0x0F;
 					if (channelIndex < MAX_SOURCE)
 					{
-						Channels[channelIndex].lastReceive = now;
-						blinkDelay = 100;
-						int8_t res = USBD_CUSTOM_HID_SendReport_FS((uint8_t*)&USBBypassPacket,(uint16_t) sizeof(USBPacket)); //forward incoming					
+						CommChannel *pChannel = &Channels[channelIndex];
+						pChannel->lastReceive = now;
+						if (pChannel->lastInSequence != USBBypassPacket.Header.Sequence)
+						{
+							blinkDelay = 100;
+							pChannel->lastInSequence = USBBypassPacket.Header.Sequence;
+							USBD_CUSTOM_HID_SendReport_FS((uint8_t*)&USBBypassPacket,(uint16_t) sizeof(USBPacket)); //forward incoming					
+						}
 					}
 				}
 			}
 		}
 
+		//send everything in channel buffer without checking sequence
 		for (uint8_t channelIndex=0; channelIndex<MAX_SOURCE; channelIndex++)
 		{
 			if (!(ChannelStateFlags & (1 << channelIndex))) 

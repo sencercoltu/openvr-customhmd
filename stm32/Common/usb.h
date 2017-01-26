@@ -146,7 +146,7 @@ struct USBVibrationData
 
 struct USBStatusData
 {
-	uint8_t CalibrationMask;
+	uint32_t HeartBeat;
 	
 };
 

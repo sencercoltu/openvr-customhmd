@@ -15,10 +15,12 @@
 
   <project>
     <PathAndName>.\TrackedDevice\MDK-ARM\TrackedDevice.uvprojx</PathAndName>
+    <NodeIsExpanded>1</NodeIsExpanded>
   </project>
 
   <project>
     <PathAndName>.\LightHouse\MDK-ARM\LightHouse.uvprojx</PathAndName>
+    <NodeIsExpanded>1</NodeIsExpanded>
   </project>
 
 </ProjectWorkspace>

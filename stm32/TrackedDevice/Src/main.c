@@ -56,6 +56,14 @@ SPI_HandleTypeDef hspi2;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
+enum RawModes
+{
+	RawMode_Off = 0,
+	RawMode_Raw = 1,
+	RawMode_Filtered = 2,        
+	RawMode_Compensated = 3,
+	RawMode_DRVectors = 4
+};
 
 int8_t ctlSource = HMD_SOURCE;
 SensorData tSensorData;
@@ -144,7 +152,8 @@ inline uint8_t sgn(float n)
 	return (n<0?-1:1);
 }
 
-volatile uint16_t DigitalValues = 0;
+volatile uint32_t LastDigitalChange = 0;
+uint16_t DigitalValues = 0;
 uint16_t DigitalCache = 0;
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
@@ -164,28 +173,10 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		case IR_SENS5_Pin:
 			break;
 		case CTL_BTN0_Pin:
-			if (HAL_GPIO_ReadPin(CTL_BTN0_GPIO_Port, CTL_BTN0_Pin) == GPIO_PIN_SET)
-				DigitalValues |= BUTTON_0;
-			else
-				DigitalValues &= ~BUTTON_0;
-			break;
 		case CTL_BTN1_Pin:
-			if (HAL_GPIO_ReadPin(CTL_BTN1_GPIO_Port, CTL_BTN1_Pin) == GPIO_PIN_SET)
-				DigitalValues |= BUTTON_1;
-			else
-				DigitalValues &= ~BUTTON_1;
-			break;
 		case CTL_BTN2_Pin:
-			if (HAL_GPIO_ReadPin(CTL_BTN2_GPIO_Port, CTL_BTN2_Pin) == GPIO_PIN_SET)
-				DigitalValues |= BUTTON_2;
-			else
-				DigitalValues &= ~BUTTON_2;
-			break;
 		case CTL_BTN3_Pin:
-			if (HAL_GPIO_ReadPin(CTL_BTN3_GPIO_Port, CTL_BTN3_Pin) == GPIO_PIN_SET)
-				DigitalValues |= BUTTON_3;
-			else
-				DigitalValues &= ~BUTTON_3;
+			LastDigitalChange = HAL_GetTick();
 			break;
 	}
 }
@@ -197,7 +188,8 @@ float ADC_Offsets[3] = {0};
 int32_t ADC_Cache[3] = {0};
 
 uint64_t lastRotationUpdate = 0; 
-uint64_t now = 0;        
+uint64_t now = 0;     
+uint32_t ticks = 0;
 uint32_t nextSend = 0; 
 
 uint32_t sndCounter = 0;
@@ -321,7 +313,7 @@ int main(void)
 		HAL_Delay(100);
 	}
 	//bool sensorWarmup = false;
-	int extraDelay = ctlSource>HMD_SOURCE? 15:10;	
+	int extraDelay = ctlSource>HMD_SOURCE? 23:13;	
 	bool hasRotationData = false;
 	bool hasPositionData = false;
 	uint8_t buttonRetransmit = 0;
@@ -380,7 +372,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
 	
 	
-	uint8_t feedRawData = 0;
+	RawModes feedRawMode = RawMode_Off;
 	uint8_t readyToSend = 0;
 	uint8_t readyToReceive = 0;
 	
@@ -390,7 +382,7 @@ int main(void)
 	//Quaternion gravQuat(0, 0, 0, 1);
 	//RF_ReceiveMode(&hspi2, NULL); //default to receive mode			
 	uint32_t lastCommandSequence = 0;
-	uint32_t lastADCAverages = 0;
+	uint32_t lastADCAverages = 0;	
 	uint32_t vibrationStopTime = 0;	
 	uint64_t lastButtonRefresh = 0;		
 	//uint64_t lastPositionIntegrateTime = 0;
@@ -405,7 +397,7 @@ int main(void)
 	//float ComplimentaryVelocityVector[3] = {0};
 	USBPositionData position = {0};
 	
-	uint8_t sendTurn = 0;
+	//uint8_t sendTurn = 0;
 	
 //	float sensorReadings = 0;
 //	float AccelReadings[3] = {0};
@@ -419,47 +411,87 @@ int main(void)
 	};
 	
 	
+	uint32_t eepromSaveTime = 0;
 	
 	while (true)
-	{		
+	{	
 		Blink(blinkDelay);
 		blinkDelay = 1000;
 		
-		now = HAL_GetMicros();				
-		if ((ctlSource == RIGHTCTL_SOURCE || ctlSource == LEFTCTL_SOURCE) && (now - lastADCAverages > 10))
+		now = HAL_GetMicros();
+		ticks = now / 1000;
+		
+		if (eepromSaveTime && eepromSaveTime >= ticks)
 		{
-			lastADCAverages = now;
-			for (int i=0; i<3; i++)
+			isCalibrated = true;
+			calibrationCache.Magic = VALID_EEPROM_MAGIC;
+			enableEEPROMWriting();
+			char *eepromData = (char *)&calibrationCache;	
+			int addr = 0;
+			for (int i=0; i<sizeof(calibrationCache); i+=sizeof(uint32_t))
 			{
-				ADC_Averages[i] = (ADC_Averages[i] * 0.9f) + ((float)ADC_Values[i] * 0.1f);
-				int32_t value = (int32_t)((ADC_Averages[i] - ADC_Offsets[i]) / 20.48f) ;			
-				if (ADC_Cache[i] != value)
+				writeEEPROMWord(addr, *((uint32_t *)(&eepromData[i])));
+				addr += sizeof(uint32_t);
+			}
+			disableEEPROMWriting();
+			eepromSaveTime = 0;
+		}
+		
+		if ((ctlSource == RIGHTCTL_SOURCE || ctlSource == LEFTCTL_SOURCE))
+		{
+			if (ticks - lastADCAverages > 20) //50 analog values per second
+			{
+				lastADCAverages = ticks;
+				for (int i=0; i<3; i++)
 				{
-					//if any analog value has changes
-					ADC_Cache[i] = value;
+					ADC_Averages[i] = (ADC_Averages[i] * 0.3f) + ((float)ADC_Values[i] * 0.7f); //basic complementary filter
+					int32_t value = (int32_t)((ADC_Averages[i] - ADC_Offsets[i]) / 20.48f) ;			
+					if (ADC_Cache[i] != value)
+					{
+						//if any analog value has changes
+						ADC_Cache[i] = value;
+						//hasTriggerData = true;
+						buttonRetransmit = 5;					
+						lastButtonRefresh = ticks;
+					}
+				}
+			}
+			if (LastDigitalChange && (ticks - LastDigitalChange > 50)) //20 clicks per second (duh!).. using sw debounce 
+			{			
+				LastDigitalChange = 0;
+				DigitalValues = 0;
+				if (HAL_GPIO_ReadPin(CTL_BTN0_GPIO_Port, CTL_BTN0_Pin) == GPIO_PIN_SET) DigitalValues |= BUTTON_0;
+				//else
+				//	DigitalValues &= ~BUTTON_0;
+				if (HAL_GPIO_ReadPin(CTL_BTN1_GPIO_Port, CTL_BTN1_Pin) == GPIO_PIN_SET) DigitalValues |= BUTTON_1;
+				//else
+				//	DigitalValues &= ~BUTTON_1;
+				if (HAL_GPIO_ReadPin(CTL_BTN2_GPIO_Port, CTL_BTN2_Pin) == GPIO_PIN_SET) DigitalValues |= BUTTON_2;
+				//else
+				//	DigitalValues &= ~BUTTON_2;
+				if (HAL_GPIO_ReadPin(CTL_BTN3_GPIO_Port, CTL_BTN3_Pin) == GPIO_PIN_SET) DigitalValues |= BUTTON_3;
+				//else
+				//	DigitalValues &= ~BUTTON_3;
+				
+				if (DigitalCache != DigitalValues)
+				{
+					//if any digital value has changes
+					DigitalCache = DigitalValues;
 					//hasTriggerData = true;
-					buttonRetransmit = 5;					
+					buttonRetransmit = 5;
+					lastButtonRefresh = ticks;
 				}
 			}
 			
-			if (DigitalCache != DigitalValues)
-			{
-				//if any digital value has changes
-				DigitalCache = DigitalValues;
-				//hasTriggerData = true;
-				buttonRetransmit = 5;
-				lastButtonRefresh = now;
-			}
-			
-			if (now - lastButtonRefresh > 500000)
+			if (ticks - lastButtonRefresh > 250)
 			{
 				//update button status every 100ms.
 				buttonRetransmit++;
-				lastButtonRefresh = now;
+				lastButtonRefresh = ticks;
 			}
 		}
 		
-		if (vibrationStopTime && HAL_GetTick() > vibrationStopTime)			
+		if (vibrationStopTime && (ticks > vibrationStopTime))
 		{
 			HAL_GPIO_WritePin(CTL_VIBRATE_GPIO_Port, CTL_VIBRATE_Pin, GPIO_PIN_RESET);
 			vibrationStopTime = 0;
@@ -488,7 +520,7 @@ int main(void)
 //				gravQuat.w = 0; gravQuat.x = 0; gravQuat.y = 0; gravQuat.z = 0;
 //				gravQuat = (orientQuat * gravQuat) * orientQuat.conjugate();
 
-				if (isPositionReady && (hasPositionData || (isCalibrated && (now >= 10000000))))
+				if (isPositionReady && (hasPositionData || (isCalibrated && (ticks >= 10000))))
 				{
 					//float elapsedPositionTime = (float)(now - lastPositionIntegrateTime) / 1000000.0f;
 					//if (elapsedPositionTime >= 0.001f) // integrate every 2 ms
@@ -561,7 +593,7 @@ int main(void)
 						switch (pUSBCommandPacket->Command.Command)
 						{
 							case CMD_RAW_DATA:								
-								feedRawData = pUSBCommandPacket->Command.Data.Raw.State;
+								feedRawMode = (RawModes) pUSBCommandPacket->Command.Data.Raw.State;
 								break;
 							case CMD_VIBRATE:
 								vibrationStopTime = HAL_GetTick() + pUSBCommandPacket->Command.Data.Vibration.Duration;
@@ -569,58 +601,44 @@ int main(void)
 								break;
 							case CMD_CALIBRATE:
 								//manually set sensor offsets
-								int sensorId = pUSBCommandPacket->Command.Data.Calibration.Sensor;								
-								if (sensorId == SENSOR_NONE)
+								int sensorId = pUSBCommandPacket->Command.Data.Calibration.Sensor;																
+								for (int i=0; i<3; i++)
 								{
-									isCalibrated = true;
-									calibrationCache.Magic = VALID_EEPROM_MAGIC;
-									enableEEPROMWriting();
-									char *eepromData = (char *)&calibrationCache;	
-									int addr = 0;
-									for (int i=0; i<sizeof(calibrationCache); i+=sizeof(uint32_t))
-									{
-										writeEEPROMWord(addr, *((uint32_t *)(&eepromData[i])));
-										addr += sizeof(uint32_t);
-									}
-									disableEEPROMWriting();
+									position.Position[i] = 0;
+									VelocityVector[i] = 0;
+									//AccelVector[i] = 0;
+									CompAccelVector[i] = 0;
 								}
-								else
-								{									
+								if (sensorId == SENSOR_NONE)
+									break;
+								else if (sensorId == SENSOR_ACCEL)
+								{
 									for (int i=0; i<3; i++)
 									{
-										position.Position[i] = 0;
-										VelocityVector[i] = 0;
-										//AccelVector[i] = 0;
-										CompAccelVector[i] = 0;
+										tSensorData.Accel.PosScale[i] = (1.0f / aRes) / (float)pUSBCommandPacket->Command.Data.Calibration.PosScale[i];
+										tSensorData.Accel.NegScale[i] = (1.0f / aRes) / (float)pUSBCommandPacket->Command.Data.Calibration.NegScale[i];
 									}
-									if (sensorId == SENSOR_ACCEL)
-									{
-										for (int i=0; i<3; i++)
-										{
-											tSensorData.Accel.PosScale[i] = (1.0f / aRes) / (float)pUSBCommandPacket->Command.Data.Calibration.PosScale[i];
-											tSensorData.Accel.NegScale[i] = (1.0f / aRes) / (float)pUSBCommandPacket->Command.Data.Calibration.NegScale[i];
-										}
-										calibrationCache.Accel = pUSBCommandPacket->Command.Data.Calibration;
-									}
-									else if (sensorId == SENSOR_GYRO)
-									{
-										for (int i=0; i<3; i++)
-										{
-											tSensorData.Gyro.PosScale[i] = pUSBCommandPacket->Command.Data.Calibration.PosScale[i];
-											tSensorData.Gyro.NegScale[i] = 0;
-										}
-										calibrationCache.Gyro = pUSBCommandPacket->Command.Data.Calibration;
-									}
-									else if (sensorId == SENSOR_MAG)
-									{
-										for (int i=0; i<3; i++)
-										{
-											tSensorData.Mag.PosScale[i] = (1.0f / mRes) / (float)pUSBCommandPacket->Command.Data.Calibration.PosScale[i];
-											tSensorData.Mag.NegScale[i] = (1.0f / mRes) / (float)pUSBCommandPacket->Command.Data.Calibration.NegScale[i];
-										}
-										calibrationCache.Mag = pUSBCommandPacket->Command.Data.Calibration;
-									}									
+									calibrationCache.Accel = pUSBCommandPacket->Command.Data.Calibration;
 								}
+								else if (sensorId == SENSOR_GYRO)
+								{
+									for (int i=0; i<3; i++)
+									{
+										tSensorData.Gyro.PosScale[i] = pUSBCommandPacket->Command.Data.Calibration.PosScale[i];
+										tSensorData.Gyro.NegScale[i] = 0;
+									}
+									calibrationCache.Gyro = pUSBCommandPacket->Command.Data.Calibration;
+								}
+								else if (sensorId == SENSOR_MAG)
+								{
+									for (int i=0; i<3; i++)
+									{
+										tSensorData.Mag.PosScale[i] = (1.0f / mRes) / (float)pUSBCommandPacket->Command.Data.Calibration.PosScale[i];
+										tSensorData.Mag.NegScale[i] = (1.0f / mRes) / (float)pUSBCommandPacket->Command.Data.Calibration.NegScale[i];
+									}
+									calibrationCache.Mag = pUSBCommandPacket->Command.Data.Calibration;
+								}
+								eepromSaveTime = ticks + 1000; //save after 1 second
 								//lastPositionIntegrateTime = 
 								//lastPositionSend = now;
 								break;
@@ -631,7 +649,7 @@ int main(void)
 			}
 		}		
 		
-		if ((hasRotationData || feedRawData || hasPositionData || buttonRetransmit) && HAL_GetTick() >= nextSend)
+		if ((hasRotationData || feedRawMode || hasPositionData || buttonRetransmit) && HAL_GetTick() >= nextSend)
 		{
 			rfStatus = RF_FifoStatus(&hspi2); readyToSend = (rfStatus & RF_TX_FIFO_FULL_Bit) == 0x00 ? 1 : 0;			
 		}
@@ -647,26 +665,26 @@ int main(void)
 			//RF_DisableTransmit(&hspi2);
 			
 			//rfStatus = RF_Status(&hspi2); readyToSend = (rfStatus & RF_TX_STATUS_FULL_Bit) == 0x00 ? 1 : 0;	
-			sendTurn = (sendTurn + 1) % 4;
+			//sendTurn = (sendTurn + 1) % 4;
 			
 			//4 types of data				
-			uint8_t currTurn = sendTurn;
+			//uint8_t currTurn = sendTurn;
 			
-			if (currTurn == 0)
+			//if (currTurn == 0)
 			{
-				if (feedRawData)
+				if (feedRawMode)
 				{	
-					sendTurn = currTurn;
+					//sendTurn = currTurn;
 					//send raw data
 					USBDataPacket.Header.Type = ctlSource | COMMAND_DATA;
 					USBDataPacket.Header.Sequence++;				
 					USBDataPacket.Command.Command = CMD_RAW_DATA;
-					USBDataPacket.Command.Data.Raw.State = feedRawData;
+					USBDataPacket.Command.Data.Raw.State = feedRawMode;
 					for (int idx=0; idx<3; idx++)
 					{
-						switch(feedRawData)
+						switch(feedRawMode)
 						{
-							case 1:
+							case RawMode_Raw:
 							{
 								//raw sensor values
 								USBDataPacket.Command.Data.Raw.Accel[idx] = tSensorData.Accel.Raw[idx];
@@ -674,7 +692,7 @@ int main(void)
 								USBDataPacket.Command.Data.Raw.Mag[idx] = tSensorData.Mag.Raw[idx];
 								break;
 							}
-							case 2:
+							case RawMode_Filtered:
 							{
 								//filtered sensor data
 								USBDataPacket.Command.Data.Raw.Accel[idx] = tSensorData.Accel.Filtered[idx];
@@ -682,7 +700,7 @@ int main(void)
 								USBDataPacket.Command.Data.Raw.Mag[idx] = tSensorData.Mag.Filtered[idx];
 								break;
 							}
-							case 3:
+							case RawMode_Compensated:
 							{
 								//compensated sensor data
 								USBDataPacket.Command.Data.Raw.Accel[idx] = tSensorData.Accel.Compensated[idx];
@@ -690,7 +708,7 @@ int main(void)
 								USBDataPacket.Command.Data.Raw.Mag[idx] = tSensorData.Mag.Compensated[idx];
 								break;
 							}
-							case 4:
+							case RawMode_DRVectors:
 							{
 								//deadreckoning vectors
 								USBDataPacket.Command.Data.Raw.Accel[idx] = (int16_t)(GravityVector[idx] / aRes);
@@ -704,14 +722,14 @@ int main(void)
 					RF_SendPayload(&hspi2, (uint8_t*)&USBDataPacket, sizeof(USBPacket));
 					//rfStatus = RF_FifoStatus(&hspi2); readyToSend = (rfStatus & RF_TX_FIFO_FULL_Bit) == 0x00 ? 1 : 0;
 				}
-				else 
-					currTurn++;
+				//else 
+				//	currTurn++;
 			}
-			if (currTurn == 1)
-			{	
+			//if (currTurn == 1)
+			//{	
 				if (hasPositionData)
 				{					
-					sendTurn = currTurn;
+					//sendTurn = currTurn;
 					//send position
 					hasPositionData = 0;				
 					USBDataPacket.Header.Type = ctlSource | POSITION_DATA;
@@ -725,14 +743,14 @@ int main(void)
 					RF_SendPayload(&hspi2, (uint8_t*)&USBDataPacket, sizeof(USBPacket));
 					//rfStatus = RF_FifoStatus(&hspi2); readyToSend = (rfStatus & RF_TX_FIFO_FULL_Bit) == 0x00 ? 1 : 0;					
 				}
-				else 
-					currTurn++;
-			} 
-			if (currTurn == 2)
-			{				
+				//else 
+				//	currTurn++;
+			//} 
+			//if (currTurn == 2)
+			//{				
 				if (hasRotationData)
 				{			
-					sendTurn = currTurn;					
+					//sendTurn = currTurn;					
 					//send rot data
 					hasRotationData = 0;				
 					USBDataPacket.Header.Type = ctlSource | ROTATION_DATA;
@@ -746,35 +764,35 @@ int main(void)
 					RF_SendPayload(&hspi2, (uint8_t*)&USBDataPacket, sizeof(USBPacket));
 					//rfStatus = RF_FifoStatus(&hspi2); readyToSend = (rfStatus & RF_TX_FIFO_FULL_Bit) == 0x00 ? 1 : 0;	
 				}			
-				else
-					currTurn++;
-			} 
-			if (currTurn == 3)
-			{
+				//else
+				//	currTurn++;
+			//} 
+			//if (currTurn == 3)
+			//{
 				if (buttonRetransmit)
 				{			
-					sendTurn = currTurn;					
+					//sendTurn = currTurn;					
 					//send trigger data				
 					buttonRetransmit--;				
 					USBDataPacket.Header.Type = ctlSource | TRIGGER_DATA;
 					USBDataPacket.Header.Sequence++;				
-					USBDataPacket.Trigger.Analog[0].x = ((float)ADC_Cache[0]) / 200.0f;
+					USBDataPacket.Trigger.Analog[0].x = ((float)ADC_Cache[0]) / 200.0f; //trigger
 					USBDataPacket.Trigger.Analog[0].y = 0;				
-					USBDataPacket.Trigger.Analog[1].x = ((float)ADC_Cache[1]) / 100.0f;
-					USBDataPacket.Trigger.Analog[1].y = ((float)ADC_Cache[2]) / 100.0f;
+					USBDataPacket.Trigger.Analog[1].x = ((float)ADC_Cache[1]) / 100.0f; //joystick x
+					USBDataPacket.Trigger.Analog[1].y = ((float)ADC_Cache[2]) / 100.0f; //joystick y
 					USBDataPacket.Trigger.Digital = DigitalCache;
 					SetPacketCrc(&USBDataPacket);				
 					RF_SendPayload(&hspi2, (uint8_t*)&USBDataPacket, sizeof(USBPacket));				
 					rfStatus = RF_FifoStatus(&hspi2); readyToSend = (rfStatus & RF_TX_FIFO_FULL_Bit) == 0x00 ? 1 : 0;									
 				}
-				currTurn++;
-			}			
+				//currTurn++;
+			//}			
 			
 			//RF_EnableTransmit(&hspi2);
 			//if (!(hasRotationData | hasPositionData | buttonRetransmit | feedRawData))
 			do { rfStatus = RF_FifoStatus(&hspi2); } while ((rfStatus & RF_TX_FIFO_EMPTY_Bit) != RF_TX_FIFO_EMPTY_Bit); //wait for send complete			
 			
-			if (!(feedRawData || hasPositionData || hasRotationData || buttonRetransmit))
+			if (!(feedRawMode || hasPositionData || hasRotationData || buttonRetransmit))
 				nextSend = HAL_GetTick() + (extraDelay + (rand() % 10));
 			readyToSend = 0;
 
