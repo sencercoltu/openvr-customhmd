@@ -128,7 +128,7 @@ int32_t CTrackedController::GetInt32Property(ETrackedDeviceProperty prop, ETrack
 		return TrackedDeviceClass_Controller;
 	case Prop_Axis0Type_Int32:
 		SET_ERROR(TrackedProp_Success);
-		return EVRControllerAxisType::k_eControllerAxis_TrackPad;
+		return EVRControllerAxisType::k_eControllerAxis_Joystick; //change later 
 	case Prop_Axis1Type_Int32:
 		SET_ERROR(TrackedProp_Success);
 		return EVRControllerAxisType::k_eControllerAxis_Trigger;
@@ -151,7 +151,7 @@ uint64_t CTrackedController::GetUint64Property(ETrackedDeviceProperty prop, ETra
 			ButtonMaskFromId(k_EButton_System) |
 			ButtonMaskFromId(k_EButton_ApplicationMenu) |
 			ButtonMaskFromId(k_EButton_Grip) |
-			//ButtonMaskFromId(k_EButton_Axis0) |
+			ButtonMaskFromId(k_EButton_Axis0) |
 			ButtonMaskFromId(k_EButton_Axis1) |
 			//ButtonMaskFromId(k_EButton_Axis2) |
 			//ButtonMaskFromId(k_EButton_Axis3) |
@@ -227,6 +227,7 @@ bool CTrackedController::TriggerHapticPulse(uint32_t unAxisId, uint16_t usPulseD
 
 void CTrackedController::RunFrame(DWORD currTick)
 {
+	/*
 	if (m_KeyDown && currTick - m_LastDown > m_Delay)
 	{
 		m_KeyDown = false;
@@ -370,7 +371,7 @@ void CTrackedController::RunFrame(DWORD currTick)
 		m_pDriverHost->TrackedDeviceAxisUpdated(m_unObjectId, 1, newState.rAxis[1]);
 
 	m_ControllerData.State = newState;
-
+*/
 
 	DriverPose_t pose;
 	pose.poseIsValid = false;
@@ -391,19 +392,12 @@ void CTrackedController::RunFrame(DWORD currTick)
 
 void CTrackedController::SendButtonUpdates(ButtonUpdate ButtonEvent, uint64_t ulMask) 
 {
-	if (!ulMask)
-		return;
-
 	for (int i = 0; i< vr::k_EButton_Max; i++)
 	{
 		vr::EVRButtonId button = (vr::EVRButtonId)i;
-
 		uint64_t bit = ButtonMaskFromId(button);
-
 		if (bit & ulMask)
-		{
 			(m_pDriverHost->*ButtonEvent)(m_unObjectId, button, 0.0);
-		}
 	}
 }
 
@@ -431,43 +425,31 @@ void CTrackedController::PoseUpdate(USBPacket *pPacket, HmdVector3d_t *pCenterEu
 					newState.ulButtonPressed |= vr::ButtonMaskFromId(k_EButton_Grip);
 
 				if (pPacket->Trigger.Analog[0].x > 0)
-				{
-					newState.ulButtonTouched |= vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger);
 					newState.ulButtonPressed |= vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger);
-					newState.rAxis[1].x = pPacket->Trigger.Analog[0].x;
-				}
 				else
-				{
 					newState.ulButtonPressed &= ~vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger);
-					newState.ulButtonTouched &= ~vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger);
-					newState.rAxis[1].x = pPacket->Trigger.Analog[0].x;
-				}
+				newState.rAxis[1].x = pPacket->Trigger.Analog[0].x;
 
-				newState.ulButtonTouched |= vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad);
-				newState.ulButtonPressed |= vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad);
 				newState.rAxis[0].x = pPacket->Trigger.Analog[1].x;
 				newState.rAxis[0].y = pPacket->Trigger.Analog[1].y;
 
-
 				newState.unPacketNum = m_ControllerData.State.unPacketNum + 1;
-				newState.ulButtonTouched |= newState.ulButtonPressed;
-
-				uint64_t ulChangedTouched = newState.ulButtonTouched ^ m_ControllerData.State.ulButtonTouched;
 				uint64_t ulChangedPressed = newState.ulButtonPressed ^ m_ControllerData.State.ulButtonPressed;
 
-				//SendButtonUpdates(&vr::IServerDriverHost::TrackedDeviceButtonTouched, ulChangedTouched & newState.ulButtonTouched);
-				SendButtonUpdates(&vr::IServerDriverHost::TrackedDeviceButtonPressed, ulChangedPressed & newState.ulButtonPressed);
-				SendButtonUpdates(&vr::IServerDriverHost::TrackedDeviceButtonUnpressed, ulChangedPressed & ~newState.ulButtonPressed);
-				//SendButtonUpdates(&vr::IServerDriverHost::TrackedDeviceButtonUntouched, ulChangedTouched & ~newState.ulButtonTouched);
-
 				if (newState.rAxis[1].x != m_ControllerData.State.rAxis[1].x)
-					m_pDriverHost->TrackedDeviceAxisUpdated(m_unObjectId, 1, newState.rAxis[1]);
+					m_pDriverHost->TrackedDeviceAxisUpdated(m_unObjectId, 1, newState.rAxis[1]); //trigger update
 				if (newState.rAxis[0].x != m_ControllerData.State.rAxis[0].x || newState.rAxis[0].y != m_ControllerData.State.rAxis[0].y)
-					m_pDriverHost->TrackedDeviceAxisUpdated(m_unObjectId, 0, newState.rAxis[0]);
+					m_pDriverHost->TrackedDeviceAxisUpdated(m_unObjectId, 0, newState.rAxis[0]); //joystick update
+
+				if (ulChangedPressed)
+				{
+					SendButtonUpdates(&vr::IServerDriverHost::TrackedDeviceButtonPressed, newState.ulButtonPressed);
+					SendButtonUpdates(&vr::IServerDriverHost::TrackedDeviceButtonUnpressed, ~newState.ulButtonPressed);
+				}
 
 				m_ControllerData.State = newState;
 
-				m_ControllerData.LastState.Trigger = pPacket->Trigger;
+				m_ControllerData.LastState.Trigger = pPacket->Trigger; 
 			}
 			break;
 		case ROTATION_DATA:

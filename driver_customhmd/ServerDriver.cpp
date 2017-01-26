@@ -29,10 +29,9 @@ EVRInitError CServerDriver::Init(IDriverLog * pDriverLog, IServerDriverHost * pD
 		m_Align.v[2] = m_pSettings->GetFloat("driver_customhmd", "eoZ");
 	}
 
-	m_TrackedDevices.push_back(new CTrackedHMD("HMD", this)); //only add hmd
-
-	//m_TrackedDevices.push_back(new CTrackedController(TrackedControllerRole_RightHand, "RIGHT CONTROLLER", this));
-	//m_TrackedDevices.push_back(new CTrackedController(TrackedControllerRole_LeftHand, "LEFT CONTROLLER", this));
+	
+	m_TrackedDevices.push_back(new CTrackedHMD("HMD", this)); //only add hmd or steam wont init?
+	m_HMDAdded = true;
 
 	m_hThread = nullptr;
 	m_IsRunning = false;
@@ -124,6 +123,7 @@ void CServerDriver::RemoveTrackedDevice(CTrackedDevice *pDevice)
 			return;
 		}
 	}
+	
 }
 
 void CServerDriver::Run()
@@ -204,8 +204,15 @@ void CServerDriver::Run()
 			{
 				switch (pUSBPacket->Header.Type & 0x0F)
 				{
+				case HMD_SOURCE:
+					if (!m_HMDAdded)
+					{
+						m_HMDAdded = true;
+						m_TrackedDevices.push_back(new CTrackedHMD("HMD", this)); //only add hmd
+					}
+					break;
 				case BASESTATION_SOURCE:
-					if ((pUSBPacket->Header.Type & 0xF0) == COMMAND_DATA)
+					if ((pUSBPacket->Header.Type & 0xF0) == COMMAND_DATA && pUSBPacket->Command.Command == CMD_SYNC)
 						ScanSyncReceived(pUSBPacket->Command.Data.Sync.SyncTime);
 					break;
 				case LEFTCTL_SOURCE:
