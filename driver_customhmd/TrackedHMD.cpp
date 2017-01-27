@@ -25,7 +25,7 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 	m_HMDData.ScreenWidth = 1280;
 	m_HMDData.ScreenHeight = 1470;
 	m_HMDData.AspectRatio = ((float)(m_HMDData.ScreenHeight - 30) / 2.0f) / (float)m_HMDData.ScreenWidth;
-	m_HMDData.Frequency = 120;
+	m_HMDData.Frequency = 60;
 	m_HMDData.IsConnected = true;
 	m_HMDData.FakePackDetected = true;
 	m_HMDData.SuperSample = 1.0f;
@@ -43,8 +43,8 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 	m_HMDData.Pose.qRotation = Quaternion(1, 0, 0, 0);
 	m_HMDData.Pose.qWorldFromDriverRotation = Quaternion(1, 0, 0, 0);
 	m_HMDData.Pose.qDriverFromHeadRotation = Quaternion(1, 0, 0, 0);
-	m_HMDData.Pose.vecDriverFromHeadTranslation[2] = -2;
-	m_HMDData.Pose.vecDriverFromHeadTranslation[2] = -0.05;
+	//m_HMDData.Pose.vecWorldFromDriverTranslation[2] = -2;
+	m_HMDData.Pose.vecDriverFromHeadTranslation[2] = -0.15;
 	m_HMDData.Pose.poseTimeOffset = -0.032f;
 
 	if (m_pSettings)

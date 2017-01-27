@@ -439,12 +439,12 @@ int main(void)
 		
 		if ((ctlSource == RIGHTCTL_SOURCE || ctlSource == LEFTCTL_SOURCE))
 		{
-			if (ticks - lastADCAverages > 20) //50 analog values per second
+			if (ticks - lastADCAverages >= 50) //20 analog values per second
 			{
 				lastADCAverages = ticks;
 				for (int i=0; i<3; i++)
 				{
-					ADC_Averages[i] = (ADC_Averages[i] * 0.3f) + ((float)ADC_Values[i] * 0.7f); //basic complementary filter
+					ADC_Averages[i] = (ADC_Averages[i] * 0.1f) + ((float)ADC_Values[i] * 0.9f); //basic complementary filter
 					int32_t value = (int32_t)((ADC_Averages[i] - ADC_Offsets[i]) / 20.48f) ;			
 					if (ADC_Cache[i] != value)
 					{
@@ -456,22 +456,14 @@ int main(void)
 					}
 				}
 			}
-			if (LastDigitalChange && (ticks - LastDigitalChange > 50)) //20 clicks per second (duh!).. using sw debounce 
+			if (LastDigitalChange && (ticks - LastDigitalChange >= 25)) //using sw debounce 
 			{			
 				LastDigitalChange = 0;
 				DigitalValues = 0;
 				if (HAL_GPIO_ReadPin(CTL_BTN0_GPIO_Port, CTL_BTN0_Pin) == GPIO_PIN_SET) DigitalValues |= BUTTON_0;
-				//else
-				//	DigitalValues &= ~BUTTON_0;
 				if (HAL_GPIO_ReadPin(CTL_BTN1_GPIO_Port, CTL_BTN1_Pin) == GPIO_PIN_SET) DigitalValues |= BUTTON_1;
-				//else
-				//	DigitalValues &= ~BUTTON_1;
 				if (HAL_GPIO_ReadPin(CTL_BTN2_GPIO_Port, CTL_BTN2_Pin) == GPIO_PIN_SET) DigitalValues |= BUTTON_2;
-				//else
-				//	DigitalValues &= ~BUTTON_2;
 				if (HAL_GPIO_ReadPin(CTL_BTN3_GPIO_Port, CTL_BTN3_Pin) == GPIO_PIN_SET) DigitalValues |= BUTTON_3;
-				//else
-				//	DigitalValues &= ~BUTTON_3;
 				
 				if (DigitalCache != DigitalValues)
 				{
@@ -483,9 +475,9 @@ int main(void)
 				}
 			}
 			
-			if (ticks - lastButtonRefresh > 250)
+			if (ticks - lastButtonRefresh >= 250)
 			{
-				//update button status every 100ms.
+				//update button status every 250ms.
 				buttonRetransmit++;
 				lastButtonRefresh = ticks;
 			}
@@ -596,7 +588,7 @@ int main(void)
 								feedRawMode = (RawModes) pUSBCommandPacket->Command.Data.Raw.State;
 								break;
 							case CMD_VIBRATE:
-								vibrationStopTime = HAL_GetTick() + pUSBCommandPacket->Command.Data.Vibration.Duration;
+								vibrationStopTime = ticks + pUSBCommandPacket->Command.Data.Vibration.Duration;
 								HAL_GPIO_WritePin(CTL_VIBRATE_GPIO_Port, CTL_VIBRATE_Pin, GPIO_PIN_SET);							
 								break;
 							case CMD_CALIBRATE:
@@ -649,7 +641,7 @@ int main(void)
 			}
 		}		
 		
-		if ((hasRotationData || feedRawMode || hasPositionData || buttonRetransmit) && HAL_GetTick() >= nextSend)
+		if ((hasRotationData || feedRawMode || hasPositionData || buttonRetransmit) && ticks >= nextSend)
 		{
 			rfStatus = RF_FifoStatus(&hspi2); readyToSend = (rfStatus & RF_TX_FIFO_FULL_Bit) == 0x00 ? 1 : 0;			
 		}
@@ -793,7 +785,7 @@ int main(void)
 			do { rfStatus = RF_FifoStatus(&hspi2); } while ((rfStatus & RF_TX_FIFO_EMPTY_Bit) != RF_TX_FIFO_EMPTY_Bit); //wait for send complete			
 			
 			if (!(feedRawMode || hasPositionData || hasRotationData || buttonRetransmit))
-				nextSend = HAL_GetTick() + (extraDelay + (rand() % 10));
+				nextSend = ticks + (extraDelay + (rand() % 10));
 			readyToSend = 0;
 
 			HAL_MicroDelay(10);

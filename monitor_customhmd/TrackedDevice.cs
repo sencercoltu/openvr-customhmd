@@ -19,7 +19,7 @@ namespace monitor_customhmd
         private ushort LastSequence;
         private int MissedPackets;
         private readonly byte DeviceType;
-
+        private DateTime VibrateEnd = DateTime.MinValue;
 
         public TrackedDevice(byte type)
         {
@@ -31,6 +31,7 @@ namespace monitor_customhmd
 
         public void ProcessPacket(PacketDirection direction, ref USBPacket packet)
         {
+            lblVibrate.Text = "Vibrate: " + (DateTime.Now > VibrateEnd ? "OFF" : "ON");
             var typ = (byte)(packet.Header.Type & 0xf0);
             if (direction == PacketDirection.Incoming)
             {
@@ -49,8 +50,8 @@ namespace monitor_customhmd
                 OutgoingPackets++;
                 lblOutgoing.Text = "Outgoing Packets: " + OutgoingPackets;
             }
-            
-            switch(typ)
+
+            switch (typ)
             {
                 case POSITION_DATA:
                     //sonra
@@ -64,20 +65,24 @@ namespace monitor_customhmd
                 case TRIGGER_DATA:
                     var digital = "";
                     var d = packet.Trigger.Digital;
-                    for (int i=0; i<sizeof(ushort) * 8;i++)
+                    for (int i = 0; i < sizeof(ushort) * 8; i++)
                     {
-                        digital += ((d & 1) == 1)? "1":"0";                            
+                        digital += ((d & 1) == 1) ? "1" : "0";
                         d >>= 1;
                     }
                     lblTriggers.Text = "Triggers [DT: " + digital + " / " +
                                        "A0: (" + packet.Trigger.Analog[0].x.ToString("N1", CultureInfo.InvariantCulture) + ";" + packet.Trigger.Analog[0].y.ToString("N1", CultureInfo.InvariantCulture) + ") / " +
                                        "A1: (" + packet.Trigger.Analog[1].x.ToString("N1", CultureInfo.InvariantCulture) + ";" + packet.Trigger.Analog[1].y.ToString("N1", CultureInfo.InvariantCulture) + ") / " +
                                        "A2: (" + packet.Trigger.Analog[2].x.ToString("N1", CultureInfo.InvariantCulture) + ";" + packet.Trigger.Analog[2].y.ToString("N1", CultureInfo.InvariantCulture) + ")]";
+
+
+
                     break;
                 case COMMAND_DATA:
-                    switch(packet.Command.Command)
+                    switch (packet.Command.Command)
                     {
                         case CMD_VIBRATE:
+                            VibrateEnd = DateTime.Now.AddMilliseconds(packet.Command.Vibration.Duration);
                             //outgoing
                             break;
                         case CMD_CALIBRATE:
@@ -88,16 +93,19 @@ namespace monitor_customhmd
                             break;
                         case CMD_RAW_DATA:
                             //incoming
+                            lblAccel.Text = "Accel [X: " + packet.Command.Raw.Accel[0].ToString("N0", CultureInfo.InvariantCulture) + "; Y: " + packet.Command.Raw.Accel[1].ToString("N0", CultureInfo.InvariantCulture) + "; Z: " + packet.Command.Raw.Accel[2].ToString("N0", CultureInfo.InvariantCulture) + "]";
+                            lblGyro.Text = "Accel [X: " + packet.Command.Raw.Gyro[0].ToString("N0", CultureInfo.InvariantCulture) + "; Y: " + packet.Command.Raw.Gyro[1].ToString("N0", CultureInfo.InvariantCulture) + "; Z: " + packet.Command.Raw.Gyro[2].ToString("N0", CultureInfo.InvariantCulture) + "]";
+                            lblMag.Text = "Mag [X: " + packet.Command.Raw.Mag[0].ToString("N0", CultureInfo.InvariantCulture) + "; Y: " + packet.Command.Raw.Mag[1].ToString("N0", CultureInfo.InvariantCulture) + "; Z: " + packet.Command.Raw.Mag[2].ToString("N0", CultureInfo.InvariantCulture) + "]";
                             break;
                         case CMD_STATUS:
                             //incoming
                             break;
                     }
                     break; ;
-    }
+            }
 
-    packetsList.Items.Insert(0, "[" + direction  + "/" + packet.Header.Sequence + "/" + typ + "]");
-            if (packetsList.Items.Count > 1000) packetsList.Items.RemoveAt(1000);
+            //packetsList.Items.Insert(0, "[" + direction + "/" + packet.Header.Sequence + "/" + typ + "]");
+            //if (packetsList.Items.Count > 1000) packetsList.Items.RemoveAt(1000);
 
         }
 
@@ -107,13 +115,18 @@ namespace monitor_customhmd
             var rawData = new USBRawData();
             rawData.State = (byte)cmbSwitchState.SelectedIndex;
             var command = USBCommandData.Create(CMD_RAW_DATA, rawData);
-            var packet = USBPacket.Create((byte)(COMMAND_DATA | DeviceType), (ushort)(DateTime.Now.Ticks / 1000), command);            
-            var d = StructToBytes(packet);            
+            var packet = USBPacket.Create((byte)(COMMAND_DATA | DeviceType), (ushort)(DateTime.Now.Ticks / 1000), command);
+            var d = StructToBytes(packet);
             SetPacketCrc(ref d);
             //var data = new byte[USBPacket.Size];
             //Array.Copy(d, 1, data, 0, USBPacket.Size);                           
             lock (MonitorForm.OutgoingPackets)
                 MonitorForm.OutgoingPackets.Enqueue(d);
+            IncomingPackets = 0;
+            OutgoingPackets = 0;
+            LastSequence = 0;
+            MissedPackets = 0;
+
         }
     }
 }

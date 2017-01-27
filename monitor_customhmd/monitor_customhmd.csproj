@@ -40,7 +40,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>Resources\HeadSetWire.ico</ApplicationIcon>
+    <ApplicationIcon>Resources\HeadSetGray.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />

@@ -57,7 +57,7 @@ namespace monitor_customhmd
         {
             InitializeComponent();
 
-            Icon = Properties.Resources.HeadSetWire;
+            Icon = Properties.Resources.HeadSetActive;
 
             StateIcons = new Dictionary<CommState, Icon>()
             {

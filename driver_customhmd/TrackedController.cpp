@@ -216,7 +216,7 @@ bool CTrackedController::TriggerHapticPulse(uint32_t unAxisId, uint16_t usPulseD
 	ZeroMemory(pPacket, sizeof(USBPacket));
 	pPacket->Header.Type = m_Role | COMMAND_DATA;
 	pPacket->Header.Crc8 = 0;
-	pPacket->Header.Sequence = (uint16_t) GetTickCount(); //put timestamp as sequence to hopefully prevent duplicates on target
+	pPacket->Header.Sequence = (uint16_t) (GetTickCount() / 100); //put timestamp with 100 ms resolution as sequence to hopefully prevent duplicates on target
 	pPacket->Command.Command = CMD_VIBRATE;
 	pPacket->Command.Data.Vibration.Axis = unAxisId;
 	pPacket->Command.Data.Vibration.Duration = usPulseDurationMicroseconds;
