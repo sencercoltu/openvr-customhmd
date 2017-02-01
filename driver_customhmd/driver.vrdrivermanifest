@@ -1,9 +1,9 @@
 {
-	"alwaysActivate": true,
+	"alwaysActivate": false,
 	"name" : "customhmd",
 	"directory" : "",
 	"resourceOnly" : false,
-	"xhmd_presence" :
+	"hmd_presence" :
     [
         "1974.0001"
     ]

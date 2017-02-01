@@ -9,28 +9,29 @@ using namespace vr;
 class CTrackedDevice;
 
 class CServerDriver : 
-	public IServerTrackedDeviceProvider
+	public IServerTrackedDeviceProvider,
+	public CDriverLog	
 {		
 private:	
-	EVRInitError Init(IDriverLog * pDriverLog, IServerDriverHost * pDriverHost, const char * pchUserDriverConfigDir, const char * pchDriverInstallDir) override;
+	EVRInitError Init(IVRDriverContext *pDriverContext); // IVRDriverLog * pDriverLog, IServerDriverHost * pDriverHost, const char * pchUserDriverConfigDir, const char * pchDriverInstallDir) override;
 	void Cleanup() override;
-	uint32_t GetTrackedDeviceCount() override;
-	ITrackedDeviceServerDriver * GetTrackedDeviceDriver(uint32_t unWhich) override;
-	ITrackedDeviceServerDriver * FindTrackedDeviceDriver(const char * pchId) override;
+	//uint32_t GetTrackedDeviceCount() override;
+	//ITrackedDeviceServerDriver * GetTrackedDeviceDriver(uint32_t unWhich) override;
+	//ITrackedDeviceServerDriver * FindTrackedDeviceDriver(const char * pchId) override;
 	void RunFrame() override;
 	bool ShouldBlockStandbyMode() override;
 	void EnterStandby() override;
 	void LeaveStandby() override;
 	const char * const * GetInterfaceVersions() override;
 public:
-	CDriverLog *m_pLog;
-	IServerDriverHost *m_pDriverHost;
+	//CDriverLog *m_pLog;
+	IVRServerDriverHost *m_pDriverHost;
 	void AlignHMD(HmdVector3d_t *pAlign);
-	void SendUSBCommand(USBPacket *command);
+	void SendDriverCommand(USBPacket *command);
 	void RemoveTrackedDevice(CTrackedDevice *pDevice);
 private:	
-	std::string m_UserDriverConfigDir;
-	std::string m_DriverInstallDir;
+	//std::string m_UserDriverConfigDir;
+	//std::string m_DriverInstallDir;
 	IVRSettings *m_pSettings;
 	HmdVector3d_t m_Align, m_Relative;
 	std::vector<CTrackedDevice *> m_TrackedDevices;

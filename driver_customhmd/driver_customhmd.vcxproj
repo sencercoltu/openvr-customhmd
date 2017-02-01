@@ -151,7 +151,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\stm32\Common\usb.c" />
-    <ClCompile Include="ClientDriver.cpp" />
     <ClCompile Include="driver_customhmd.cpp" />
     <ClCompile Include="escapi\capturedevice.cpp" />
     <ClCompile Include="escapi\videobufferlock.cpp" />
@@ -159,27 +158,27 @@
     <ClCompile Include="Quaternion.cpp" />
     <ClCompile Include="ServerDriver.cpp" />
     <ClCompile Include="ShMem.cpp" />
-    <ClCompile Include="simplejson\JSON.cpp" />
-    <ClCompile Include="simplejson\JSONValue.cpp" />
     <ClCompile Include="TrackedController.cpp" />
     <ClCompile Include="TrackedDevice.cpp" />
     <ClCompile Include="TrackedHMD.cpp" />
+    <ClCompile Include="WatchDogDriver.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\OpenVR\headers\openvr_driver.h" />
     <ClInclude Include="..\stm32\Common\usb.h" />
-    <ClInclude Include="ClientDriver.h" />
+    <ClInclude Include="WatchDogDriver.h" />
     <ClInclude Include="Common.h" />
     <ClInclude Include="escapi\capturedevice.h" />
     <ClInclude Include="escapi\videobufferlock.h" />
     <ClInclude Include="Quaternion.h" />
     <ClInclude Include="ShMem.h" />
-    <ClInclude Include="simplejson\JSON.h" />
-    <ClInclude Include="simplejson\JSONValue.h" />
     <ClInclude Include="TrackedController.h" />
     <ClInclude Include="TrackedDevice.h" />
     <ClInclude Include="TrackedHMD.h" />
     <ClInclude Include="ServerDriver.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="driver.vrdrivermanifest" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

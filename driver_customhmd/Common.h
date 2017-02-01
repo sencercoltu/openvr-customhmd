@@ -13,12 +13,12 @@
 #include <HighLevelMonitorConfigurationAPI.h>
 #include "escapi/capturedevice.h"
 #include "..\stm32\Common\usb.h"
-
+#include "ShMem.h"
 #include "LiquidVR.h"
 
 extern bool IsD2DConnected(uint16_t edid);
 
-#define _LOG(f, ...) m_pLog->Log(f, __VA_ARGS__)
+//#define _LOG(f, ...) m_pLog->Log(f, __VA_ARGS__)
 
 #define HMD_DLL_EXPORT extern "C" __declspec(dllexport)
 #define HMD_DLL_IMPORT extern "C" __declspec(dllimport)
@@ -27,39 +27,52 @@ extern bool IsD2DConnected(uint16_t edid);
 
 using namespace vr;
 
-struct CDriverLog
+class CDriverLog
 {
-public:
-	CDriverLog(IDriverLog *pLogger)
-	{
-		_logger = pLogger;
-	}
-	void Log(const char *pFmt, ...) {
-		if (!_logger)
-			return;
-		char szMessage[4096];
-		va_list argptr;
-		va_start(argptr, pFmt);
-		vsprintf_s(szMessage, pFmt, argptr);
-		va_end(argptr);		
-		strcat_s(szMessage, "\n");
-		_logger->Log(szMessage);
-	}
-	void Log(const wchar_t *pFmt, ...) {
-		if (!_logger)
-			return;
-		std::wstring wchar_string(pFmt);
-		const std::string basic_string(wchar_string.begin(), wchar_string.end());
-		char szMessage[4096];
-		va_list argptr;
-		va_start(argptr, pFmt);
-		vsprintf_s(szMessage, basic_string.c_str(), argptr);
-		va_end(argptr);
-		strcat_s(szMessage, "\n");
-		_logger->Log(szMessage);
-	}
 private:
-	IDriverLog *_logger; 
+	vr::IVRDriverLog *s_pLogFile;
+public:
+	CDriverLog()
+	{
+		s_pLogFile = nullptr;
+	}
+
+	~CDriverLog()
+	{
+		s_pLogFile = nullptr;
+	}
+
+	bool InitDriverLog(vr::IVRDriverLog *pDriverLog)
+	{
+		if (s_pLogFile)
+			return false;
+		s_pLogFile = pDriverLog;
+		return s_pLogFile != nullptr;
+	}
+
+	void CleanupDriverLog()
+	{
+		s_pLogFile = nullptr;
+	}
+
+	void DriverLog(const char *pMsgFormat, ...)
+	{
+		va_list args;
+		va_start(args, pMsgFormat);
+		DriverLogVarArgs(pMsgFormat, args);
+		va_end(args);
+	}
+
+private:
+
+	void DriverLogVarArgs(const char *pMsgFormat, va_list args)
+	{
+		char buf[8192];
+		vsprintf_s(buf, pMsgFormat, args);
+		strcat_s(buf, "\n");
+		if (s_pLogFile)
+			s_pLogFile->Log(buf);
+	}
 };
 //
 //#pragma pack(push)
@@ -174,8 +187,11 @@ struct CameraData
 
 };
 
+class CTrackedHMD;
+
 struct HMDData : TrackerData
 {
+	CTrackedHMD *pHMDDriver;
 	WCHAR DisplayName[CCHDEVICENAME];
 	WCHAR Model[128];	
 	bool IsConnected;
@@ -189,8 +205,8 @@ struct HMDData : TrackerData
 	float Frequency;
 	float AspectRatio;	
 	float SuperSample;
-	CDriverLog *Logger;
-	float IPDValue;
+	//CDriverLog *Logger;
+	//float IPDValue;
 	USBDataCache LastState;
 };
 
@@ -203,13 +219,5 @@ struct ControllerData : TrackerData
 	USBDataCache LastState;
 };
 
-void CreateDefaultSettings();
-BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData);
-
-class CDummyLog : public IDriverLog
-{
-public:
-	void Log(const char *pchLogMessage) override;
-};
 
 #endif // Common_H

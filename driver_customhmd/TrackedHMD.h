@@ -6,9 +6,9 @@
 using namespace vr;
 
 class CTrackedHMD : 
-	public CTrackedDevice,
-	public IVRDisplayComponent, 
-	public IVRCameraComponent
+	public IVRDisplayComponent,
+	public IVRCameraComponent,
+	public CTrackedDevice
 {
 private:	
 	HMDData m_HMDData;		
@@ -20,6 +20,7 @@ private:
 public:
 	CTrackedHMD(std::string displayName, CServerDriver *pServer);
 	~CTrackedHMD();
+	bool IsConnected();
 	EVRInitError Activate(uint32_t unObjectId) override;
 	void Deactivate() override;
 	void *GetComponent(const char *pchComponentNameAndVersion) override;
@@ -77,18 +78,65 @@ public:
 
 
 protected:
-	std::string GetStringProperty(ETrackedDeviceProperty prop, ETrackedPropertyError *pError) override;
-	bool GetBoolProperty(ETrackedDeviceProperty prop, ETrackedPropertyError *pError) override;
-	float GetFloatProperty(ETrackedDeviceProperty prop, ETrackedPropertyError * pError) override;
-	int32_t GetInt32Property(ETrackedDeviceProperty prop, ETrackedPropertyError * pError) override;
-	uint64_t GetUint64Property(ETrackedDeviceProperty prop, ETrackedPropertyError * pError) override;
-	void PoseUpdate(USBPacket *pPacket, HmdVector3d_t *pCenterEuler, HmdVector3d_t *pRelativePos) override;
+	//std::string GetStringProperty(ETrackedDeviceProperty prop, ETrackedPropertyError *pError) override;
+	//bool GetBoolProperty(ETrackedDeviceProperty prop, ETrackedPropertyError *pError) override;
+	//float GetFloatProperty(ETrackedDeviceProperty prop, ETrackedPropertyError * pError) override;
+	//int32_t GetInt32Property(ETrackedDeviceProperty prop, ETrackedPropertyError * pError) override;
+	//uint64_t GetUint64Property(ETrackedDeviceProperty prop, ETrackedPropertyError * pError) override;
+	void PacketReceived(USBPacket *pPacket, HmdVector3d_t *pCenterEuler, HmdVector3d_t *pRelativePos) override;
 	void RunFrame(DWORD currTick) override;
 
 private:		
 	void SetupCamera();
 	static void CameraFrameUpdateCallback(CCaptureDevice *pCaptureDevice, void *pUserData);
 	void OnCameraFrameUpdate();	
+	static BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData);
+
+protected:
+	void SetDefaultProperties() override;
+	bool ReportsTimeSinceVSync;
+	float SecondsFromVsyncToPhotons;
+	float DisplayFrequency;
+	float UserIpdMeters;
+	uint64_t CurrentUniverseId;
+	uint64_t PreviousUniverseId;
+	uint64_t DisplayFirmwareVersion;
+	bool IsOnDesktop;
+	int32_t DisplayMCType;
+	float DisplayMCOffset;
+	float DisplayMCScale;
+	int32_t EdidVendorID;
+	std::string DisplayMCImageLeft;
+	std::string DisplayMCImageRight;
+	float DisplayGCBlackClamp;
+	int32_t EdidProductID;
+	HmdMatrix34_t CameraToHeadTransform;
+	int32_t DisplayGCType;
+	float DisplayGCOffset;
+	float DisplayGCScale;
+	float DisplayGCPrescale;
+	std::string DisplayGCImage;
+	float LensCenterLeftU;
+	float LensCenterLeftV;
+	float LensCenterRightU;
+	float LensCenterRightV;
+	float UserHeadToEyeDepthMeters;
+	uint64_t CameraFirmwareVersion;
+	std::string CameraFirmwareDescription;
+	uint64_t DisplayFPGAVersion;
+	uint64_t DisplayBootloaderVersion;
+	uint64_t DisplayHardwareVersion;
+	uint64_t AudioFirmwareVersion;
+	int32_t CameraCompatibilityMode;
+	float ScreenshotHorizontalFieldOfViewDegrees;
+	float ScreenshotVerticalFieldOfViewDegrees;
+	bool DisplaySuppressed;
+	bool DisplayAllowNightMode;
+	int32_t DisplayMCImageWidth;
+	int32_t DisplayMCImageHeight;
+	int32_t DisplayMCImageNumChannels;
+	void *DisplayMCImageData;
+	bool UsesDriverDirectMode;
 };
 
 #endif // TrackedHMD_H

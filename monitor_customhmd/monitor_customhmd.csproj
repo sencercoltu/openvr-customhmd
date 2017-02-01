@@ -71,13 +71,6 @@
     <Compile Include="..\..\OpenVR\headers\openvr_api.cs">
       <Link>openvr_api.cs</Link>
     </Compile>
-    <Compile Include="Drawing3d\Camera.cs" />
-    <Compile Include="Drawing3d\Axes.cs" />
-    <Compile Include="Drawing3d\Gravity.cs" />
-    <Compile Include="Drawing3d\Point3d.cs" />
-    <Compile Include="Drawing3d\Quaternion.cs" />
-    <Compile Include="Drawing3d\Shape3d.cs" />
-    <Compile Include="Drawing3d\Vector3d.cs" />
     <Compile Include="DriverComm\ShMem.cs" />
     <Compile Include="MonitorForm.cs">
       <SubType>Form</SubType>
@@ -96,6 +89,7 @@
     </Compile>
     <EmbeddedResource Include="MonitorForm.resx">
       <DependentUpon>MonitorForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>

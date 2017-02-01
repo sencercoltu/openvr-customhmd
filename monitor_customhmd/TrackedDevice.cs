@@ -11,9 +11,41 @@ using static monitor_customhmd.UsbPacketDefs;
 using System.Globalization;
 
 namespace monitor_customhmd
-{
+{    
     public partial class TrackedDevice : UserControl
     {
+        public class MinMaxData
+        {
+            public class Data
+            {
+                public float[] Accel = new float[3];
+                public float[] Gyro = new float[3];
+                public float[] Mag = new float[3];
+            }
+            public Data Max = new Data();
+
+            public Data Min = new Data();
+
+            public Data Med = new Data();
+
+
+
+            public void Init()
+            {
+                for (var i = 0; i < 3; i++)
+                {
+                    Max.Accel[i] = float.MinValue;
+                    Min.Accel[i] = float.MaxValue;
+                    Max.Gyro[i] = 0;
+                    Min.Gyro[i] = 0;
+                    Max.Mag[i] = float.MinValue;
+                    Min.Mag[i] = float.MaxValue;
+                }
+            }
+        }
+
+        private MinMaxData MinMax = new MinMaxData();
+
         private int IncomingPackets;
         private int OutgoingPackets;
         private ushort LastSequence;
@@ -23,10 +55,43 @@ namespace monitor_customhmd
 
         public TrackedDevice(byte type)
         {
+            MinMax.Init();
             DeviceType = type;
             InitializeComponent();
             foreach (var item in Enum.GetValues(typeof(RawModes)))
                 cmbSwitchState.Items.Add(item);
+            dgProperties.Rows.Add("Incoming Packets", 0);
+            dgProperties.Rows.Add("Outgoing Packets", 0);
+            dgProperties.Rows.Add("Missed Packets", 0);
+            dgProperties.Rows.Add("Last Sequence", 0);
+
+            dgQuaternion.Rows.Add("W", 0.0f);
+            dgQuaternion.Rows.Add("X", 0.0f);
+            dgQuaternion.Rows.Add("Y", 0.0f);
+            dgQuaternion.Rows.Add("Z", 0.0f);
+
+            dgButtons.Rows.Add("Analog 0", 0.0f);
+            dgButtons.Rows.Add("Analog 1", 0.0f);
+            dgButtons.Rows.Add("Analog 2", 0.0f);
+            dgButtons.Rows.Add("Digital 0", "OFF");
+            dgButtons.Rows.Add("Digital 1", "OFF");
+            dgButtons.Rows.Add("Digital 2", "OFF");
+            dgButtons.Rows.Add("Digital 3", "OFF");
+
+            dgRaw.Rows.Add("Accel", "", "", "", "");
+            dgRaw.Rows.Add("", "Min", "", "", "");
+            dgRaw.Rows.Add("", "Max", "", "", "");
+            dgRaw.Rows.Add("", "Med", "", "", "");
+            dgRaw.Rows.Add("Gyro", "", "", "", "");
+            dgRaw.Rows.Add("", "Min", "", "", "");
+            dgRaw.Rows.Add("", "Max", "", "", "");
+            dgRaw.Rows.Add("", "Med", "", "", "");
+            dgRaw.Rows.Add("Mag", "", "", "", "");
+            dgRaw.Rows.Add("", "Min", "", "", "");
+            dgRaw.Rows.Add("", "Max", "", "", "");
+            dgRaw.Rows.Add("", "Med", "", "", "");
+
+
         }
 
         public void ProcessPacket(PacketDirection direction, ref USBPacket packet)
@@ -39,16 +104,17 @@ namespace monitor_customhmd
                 if (packet.Header.Sequence != LastSequence + 1 && LastSequence > 0)
                 {
                     MissedPackets += (packet.Header.Sequence - LastSequence);
-                    lblMissed.Text = "Missed Packets: " + MissedPackets;
+                    //lblMissed.Text = "Missed Packets: " + MissedPackets;
+                    dgProperties.Rows[2].Cells[1].Value = MissedPackets;
                 }
                 LastSequence = packet.Header.Sequence;
-                lblLastSequence.Text = "Last Sequence: " + LastSequence;
-                lblIncoming.Text = "Incoming Packets: " + IncomingPackets;
+                dgProperties.Rows[3].Cells[1].Value = LastSequence;
+                dgProperties.Rows[0].Cells[1].Value = IncomingPackets;
             }
             else if (direction == PacketDirection.Outgoing)
             {
                 OutgoingPackets++;
-                lblOutgoing.Text = "Outgoing Packets: " + OutgoingPackets;
+                dgProperties.Rows[1].Cells[1].Value = OutgoingPackets;
             }
 
             switch (typ)
@@ -57,25 +123,30 @@ namespace monitor_customhmd
                     //sonra
                     break;
                 case ROTATION_DATA:
-                    lblQuat.Text = "Quaternions [QW: " + packet.Rotation.w.ToString("N4", CultureInfo.InvariantCulture) + " / " +
-                                   "QX: " + packet.Rotation.x.ToString("N4", CultureInfo.InvariantCulture) + " / " +
-                                   "QY: " + packet.Rotation.y.ToString("N4", CultureInfo.InvariantCulture) + " / " +
-                                   "QZ: " + packet.Rotation.z.ToString("N4", CultureInfo.InvariantCulture) + "]";
+                    dgQuaternion.Rows[0].Cells[1].Value = packet.Rotation.w;
+                    dgQuaternion.Rows[1].Cells[1].Value = packet.Rotation.x;
+                    dgQuaternion.Rows[2].Cells[1].Value = packet.Rotation.y;
+                    dgQuaternion.Rows[3].Cells[1].Value = packet.Rotation.z;
                     break;
                 case TRIGGER_DATA:
-                    var digital = "";
-                    var d = packet.Trigger.Digital;
-                    for (int i = 0; i < sizeof(ushort) * 8; i++)
-                    {
-                        digital += ((d & 1) == 1) ? "1" : "0";
-                        d >>= 1;
-                    }
-                    lblTriggers.Text = "Triggers [DT: " + digital + " / " +
-                                       "A0: (" + packet.Trigger.Analog[0].x.ToString("N1", CultureInfo.InvariantCulture) + ";" + packet.Trigger.Analog[0].y.ToString("N1", CultureInfo.InvariantCulture) + ") / " +
-                                       "A1: (" + packet.Trigger.Analog[1].x.ToString("N1", CultureInfo.InvariantCulture) + ";" + packet.Trigger.Analog[1].y.ToString("N1", CultureInfo.InvariantCulture) + ") / " +
-                                       "A2: (" + packet.Trigger.Analog[2].x.ToString("N1", CultureInfo.InvariantCulture) + ";" + packet.Trigger.Analog[2].y.ToString("N1", CultureInfo.InvariantCulture) + ")]";
+                    //var digital = "";
+                    //var d = packet.Trigger.Digital;
+                    //for (int i = 0; i < sizeof(ushort) * 8; i++)
+                    //{
+                    //    digital += ((d & 1) == 1) ? "1" : "0";
+                    //    d >>= 1;
+                    //}
 
-
+                    dgButtons.Rows[0].Cells[1].Value = packet.Trigger.Analog[0].x;
+                    dgButtons.Rows[0].Cells[2].Value = packet.Trigger.Analog[0].y;
+                    dgButtons.Rows[1].Cells[1].Value = packet.Trigger.Analog[1].x;
+                    dgButtons.Rows[1].Cells[2].Value = packet.Trigger.Analog[1].y;
+                    dgButtons.Rows[2].Cells[1].Value = packet.Trigger.Analog[2].x;
+                    dgButtons.Rows[2].Cells[2].Value = packet.Trigger.Analog[2].y;                    
+                    dgButtons.Rows[3].Cells[1].Value = ((packet.Trigger.Digital & BUTTON_0) == BUTTON_0) ? "ON" : "OFF";
+                    dgButtons.Rows[4].Cells[1].Value = ((packet.Trigger.Digital & BUTTON_1) == BUTTON_1) ? "ON" : "OFF";
+                    dgButtons.Rows[5].Cells[1].Value = ((packet.Trigger.Digital & BUTTON_2) == BUTTON_2) ? "ON" : "OFF";
+                    dgButtons.Rows[6].Cells[1].Value = ((packet.Trigger.Digital & BUTTON_3) == BUTTON_3) ? "ON" : "OFF";
 
                     break;
                 case COMMAND_DATA:
@@ -86,16 +157,82 @@ namespace monitor_customhmd
                             //outgoing
                             break;
                         case CMD_CALIBRATE:
-                            //outgoing
+                            //outgoing - incoming
+                            if (direction == PacketDirection.Incoming)
+                            {
+                                if (packet.Command.Calibration.Command == CALIB_GET)
+                                {
+                                    minX.Text = packet.Command.Calibration.RawMin[0].ToString();
+                                    minY.Text = packet.Command.Calibration.RawMin[1].ToString();
+                                    minZ.Text = packet.Command.Calibration.RawMin[2].ToString();
+                                    maxX.Text = packet.Command.Calibration.RawMax[0].ToString();
+                                    maxY.Text = packet.Command.Calibration.RawMax[1].ToString();
+                                    maxZ.Text = packet.Command.Calibration.RawMax[2].ToString();
+                                }
+                            }
                             break;
                         case CMD_SYNC:
                             //incoming from basestation
                             break;
                         case CMD_RAW_DATA:
                             //incoming
-                            lblAccel.Text = "Accel [X: " + packet.Command.Raw.Accel[0].ToString("N0", CultureInfo.InvariantCulture) + "; Y: " + packet.Command.Raw.Accel[1].ToString("N0", CultureInfo.InvariantCulture) + "; Z: " + packet.Command.Raw.Accel[2].ToString("N0", CultureInfo.InvariantCulture) + "]";
-                            lblGyro.Text = "Accel [X: " + packet.Command.Raw.Gyro[0].ToString("N0", CultureInfo.InvariantCulture) + "; Y: " + packet.Command.Raw.Gyro[1].ToString("N0", CultureInfo.InvariantCulture) + "; Z: " + packet.Command.Raw.Gyro[2].ToString("N0", CultureInfo.InvariantCulture) + "]";
-                            lblMag.Text = "Mag [X: " + packet.Command.Raw.Mag[0].ToString("N0", CultureInfo.InvariantCulture) + "; Y: " + packet.Command.Raw.Mag[1].ToString("N0", CultureInfo.InvariantCulture) + "; Z: " + packet.Command.Raw.Mag[2].ToString("N0", CultureInfo.InvariantCulture) + "]";
+                            for (var i=0; i<3; i++)
+                            {
+                                MinMax.Med.Accel[i] = (MinMax.Med.Accel[i] * 0.99f) + (packet.Command.Raw.Accel[i] * 0.01f);
+                                MinMax.Med.Gyro[i] = (MinMax.Med.Gyro[i] * 0.99f) + (packet.Command.Raw.Gyro[i] * 0.01f);
+                                MinMax.Med.Mag[i] = (MinMax.Med.Mag[i] * 0.99f) + (packet.Command.Raw.Mag[i] * 0.01f);
+
+                                if (packet.Command.Raw.Accel[i] > MinMax.Max.Accel[i]) MinMax.Max.Accel[i] = packet.Command.Raw.Accel[i];
+                                if (packet.Command.Raw.Accel[i] < MinMax.Min.Accel[i]) MinMax.Min.Accel[i] = packet.Command.Raw.Accel[i];
+
+                                if (packet.Command.Raw.Gyro[i] > MinMax.Max.Gyro[i]) MinMax.Max.Gyro[i] = packet.Command.Raw.Gyro[i];
+                                if (packet.Command.Raw.Gyro[i] < MinMax.Min.Gyro[i]) MinMax.Min.Gyro[i] = packet.Command.Raw.Gyro[i];
+
+                                if (packet.Command.Raw.Mag[i] > MinMax.Max.Mag[i]) MinMax.Max.Mag[i] = packet.Command.Raw.Mag[i];
+                                if (packet.Command.Raw.Mag[i] < MinMax.Min.Mag[i]) MinMax.Min.Mag[i] = packet.Command.Raw.Mag[i];
+                            }
+
+                            dgRaw.Rows[0].Cells[2].Value = packet.Command.Raw.Accel[0];
+                            dgRaw.Rows[0].Cells[3].Value = packet.Command.Raw.Accel[1];
+                            dgRaw.Rows[0].Cells[4].Value = packet.Command.Raw.Accel[2];
+                            dgRaw.Rows[1].Cells[2].Value = MinMax.Min.Accel[0];
+                            dgRaw.Rows[1].Cells[3].Value = MinMax.Min.Accel[1];
+                            dgRaw.Rows[1].Cells[4].Value = MinMax.Min.Accel[2];
+                            dgRaw.Rows[2].Cells[2].Value = MinMax.Max.Accel[0];
+                            dgRaw.Rows[2].Cells[3].Value = MinMax.Max.Accel[1];
+                            dgRaw.Rows[2].Cells[4].Value = MinMax.Max.Accel[2];
+                            dgRaw.Rows[3].Cells[2].Value = MinMax.Med.Accel[0];
+                            dgRaw.Rows[3].Cells[3].Value = MinMax.Med.Accel[1];
+                            dgRaw.Rows[3].Cells[4].Value = MinMax.Med.Accel[2];
+
+
+                            dgRaw.Rows[4].Cells[2].Value = packet.Command.Raw.Gyro[0];
+                            dgRaw.Rows[4].Cells[3].Value = packet.Command.Raw.Gyro[1];
+                            dgRaw.Rows[4].Cells[4].Value = packet.Command.Raw.Gyro[2];
+                            dgRaw.Rows[5].Cells[2].Value = MinMax.Min.Gyro[0];
+                            dgRaw.Rows[5].Cells[3].Value = MinMax.Min.Gyro[1];
+                            dgRaw.Rows[5].Cells[4].Value = MinMax.Min.Gyro[2];
+                            dgRaw.Rows[6].Cells[2].Value = MinMax.Max.Gyro[0];
+                            dgRaw.Rows[6].Cells[3].Value = MinMax.Max.Gyro[1];
+                            dgRaw.Rows[6].Cells[4].Value = MinMax.Max.Gyro[2];
+                            dgRaw.Rows[7].Cells[2].Value = MinMax.Med.Gyro[0];
+                            dgRaw.Rows[7].Cells[3].Value = MinMax.Med.Gyro[1];
+                            dgRaw.Rows[7].Cells[4].Value = MinMax.Med.Gyro[2];
+
+
+                            dgRaw.Rows[8].Cells[2].Value = packet.Command.Raw.Mag[0];
+                            dgRaw.Rows[8].Cells[3].Value = packet.Command.Raw.Mag[1];
+                            dgRaw.Rows[8].Cells[4].Value = packet.Command.Raw.Mag[2];
+                            dgRaw.Rows[9].Cells[2].Value = MinMax.Min.Mag[0];
+                            dgRaw.Rows[9].Cells[3].Value = MinMax.Min.Mag[1];
+                            dgRaw.Rows[9].Cells[4].Value = MinMax.Min.Mag[2];
+                            dgRaw.Rows[10].Cells[2].Value = MinMax.Max.Mag[0];
+                            dgRaw.Rows[10].Cells[3].Value = MinMax.Max.Mag[1];
+                            dgRaw.Rows[10].Cells[4].Value = MinMax.Max.Mag[2];
+                            dgRaw.Rows[11].Cells[2].Value = MinMax.Med.Mag[0];
+                            dgRaw.Rows[11].Cells[3].Value = MinMax.Med.Mag[1];
+                            dgRaw.Rows[11].Cells[4].Value = MinMax.Med.Mag[2];
+
                             break;
                         case CMD_STATUS:
                             //incoming
@@ -126,7 +263,48 @@ namespace monitor_customhmd
             OutgoingPackets = 0;
             LastSequence = 0;
             MissedPackets = 0;
+            MinMax.Init();
 
+        }
+
+        private void btnGetCalib_Click(object sender, EventArgs e)
+        {
+            if (cmbSensor.SelectedIndex < 1) return;
+            var calibData = new USBCalibrationData();
+            calibData.Init();
+            calibData.Command = (byte)CALIB_GET;
+            calibData.Sensor = (byte)cmbSensor.SelectedIndex;
+            var command = USBCommandData.Create(CMD_CALIBRATE, calibData);
+            var packet = USBPacket.Create((byte)(COMMAND_DATA | DeviceType), (ushort)(DateTime.Now.Ticks / 1000), command);
+            var d = StructToBytes(packet);
+            SetPacketCrc(ref d);
+            //var data = new byte[USBPacket.Size];
+            //Array.Copy(d, 1, data, 0, USBPacket.Size);                           
+            lock (MonitorForm.OutgoingPackets)
+                MonitorForm.OutgoingPackets.Enqueue(d);
+        }
+
+        private void btnSetCalib_Click(object sender, EventArgs e)
+        {
+            if (cmbSensor.SelectedIndex < 1) return;
+            var calibData = new USBCalibrationData();
+            calibData.Init();
+            calibData.Command = (byte)CALIB_SET;
+            calibData.Sensor = (byte)cmbSensor.SelectedIndex;
+            calibData.RawMin[0] = short.Parse(minX.Text);
+            calibData.RawMin[1] = short.Parse(minY.Text);
+            calibData.RawMin[2] = short.Parse(minZ.Text);
+            calibData.RawMax[0] = short.Parse(maxX.Text);
+            calibData.RawMax[1] = short.Parse(maxY.Text);
+            calibData.RawMax[2] = short.Parse(maxZ.Text);
+            var command = USBCommandData.Create(CMD_CALIBRATE, calibData);
+            var packet = USBPacket.Create((byte)(COMMAND_DATA | DeviceType), (ushort)(DateTime.Now.Ticks / 1000), command);
+            var d = StructToBytes(packet);
+            SetPacketCrc(ref d);
+            //var data = new byte[USBPacket.Size];
+            //Array.Copy(d, 1, data, 0, USBPacket.Size);                           
+            lock (MonitorForm.OutgoingPackets)
+                MonitorForm.OutgoingPackets.Enqueue(d);
         }
     }
 }

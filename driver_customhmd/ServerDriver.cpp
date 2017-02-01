@@ -4,34 +4,43 @@
 #include <process.h>
 #include "ShMem.h"
 
-EVRInitError CServerDriver::Init(IDriverLog * pDriverLog, IServerDriverHost * pDriverHost, const char * pchUserDriverConfigDir, const char * pchDriverInstallDir)
-{
+EVRInitError CServerDriver::Init(IVRDriverContext *pDriverContext) //IVRDriverLog * pDriverLog, IServerDriverHost * pDriverHost, const char * pchUserDriverConfigDir, const char * pchDriverInstallDir)
+{	
+	VR_INIT_SERVER_DRIVER_CONTEXT(pDriverContext);
+	InitDriverLog(vr::VRDriverLog());
+
 	timeBeginPeriod(1);
 	m_CurrTick = m_LastTick = GetTickCount();
 
-	m_pLog = new CDriverLog(pDriverLog);
+	//m_pLog = new CDriverLog(vr::VRDriverLog());
 	m_LastTypeSequence = 0;
-	_LOG(__FUNCTION__" start");
+	DriverLog(__FUNCTION__" start");
 
-	m_pDriverHost = pDriverHost;
-	m_UserDriverConfigDir = pchUserDriverConfigDir;
-	m_DriverInstallDir = pchDriverInstallDir;
+	m_pDriverHost = vr::VRServerDriverHost();
+	//m_UserDriverConfigDir = pchUserDriverConfigDir;
+	//m_DriverInstallDir = pchDriverInstallDir;
 
 	m_HMDAdded = m_RightCtlAdded = m_LeftCtlAdded = false;
 
-	m_pSettings = pDriverHost ? pDriverHost->GetSettings(IVRSettings_Version) : nullptr;
+	m_pSettings = vr::VRSettings(); // m_pDriverHost ? m_pDriverHost->GetSettings(IVRSettings_Version) : nullptr;
 	m_Align = { 0 };
 	m_Relative = { 0 };
-	if (m_pSettings)
-	{
-		m_Align.v[0] = m_pSettings->GetFloat("driver_customhmd", "eoX");
-		m_Align.v[1] = m_pSettings->GetFloat("driver_customhmd", "eoY");
-		m_Align.v[2] = m_pSettings->GetFloat("driver_customhmd", "eoZ");
-	}
+	//if (m_pSettings)
+	//{
+	//	m_Align.v[0] = m_pSettings->GetFloat("driver_customhmd", "eoX");
+	//	m_Align.v[1] = m_pSettings->GetFloat("driver_customhmd", "eoY");
+	//	m_Align.v[2] = m_pSettings->GetFloat("driver_customhmd", "eoZ");
+	//}
 
 	
-	m_TrackedDevices.push_back(new CTrackedHMD("HMD", this)); //only add hmd or steam wont init?
 	m_HMDAdded = true;
+	auto hmd = new CTrackedHMD("HMD", this);
+
+	if (!hmd->IsConnected())
+		return VRInitError_Init_HmdNotFound;
+
+	m_TrackedDevices.push_back(hmd); //seems steamvr wont init without adding hmd device on init??	
+
 
 	m_hThread = nullptr;
 	m_IsRunning = false;
@@ -43,12 +52,13 @@ EVRInitError CServerDriver::Init(IDriverLog * pDriverLog, IServerDriverHost * pD
 		ResumeThread(m_hThread);
 	}
 
-	_LOG(__FUNCTION__" end");
+	DriverLog(__FUNCTION__" end");
 	return VRInitError_None;
 }
 
 void CServerDriver::Cleanup()
 {
+	DriverLog(__FUNCTION__);
 	m_IsRunning = false;
 	if (m_hThread)
 	{
@@ -57,17 +67,18 @@ void CServerDriver::Cleanup()
 		m_hThread = nullptr;
 	}
 
-	_LOG(__FUNCTION__);
 	for (auto iter = m_TrackedDevices.begin(); iter != m_TrackedDevices.end(); iter++)
 		delete (*iter);
 	m_TrackedDevices.clear();
 
 	m_pDriverHost = nullptr;
-	m_UserDriverConfigDir.clear();
-	m_DriverInstallDir.clear();
-	delete m_pLog;
-	m_pLog = nullptr;
+	//m_UserDriverConfigDir.clear();
+	//m_DriverInstallDir.clear();
+	//delete m_pLog;
+	//m_pLog = nullptr;
 	timeEndPeriod(1);
+	CleanupDriverLog();
+	VR_CLEANUP_SERVER_DRIVER_CONTEXT();
 }
 
 unsigned int WINAPI CServerDriver::ProcessThread(void *p)
@@ -79,38 +90,14 @@ unsigned int WINAPI CServerDriver::ProcessThread(void *p)
 	return 0;
 }
 
-//void CServerDriver::OpenUSB(hid_device **ppHandle)
-//{
-//	CloseUSB(ppHandle);
-//	hid_device *handle = hid_open(0x1974, 0x0001, nullptr);
-//	if (!handle)
-//		return;
-//	*ppHandle = handle;
-//	
-//	#define MAX_STR 255
-//	wchar_t wstr[MAX_STR];
-//	int res = hid_get_manufacturer_string(handle, wstr, MAX_STR);
-//	res = hid_get_product_string(handle, wstr, MAX_STR);
-//	res = hid_get_serial_number_string(handle, wstr, MAX_STR);
-//	hid_set_nonblocking(handle, 1);
-//}
-//
-//void CServerDriver::CloseUSB(hid_device **ppHandle)
-//{
-//	if (!ppHandle || !*ppHandle)
-//		return;
-//	hid_close(*ppHandle);
-//	*ppHandle = nullptr;
-//}
-
-void CServerDriver::SendUSBCommand(USBPacket *command)
+void CServerDriver::SendDriverCommand(USBPacket *command)
 {
 	m_CommandQueue.push_back(command);
 }
 
 void CServerDriver::ScanSyncReceived(uint64_t syncTime)
 {
-	_LOG(__FUNCTION__" sync @ %I64u", syncTime);
+	DriverLog(__FUNCTION__" sync @ %I64u", syncTime);
 }
 
 void CServerDriver::RemoveTrackedDevice(CTrackedDevice *pDevice)
@@ -122,8 +109,7 @@ void CServerDriver::RemoveTrackedDevice(CTrackedDevice *pDevice)
 			delete (*iter);
 			return;
 		}
-	}
-	
+	}	
 }
 
 void CServerDriver::Run()
@@ -134,23 +120,10 @@ void CServerDriver::Run()
 	USBPacket tUSBPacket = { 0 };
 
 	DWORD lastTick = GetTickCount();
-	DWORD lastCalibSend = 0;
-	uint8_t calibDeviceIndex = 0;
+	//DWORD lastCalibSend = 0;
+	//uint8_t calibDeviceIndex = 0;
 
-	USBCalibrationData calibrationData[3] = { 0 };
-	for (auto i = 0; i < 3; i++)
-	{
-		//char sectionName[32];
-		//sprintf_s(sectionName, "offsetAccX_%d", i); calibrationData[i].OffsetAccel[0] = (int16_t) m_pSettings->GetInt32("driver_customhmd", sectionName, 0);
-		//sprintf_s(sectionName, "offsetAccY_%d", i); calibrationData[i].OffsetAccel[1] = (int16_t)m_pSettings->GetInt32("driver_customhmd", sectionName, 0);
-		//sprintf_s(sectionName, "offsetAccZ_%d", i); calibrationData[i].OffsetAccel[2] = (int16_t)m_pSettings->GetInt32("driver_customhmd", sectionName, 0);
-		//sprintf_s(sectionName, "offsetGyroX_%d", i); calibrationData[i].OffsetGyro[0] = (int16_t)m_pSettings->GetInt32("driver_customhmd", sectionName, 0);
-		//sprintf_s(sectionName, "offsetGyroY_%d", i); calibrationData[i].OffsetGyro[1] = (int16_t)m_pSettings->GetInt32("driver_customhmd", sectionName, 0);
-		//sprintf_s(sectionName, "offsetGyroZ_%d", i); calibrationData[i].OffsetGyro[2] = (int16_t)m_pSettings->GetInt32("driver_customhmd", sectionName, 0);
-		//sprintf_s(sectionName, "offsetMagX_%d", i); calibrationData[i].OffsetMag[0] = (int16_t)m_pSettings->GetInt32("driver_customhmd", sectionName, 0);
-		//sprintf_s(sectionName, "offsetMagY_%d", i); calibrationData[i].OffsetMag[1] = (int16_t)m_pSettings->GetInt32("driver_customhmd", sectionName, 0);
-		//sprintf_s(sectionName, "offsetMagZ_%d", i); calibrationData[i].OffsetMag[2] = (int16_t)m_pSettings->GetInt32("driver_customhmd", sectionName, 0);
-	}
+	//USBCalibrationData calibrationData[3] = { 0 };
 
 	CShMem mem;
 	auto state = CommState::Disconnected;
@@ -231,7 +204,7 @@ void CServerDriver::Run()
 					break;
 				}
 				for (auto iter = m_TrackedDevices.begin(); iter != m_TrackedDevices.end(); iter++)
-					(*iter)->PoseUpdate(pUSBPacket, &m_Align, &m_Relative);
+					(*iter)->PacketReceived(pUSBPacket, &m_Align, &m_Relative);
 			}
 		}
 
@@ -239,34 +212,34 @@ void CServerDriver::Run()
 	}
 }
 
-uint32_t CServerDriver::GetTrackedDeviceCount()
-{
-	_LOG(__FUNCTION__" returns %d", m_TrackedDevices.size());
-	return (uint32_t)m_TrackedDevices.size();
-}
-
-ITrackedDeviceServerDriver * CServerDriver::GetTrackedDeviceDriver(uint32_t unWhich)
-{
-	_LOG(__FUNCTION__" idx: %d", unWhich);
-	//if (0 != _stricmp(pchInterfaceVersion, ITrackedDeviceServerDriver_Version))
-	//	return nullptr;	
-	if (unWhich >= m_TrackedDevices.size())
-		return nullptr;
-	return m_TrackedDevices.at(unWhich);
-}
-
-ITrackedDeviceServerDriver * CServerDriver::FindTrackedDeviceDriver(const char * pchId)
-{
-	_LOG(__FUNCTION__" id: %s", pchId);
-	for (auto iter = m_TrackedDevices.begin(); iter != m_TrackedDevices.end(); iter++)
-	{
-		if (0 == std::strcmp(pchId, (*iter)->Prop_SerialNumber.c_str()))
-		{
-			return *iter;
-		}
-	}
-	return nullptr;
-}
+//uint32_t CServerDriver::GetTrackedDeviceCount()
+//{
+//	_LOG(__FUNCTION__" returns %d", m_TrackedDevices.size());
+//	return (uint32_t)m_TrackedDevices.size();
+//}
+//
+//ITrackedDeviceServerDriver * CServerDriver::GetTrackedDeviceDriver(uint32_t unWhich)
+//{
+//	_LOG(__FUNCTION__" idx: %d", unWhich);
+//	//if (0 != _stricmp(pchInterfaceVersion, ITrackedDeviceServerDriver_Version))
+//	//	return nullptr;	
+//	if (unWhich >= m_TrackedDevices.size())
+//		return nullptr;
+//	return m_TrackedDevices.at(unWhich);
+//}
+//
+//ITrackedDeviceServerDriver * CServerDriver::FindTrackedDeviceDriver(const char * pchId)
+//{
+//	_LOG(__FUNCTION__" id: %s", pchId);
+//	for (auto iter = m_TrackedDevices.begin(); iter != m_TrackedDevices.end(); iter++)
+//	{
+//		if (0 == std::strcmp(pchId, (*iter)->Prop_SerialNumber.c_str()))
+//		{
+//			return *iter;
+//		}
+//	}
+//	return nullptr;
+//}
 
 void CServerDriver::RunFrame()
 {
@@ -277,18 +250,18 @@ void CServerDriver::RunFrame()
 
 bool CServerDriver::ShouldBlockStandbyMode()
 {
-	_LOG(__FUNCTION__);
-	return false;
+	DriverLog(__FUNCTION__);
+	return true;
 }
 
 void CServerDriver::EnterStandby()
 {
-	_LOG(__FUNCTION__);
+	DriverLog(__FUNCTION__);
 }
 
 void CServerDriver::LeaveStandby()
 {
-	_LOG(__FUNCTION__);
+	DriverLog(__FUNCTION__);
 }
 
 const char * const * CServerDriver::GetInterfaceVersions()
@@ -298,6 +271,7 @@ const char * const * CServerDriver::GetInterfaceVersions()
 
 void CServerDriver::AlignHMD(HmdVector3d_t *pAlign)
 {
+	//trash
 	m_Align = *pAlign;
 	if (m_pSettings)
 	{

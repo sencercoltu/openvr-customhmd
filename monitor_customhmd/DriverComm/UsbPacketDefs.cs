@@ -40,6 +40,9 @@ namespace monitor_customhmd
         public const byte CMD_RAW_DATA = 0x04;
         public const byte CMD_STATUS = 0x05;
 
+        public const byte CALIB_SET = 0x00;
+        public const byte CALIB_GET = 0x01;
+
         public const byte BUTTON_0 = 0x01;
         public const byte BUTTON_1 = 0x02;
         public const byte BUTTON_2 = 0x04;
@@ -111,6 +114,12 @@ namespace monitor_customhmd
             public short[] Gyro;
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = 3, ArraySubType = UnmanagedType.I2)]
             public short[] Mag;
+            public void Init()
+            {
+                Accel = new short[3];
+                Gyro = new short[3];
+                Mag = new short[3];
+            }
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
@@ -126,13 +135,20 @@ namespace monitor_customhmd
         public struct USBCalibrationData : IUSBData
         {
             public static int Size { get { return Marshal.SizeOf(typeof(USBCalibrationData)); } }
+            public byte Command;
             public byte Sensor;
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = 3, ArraySubType = UnmanagedType.I2)]
-            public short[] PosScale;
+            public short[] RawMax;
             //[MarshalAs(UnmanagedType.ByValArray, SizeConst = 3, ArraySubType = UnmanagedType.U2)]
             //public ushort[] ScaleAccel;
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = 3, ArraySubType = UnmanagedType.I2)]
-            public short[] NegScale;
+            public short[] RawMin;
+            public short Reserved;
+            public void Init()
+            {
+                RawMax = new short[3];
+                RawMin = new short[3];
+            }
             //[MarshalAs(UnmanagedType.ByValArray, SizeConst = 3, ArraySubType = UnmanagedType.I2)]
             //public short[] OffsetMag;
         };
