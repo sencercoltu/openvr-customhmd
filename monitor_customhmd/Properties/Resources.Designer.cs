@@ -73,6 +73,16 @@ namespace monitor_customhmd.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
         /// </summary>
+        internal static System.Drawing.Icon HeadSetActiveNoDriver {
+            get {
+                object obj = ResourceManager.GetObject("HeadSetActiveNoDriver", resourceCulture);
+                return ((System.Drawing.Icon)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
+        /// </summary>
         internal static System.Drawing.Icon HeadSetGray {
             get {
                 object obj = ResourceManager.GetObject("HeadSetGray", resourceCulture);

@@ -37,7 +37,9 @@
             this.trayMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.mnuDebug = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuExit = new System.Windows.Forms.ToolStripMenuItem();
+            this.chkWatchDog = new System.Windows.Forms.CheckBox();
             this.tabSources.SuspendLayout();
+            this.tabDefault.SuspendLayout();
             this.trayMenu.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -73,6 +75,7 @@
             // 
             // tabDefault
             // 
+            this.tabDefault.Controls.Add(this.chkWatchDog);
             this.tabDefault.Location = new System.Drawing.Point(4, 22);
             this.tabDefault.Name = "tabDefault";
             this.tabDefault.Padding = new System.Windows.Forms.Padding(3);
@@ -103,6 +106,17 @@
             this.mnuExit.Text = "Exit";
             this.mnuExit.Click += new System.EventHandler(this.mnuExit_Click);
             // 
+            // chkWatchDog
+            // 
+            this.chkWatchDog.AutoSize = true;
+            this.chkWatchDog.Location = new System.Drawing.Point(9, 7);
+            this.chkWatchDog.Name = "chkWatchDog";
+            this.chkWatchDog.Size = new System.Drawing.Size(114, 17);
+            this.chkWatchDog.TabIndex = 0;
+            this.chkWatchDog.Text = "Enable WatchDog";
+            this.chkWatchDog.UseVisualStyleBackColor = true;
+            this.chkWatchDog.CheckedChanged += new System.EventHandler(this.chkWatchDog_CheckedChanged);
+            // 
             // MonitorForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -117,6 +131,8 @@
             this.Load += new System.EventHandler(this.MonitorForm_Load);
             this.Resize += new System.EventHandler(this.MonitorForm_Resize);
             this.tabSources.ResumeLayout(false);
+            this.tabDefault.ResumeLayout(false);
+            this.tabDefault.PerformLayout();
             this.trayMenu.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -132,6 +148,7 @@
         private System.Windows.Forms.ToolStripMenuItem mnuDebug;
         private System.Windows.Forms.ToolStripMenuItem mnuExit;
         private System.Windows.Forms.TabPage tabDefault;
+        private System.Windows.Forms.CheckBox chkWatchDog;
     }
 }
 

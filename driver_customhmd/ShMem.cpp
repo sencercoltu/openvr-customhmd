@@ -3,6 +3,7 @@
 
 CShMem::CShMem()
 {
+	WatchDogEnabled = false;
 	_accessLock = CreateMutex(nullptr, false, L"Global\\CustomHMDCommLock");
 	_accessor = nullptr;
 	_sharedMem = CreateFileMapping(INVALID_HANDLE_VALUE, nullptr, PAGE_READWRITE, 0, _bufferSize, L"CustomHMDComm");
@@ -29,6 +30,7 @@ CommState CShMem::GetState()
 	if (WaitForSingleObject(_accessLock, 100) == WAIT_OBJECT_0)
 	{
 		_status = *((CommStatus*)&_accessor[_statusOffset]);
+		WatchDogEnabled = _status.EnableWatchDog ? true : false;
 		ReleaseMutex(_accessLock);
 	}	
 	return _status.State;		
@@ -39,6 +41,7 @@ void CShMem::WriteOutgoingPacket(char *packet)
 	if (WaitForSingleObject(_accessLock, 100) == WAIT_OBJECT_0)
 	{
 		_status = *((CommStatus*)&_accessor[_statusOffset]);
+		_status.DriverTime = GetTickCount();
 		if (_status.OutgoingPackets < _maxPackets)
 		{
 			int offset = _outgoingOffset + (_status.OutgoingPackets * _packetSize);
@@ -65,6 +68,7 @@ char *CShMem::ReadIncomingPackets(int *count)
 	if (WaitForSingleObject(_accessLock, 100) == WAIT_OBJECT_0)
 	{
 		_status = *((CommStatus*)&_accessor[_statusOffset]);
+		_status.DriverTime = GetTickCount();
 		if (_status.IncomingPackets > 0)
 		{
 			result = new char[_status.IncomingPackets * _packetSize];
@@ -76,9 +80,9 @@ char *CShMem::ReadIncomingPackets(int *count)
 					result[pos++] = _accessor[currOffset + i];
 			}
 			*count = _status.IncomingPackets;
-			_status.IncomingPackets = 0;
-			*((CommStatus*)&_accessor[_statusOffset]) = _status;
+			_status.IncomingPackets = 0;			
 		}
+		*((CommStatus*)&_accessor[_statusOffset]) = _status;
 		ReleaseMutex(_accessLock);
 	}
 	return result;

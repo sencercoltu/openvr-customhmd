@@ -61,11 +61,19 @@ void CWatchDogDriver::WatchdogThreadFunction(CWatchDogDriver *pWatchDog)
 {	
 	CShMem shMem;
 	pWatchDog->DriverLog(__FUNCTION__);
+	auto lastState = CommState::Disconnected;
 	while (pWatchDog->m_Running)
 	{
 		auto state = shMem.GetState();
-		if (state != CommState::Disconnected)
+		if (!shMem.WatchDogEnabled)
+		{
+			lastState = CommState::Disconnected;
+			std::this_thread::sleep_for(std::chrono::seconds(1));
+			continue;
+		}
+		if (state != CommState::Disconnected && lastState != state)
 			vr::VRWatchdogHost()->WatchdogWakeUp();
+		lastState = state;
 		std::this_thread::sleep_for(std::chrono::seconds(1));
 	}
 }

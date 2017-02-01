@@ -28,6 +28,3 @@ trackeddevice\stm32f1xx_hal_pcd_ex.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f
 trackeddevice\stm32f1xx_hal_pcd_ex.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h
 trackeddevice\stm32f1xx_hal_pcd_ex.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h
 trackeddevice\stm32f1xx_hal_pcd_ex.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h
-trackeddevice\stm32f1xx_hal_pcd_ex.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h
-trackeddevice\stm32f1xx_hal_pcd_ex.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h
-trackeddevice\stm32f1xx_hal_pcd_ex.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h

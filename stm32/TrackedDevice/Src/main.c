@@ -43,7 +43,7 @@
 #include "..\\..\\Common\\gy8x.h"
 #include "..\\..\\Common\\nrf24l01.h"
 #include "..\\..\\Common\\usb.h"
-#include "usbd_custom_hid_if.h"
+//#include "usbd_custom_hid_if.h"
 #include "..\\..\\Common\\eeprom_flash.h"
 /* USER CODE END Includes */
 
@@ -265,26 +265,13 @@ int main(void)
   
 	LedOff();	 
 
-	ctlSource = HMD_SOURCE;
-	ctlSource += (GPIO_PIN_SET == HAL_GPIO_ReadPin(CTL_MODE1_GPIO_Port, CTL_MODE1_Pin)?1:0); 
-	ctlSource += (GPIO_PIN_SET == HAL_GPIO_ReadPin(CTL_MODE2_GPIO_Port, CTL_MODE2_Pin)?2:0); 	
-	srand(ctlSource);
-
-
-	if (ctlSource == RIGHTCTL_SOURCE || ctlSource == LEFTCTL_SOURCE)
-	{
-		HAL_GPIO_WritePin(CTL_VIBRATE_GPIO_Port, CTL_VIBRATE_Pin, GPIO_PIN_SET); 
-		BlinkRease(30);
-		HAL_GPIO_WritePin(CTL_VIBRATE_GPIO_Port, CTL_VIBRATE_Pin, GPIO_PIN_RESET);
-		HAL_Delay(250);
-	}
 
 	//load eeprom calibration data	
-	char *eepromData = (char *)&calibrationCache;	
+	char *eepromBytes = (char *)&calibrationCache;	
 	int addr = 0;
 	for (int i=0; i<sizeof(calibrationCache); i+=sizeof(uint32_t))
 	{
-		*((uint32_t *)(&eepromData[i])) = readEEPROMWord(addr);
+		*((uint32_t *)(&eepromBytes[i])) = readEEPROMWord(addr);
 		addr += sizeof(uint32_t);
 	}
 	
@@ -292,6 +279,20 @@ int main(void)
 	if (calibrationCache.Magic == VALID_EEPROM_MAGIC)	
 		CalibrateSensors();		
 	
+//	ctlSource = HMD_SOURCE;
+//	ctlSource += (GPIO_PIN_SET == HAL_GPIO_ReadPin(CTL_MODE1_GPIO_Port, CTL_MODE1_Pin)?1:0); 
+//	ctlSource += (GPIO_PIN_SET == HAL_GPIO_ReadPin(CTL_MODE2_GPIO_Port, CTL_MODE2_Pin)?2:0); 	
+	srand(ctlSource);
+
+
+	if (ctlSource == RIGHTCTL_SOURCE || ctlSource == LEFTCTL_SOURCE)
+	{
+		HAL_GPIO_WritePin(CTL_VIBRATE0_GPIO_Port, CTL_VIBRATE0_Pin, GPIO_PIN_SET); 
+		BlinkRease(30);
+		HAL_GPIO_WritePin(CTL_VIBRATE0_GPIO_Port, CTL_VIBRATE0_Pin, GPIO_PIN_RESET);
+		HAL_Delay(250);
+	}
+
 	
 //	GPIO_InitTypeDef GPIO_InitStruct;
 //	GPIO_InitStruct.Pin = I2C_SCL_Pin;
@@ -328,11 +329,12 @@ int main(void)
 	if (ctlSource == RIGHTCTL_SOURCE || ctlSource == LEFTCTL_SOURCE)
 	{
 		buttonRefreshTimeout = 250;
-		HAL_GPIO_WritePin(CTL_VIBRATE_GPIO_Port, CTL_VIBRATE_Pin, GPIO_PIN_SET); 
+		HAL_GPIO_WritePin(CTL_VIBRATE0_GPIO_Port, CTL_VIBRATE0_Pin, GPIO_PIN_SET); 
 		BlinkRease(20);
-		HAL_GPIO_WritePin(CTL_VIBRATE_GPIO_Port, CTL_VIBRATE_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(CTL_VIBRATE0_GPIO_Port, CTL_VIBRATE0_Pin, GPIO_PIN_RESET);
 		HAL_Delay(100);
 	}
+	
 	//bool sensorWarmup = false;
 	int extraDelay = ctlSource>HMD_SOURCE? 10:15;	
 	bool hasRotationData = false;
@@ -404,7 +406,8 @@ int main(void)
 	//RF_ReceiveMode(&hspi2, NULL); //default to receive mode			
 	uint32_t lastCommandSequence = 0;
 	uint32_t lastADCAverages = 0;	
-	uint32_t vibrationStopTime = 0;	
+	uint32_t vibrationStopTime0 = 0;	
+	uint32_t vibrationStopTime1 = 0;	
 	uint64_t lastButtonRefresh = 0;		
 	//uint64_t lastPositionIntegrateTime = 0;
 	//uint64_t lastPositionSend = 0;
@@ -504,12 +507,18 @@ int main(void)
 			}
 		//}
 		
-		if (vibrationStopTime && (ticks > vibrationStopTime))
+		if (vibrationStopTime0 && (ticks > vibrationStopTime0))
 		{
-			HAL_GPIO_WritePin(CTL_VIBRATE_GPIO_Port, CTL_VIBRATE_Pin, GPIO_PIN_RESET);
-			vibrationStopTime = 0;
+			HAL_GPIO_WritePin(CTL_VIBRATE0_GPIO_Port, CTL_VIBRATE0_Pin, GPIO_PIN_RESET);
+			vibrationStopTime0 = 0;
 		}
 		
+		if (vibrationStopTime1 && (ticks > vibrationStopTime1))
+		{
+			HAL_GPIO_WritePin(CTL_VIBRATE1_GPIO_Port, CTL_VIBRATE1_Pin, GPIO_PIN_RESET);
+			vibrationStopTime1 = 0;
+		}
+
 		float elapsedTime = (now - lastRotationUpdate) / 1000000.0f; // set integration time by time elapsed since last filter update				
 		
 		if (elapsedTime >= 0.005f) //update at 200hz
@@ -609,8 +618,16 @@ int main(void)
 								feedRawMode = (RawModes) pUSBCommandPacket->Command.Data.Raw.State;
 								break;
 							case CMD_VIBRATE:
-								vibrationStopTime = ticks + pUSBCommandPacket->Command.Data.Vibration.Duration;
-								HAL_GPIO_WritePin(CTL_VIBRATE_GPIO_Port, CTL_VIBRATE_Pin, GPIO_PIN_SET);							
+								if (pUSBCommandPacket->Command.Data.Vibration.Axis == 0)
+								{
+									vibrationStopTime0 = ticks + pUSBCommandPacket->Command.Data.Vibration.Duration;
+									HAL_GPIO_WritePin(CTL_VIBRATE0_GPIO_Port, CTL_VIBRATE0_Pin, GPIO_PIN_SET);							
+								}
+								else if (pUSBCommandPacket->Command.Data.Vibration.Axis == 1)
+								{
+									vibrationStopTime1 = ticks + pUSBCommandPacket->Command.Data.Vibration.Duration;
+									HAL_GPIO_WritePin(CTL_VIBRATE1_GPIO_Port, CTL_VIBRATE1_Pin, GPIO_PIN_SET);							
+								}
 								break;
 							case CMD_CALIBRATE:
 								//manually set sensor offsets
@@ -1014,10 +1031,10 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, CTL_VIBRATE_Pin|SPI_RF_NSS_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOB, SPI_RF_NSS_Pin|CTL_VIBRATE0_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(SPI_RF_CE_GPIO_Port, SPI_RF_CE_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, SPI_RF_CE_Pin|CTL_VIBRATE1_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : LED_Pin */
   GPIO_InitStruct.Pin = LED_Pin;
@@ -1041,18 +1058,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PB0 PB1 PB2 PB3 
-                           PB4 PB5 */
-  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3 
-                          |GPIO_PIN_4|GPIO_PIN_5;
+  /*Configure GPIO pins : PB0 PB1 PB2 PB12 
+                           PB3 PB4 PB5 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_12 
+                          |GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : CTL_VIBRATE_Pin */
-  GPIO_InitStruct.Pin = CTL_VIBRATE_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;
-  HAL_GPIO_Init(CTL_VIBRATE_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : IR_SENS0_Pin IR_SENS1_Pin IR_SENS2_Pin IR_SENS3_Pin 
                            IR_SENS4_Pin IR_SENS5_Pin */
@@ -1068,11 +1079,17 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : CTL_MODE2_Pin CTL_MODE1_Pin */
-  GPIO_InitStruct.Pin = CTL_MODE2_Pin|CTL_MODE1_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+  /*Configure GPIO pin : CTL_VIBRATE1_Pin */
+  GPIO_InitStruct.Pin = CTL_VIBRATE1_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(CTL_VIBRATE1_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : CTL_VIBRATE0_Pin */
+  GPIO_InitStruct.Pin = CTL_VIBRATE0_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;
+  HAL_GPIO_Init(CTL_VIBRATE0_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI4_IRQn, 0, 0);

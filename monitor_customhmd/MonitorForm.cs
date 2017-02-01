@@ -38,6 +38,8 @@ namespace monitor_customhmd
         public static List<USBPacket> OutPacketMonitor = new List<USBPacket>();
         public static readonly Queue<byte[]> OutgoingPackets = new Queue<byte[]>();
 
+        private ShMem _sharedMem = null;
+
         public MonitorForm()
         {
             InitializeComponent();
@@ -48,6 +50,7 @@ namespace monitor_customhmd
             {
                 { CommState.Disconnected, Properties.Resources.HeadSetWire},
                 { CommState.Connected, Properties.Resources.HeadSetWhite},
+                { CommState.ActiveNoDriver, Properties.Resources.HeadSetActiveNoDriver},
                 { CommState.Active, Properties.Resources.HeadSetActive}
             };
 
@@ -79,6 +82,7 @@ namespace monitor_customhmd
                 
         private void MonitorForm_Load(object sender, EventArgs e)
         {
+            _sharedMem = new ShMem();
             IsVisible = true;
             _thread = new Thread(USBProcessor);
             _running = true;
@@ -92,14 +96,15 @@ namespace monitor_customhmd
             _thread = null;
             _trayIcon.Dispose();
             _trayIcon = null;
+            _sharedMem.Dispose();
+            _sharedMem = null;
             //if (ulMainHandle != 0)
             //    OpenVR.Overlay.DestroyOverlay(ulMainHandle);
             //OpenVR.Shutdown();
         }
 
         private void USBProcessor()
-        {
-            var _sharedMem = new ShMem();
+        {            
             List<byte[]> outgoingPackets = null;
             HIDDev _usb = null;
             var data = new byte[33];
@@ -145,7 +150,7 @@ namespace monitor_customhmd
                         if (CheckPacketCrc(data, 1))
                         {
                             _sharedMem.WriteIncomingPacket(data); //send before monitor process
-                            State = CommState.Active;
+                            State = _sharedMem.IsDriverActive?  CommState.Active : CommState.ActiveNoDriver;
                             if (IsDebug && IsVisible)
                             {
                                 //var x = Marshal.SizeOf(typeof(USBPacket));
@@ -167,7 +172,7 @@ namespace monitor_customhmd
                     }
                     _usb = null;
                     State = CommState.Disconnected;
-                    _sharedMem.SetState(CommState.Disconnected);
+                    _sharedMem.SetState(State);
 
                     Thread.Sleep(100);
                 }
@@ -179,8 +184,7 @@ namespace monitor_customhmd
             }
             _usb = null;
             State = CommState.Disconnected;
-            _sharedMem.SetState(CommState.Disconnected);
-            _sharedMem.Dispose();
+            _sharedMem.SetState(CommState.Disconnected);            
         }
 
         private void tmrConsumer_Tick(object sender, EventArgs e)
@@ -290,6 +294,12 @@ namespace monitor_customhmd
             }
             else
                 IsVisible = true;
+        }
+
+        private void chkWatchDog_CheckedChanged(object sender, EventArgs e)
+        {
+            if (_sharedMem == null) return;
+            _sharedMem.EnableWatchDog(chkWatchDog.Checked);
         }
     }
 }

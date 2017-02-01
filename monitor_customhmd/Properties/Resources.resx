@@ -121,6 +121,9 @@
   <data name="HeadSetActive" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\HeadSetActive.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="HeadSetActiveNoDriver" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\HeadSetActiveNoDriver.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
   <data name="HeadSetGray" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\HeadSetGray.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
