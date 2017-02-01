@@ -61,6 +61,8 @@
 #define I2C_SCL_GPIO_Port GPIOB
 #define I2C_SDA_Pin GPIO_PIN_11
 #define I2C_SDA_GPIO_Port GPIOB
+#define CTL_VIBRATE0_Pin GPIO_PIN_12
+#define CTL_VIBRATE0_GPIO_Port GPIOB
 #define SPI_SCK_Pin GPIO_PIN_13
 #define SPI_SCK_GPIO_Port GPIOB
 #define SPI_MISO_Pin GPIO_PIN_14
@@ -83,10 +85,10 @@
 #define SPI_RF_NSS_GPIO_Port GPIOB
 #define SPI_RF_CE_Pin GPIO_PIN_7
 #define SPI_RF_CE_GPIO_Port GPIOB
-#define CTL_VIBRATE1_Pin GPIO_PIN_8
-#define CTL_VIBRATE1_GPIO_Port GPIOB
-#define CTL_VIBRATE0_Pin GPIO_PIN_9
-#define CTL_VIBRATE0_GPIO_Port GPIOB
+#define CTL_MODE2_Pin GPIO_PIN_8
+#define CTL_MODE2_GPIO_Port GPIOB
+#define CTL_MODE1_Pin GPIO_PIN_9
+#define CTL_MODE1_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
