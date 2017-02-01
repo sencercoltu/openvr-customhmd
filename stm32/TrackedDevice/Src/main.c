@@ -46,9 +46,6 @@
 //#include "usbd_custom_hid_if.h"
 #include "..\\..\\Common\\eeprom_flash.h"
 
-#define CTL_VIBRATE1_GPIO_Port CTL_VIBRATE0_GPIO_Port
-#define CTL_VIBRATE1_Pin CTL_VIBRATE0_Pin
-
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -198,11 +195,11 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	}
 }
 
-volatile uint32_t ADC_Values[3] = {0};
+volatile uint32_t ADC_Values[2] = {0};
 
-float ADC_Averages[3] = {0};
-float ADC_Offsets[3] = {0};
-int32_t ADC_Cache[3] = {0};
+float ADC_Averages[2] = {0};
+float ADC_Offsets[2] = {0};
+int32_t ADC_Cache[2] = {0};
 
 uint64_t lastRotationUpdate = 0; 
 uint64_t now = 0;     
@@ -378,7 +375,7 @@ int main(void)
 		//start background adc conversion
 		if( HAL_ADC_Start(&hadc1) != HAL_OK)  
 			Error_Handler();
-		if (HAL_ADC_Start_DMA(&hadc1, (uint32_t*)ADC_Values, 3) != HAL_OK)  
+		if (HAL_ADC_Start_DMA(&hadc1, (uint32_t*)ADC_Values, 2) != HAL_OK)  
 			Error_Handler();
 		HAL_Delay(100);
 		
@@ -386,10 +383,10 @@ int main(void)
 		for (int c=0; c<100; c++)
 		{
 			HAL_Delay(1);
-			for (int i=0; i<3; i++)
+			for (int i=0; i<2; i++)
 				ADC_Averages[i] = (ADC_Averages[i] * 0.9f) + ((float)ADC_Values[i] * 0.1f);
 		}
-		for (int i=0; i<3; i++)
+		for (int i=0; i<2; i++)
 			ADC_Offsets[i] = ADC_Averages[i];		
 	//}
 	
@@ -470,7 +467,7 @@ int main(void)
 			if (ticks - lastADCAverages >= 50) //20 analog values per second
 			{
 				lastADCAverages = ticks;
-				for (int i=0; i<3; i++)
+				for (int i=0; i<2; i++)
 				{
 					ADC_Averages[i] = (ADC_Averages[i] * 0.1f) + ((float)ADC_Values[i] * 0.9f); //basic complementary filter
 					int32_t value = (int32_t)((ADC_Averages[i] - ADC_Offsets[i]) / 20.48f) ;			
@@ -722,6 +719,8 @@ int main(void)
 					{
 						switch(feedRawMode)
 						{
+							case RawMode_Off:
+								break;
 							case RawMode_Raw:
 							{
 								//raw sensor values
@@ -815,9 +814,7 @@ int main(void)
 					USBDataPacket.Header.Type = ctlSource | TRIGGER_DATA;
 					USBDataPacket.Header.Sequence++;				
 					USBDataPacket.Trigger.Analog[0].x = ((float)ADC_Cache[0]) / 200.0f; //trigger
-					USBDataPacket.Trigger.Analog[0].y = 0;				
-					USBDataPacket.Trigger.Analog[1].x = ((float)ADC_Cache[1]) / 100.0f; //joystick x
-					USBDataPacket.Trigger.Analog[1].y = ((float)ADC_Cache[2]) / 100.0f; //joystick y
+					USBDataPacket.Trigger.Analog[0].y = ((float)ADC_Cache[0]) / 200.0f; //IPD
 					USBDataPacket.Trigger.Digital = DigitalCache;
 					SetPacketCrc(&USBDataPacket);				
 					RF_SendPayload(&hspi2, (uint8_t*)&USBDataPacket, sizeof(USBPacket));				
@@ -917,7 +914,7 @@ static void MX_ADC1_Init(void)
   hadc1.Init.DiscontinuousConvMode = DISABLE;
   hadc1.Init.ExternalTrigConv = ADC_EXTERNALTRIGCONV_T1_CC1;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-  hadc1.Init.NbrOfConversion = 3;
+  hadc1.Init.NbrOfConversion = 2;
   if (HAL_ADC_Init(&hadc1) != HAL_OK)
   {
     Error_Handler();
@@ -925,7 +922,7 @@ static void MX_ADC1_Init(void)
 
     /**Configure Regular Channel 
     */
-  sConfig.Channel = ADC_CHANNEL_1;
+  sConfig.Channel = ADC_CHANNEL_0;
   sConfig.Rank = 1;
   sConfig.SamplingTime = ADC_SAMPLETIME_55CYCLES_5;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
@@ -935,17 +932,8 @@ static void MX_ADC1_Init(void)
 
     /**Configure Regular Channel 
     */
-  sConfig.Channel = ADC_CHANNEL_2;
+  sConfig.Channel = ADC_CHANNEL_1;
   sConfig.Rank = 2;
-  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-    /**Configure Regular Channel 
-    */
-  sConfig.Channel = ADC_CHANNEL_3;
-  sConfig.Rank = 3;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -1035,10 +1023,10 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, CTL_VIBRATE0_Pin|SPI_RF_NSS_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOB, SPI_RF_NSS_Pin|SPI_RF_CE_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(SPI_RF_CE_GPIO_Port, SPI_RF_CE_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, CTL_VIBRATE1_Pin|CTL_VIBRATE0_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : LED_Pin */
   GPIO_InitStruct.Pin = LED_Pin;
@@ -1046,41 +1034,46 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(LED_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PC14 PC15 */
-  GPIO_InitStruct.Pin = GPIO_PIN_14|GPIO_PIN_15;
-  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+  /*Configure GPIO pins : IR_SENS4_Pin IR_SENS5_Pin */
+  GPIO_InitStruct.Pin = IR_SENS4_Pin|IR_SENS5_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PA0 PA14 PA15 */
-  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_14|GPIO_PIN_15;
-  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : CTL_BTN0_Pin CTL_BTN1_Pin CTL_BTN2_Pin CTL_BTN3_Pin */
-  GPIO_InitStruct.Pin = CTL_BTN0_Pin|CTL_BTN1_Pin|CTL_BTN2_Pin|CTL_BTN3_Pin;
+  /*Configure GPIO pins : CTL_BTN0_Pin CTL_BTN1_Pin CTL_BTN2_Pin CTL_BTN3_Pin 
+                           CTL_BTN4_Pin CTL_BTN5_Pin */
+  GPIO_InitStruct.Pin = CTL_BTN0_Pin|CTL_BTN1_Pin|CTL_BTN2_Pin|CTL_BTN3_Pin 
+                          |CTL_BTN4_Pin|CTL_BTN5_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PB0 PB1 PB2 PB3 
-                           PB4 PB5 */
-  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3 
-                          |GPIO_PIN_4|GPIO_PIN_5;
+  /*Configure GPIO pins : CTL_BTN6_Pin CTL_BTN7_Pin */
+  GPIO_InitStruct.Pin = CTL_BTN6_Pin|CTL_BTN7_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PB2 PB3 PB4 PB5 */
+  GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : CTL_VIBRATE0_Pin */
-  GPIO_InitStruct.Pin = CTL_VIBRATE0_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;
-  HAL_GPIO_Init(CTL_VIBRATE0_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : IR_SENS0_Pin IR_SENS1_Pin IR_SENS2_Pin IR_SENS3_Pin 
-                           IR_SENS4_Pin IR_SENS5_Pin */
-  GPIO_InitStruct.Pin = IR_SENS0_Pin|IR_SENS1_Pin|IR_SENS2_Pin|IR_SENS3_Pin 
-                          |IR_SENS4_Pin|IR_SENS5_Pin;
+  /*Configure GPIO pin : IR_SYNC_Pin */
+  GPIO_InitStruct.Pin = IR_SYNC_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(IR_SYNC_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : IR_SENS0_Pin IR_SENS1_Pin IR_SENS2_Pin IR_SENS3_Pin */
+  GPIO_InitStruct.Pin = IR_SENS0_Pin|IR_SENS1_Pin|IR_SENS2_Pin|IR_SENS3_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PA11 PA12 PA14 PA15 */
+  GPIO_InitStruct.Pin = GPIO_PIN_11|GPIO_PIN_12|GPIO_PIN_14|GPIO_PIN_15;
+  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : SPI_RF_NSS_Pin SPI_RF_CE_Pin */
@@ -1089,13 +1082,25 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : CTL_MODE2_Pin CTL_MODE1_Pin */
-  GPIO_InitStruct.Pin = CTL_MODE2_Pin|CTL_MODE1_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  /*Configure GPIO pins : CTL_VIBRATE1_Pin CTL_VIBRATE0_Pin */
+  GPIO_InitStruct.Pin = CTL_VIBRATE1_Pin|CTL_VIBRATE0_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI0_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI1_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI2_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI2_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI3_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI3_IRQn);
+
   HAL_NVIC_SetPriority(EXTI4_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI4_IRQn);
 
