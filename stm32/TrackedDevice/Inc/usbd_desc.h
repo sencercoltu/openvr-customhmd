@@ -1,7 +1,8 @@
 /**
   ******************************************************************************
-  * File Name          : main.h
-  * Description        : This file contains the common defines of the application
+  * @file           : usbd_desc.h
+  * @version        : v1.0_Cube
+  * @brief          : Header for usbd_desc file.
   ******************************************************************************
   *
   * Copyright (c) 2017 STMicroelectronics International N.V. 
@@ -39,85 +40,75 @@
   * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   *
   ******************************************************************************
-  */
+*/
+
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef __MAIN_H
-#define __MAIN_H
-  /* Includes ------------------------------------------------------------------*/
+#ifndef __USBD_DESC__H__
+#define __USBD_DESC__H__
 
-/* USER CODE BEGIN Includes */
+#ifdef __cplusplus
+ extern "C" {
+#endif
+/* Includes ------------------------------------------------------------------*/
+#include "usbd_def.h"
 
-/* USER CODE END Includes */
+/** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
+  * @{
+  */
+  
+/** @defgroup USB_DESC
+  * @brief general defines for the usb device library file
+  * @{
+  */ 
 
-/* Private define ------------------------------------------------------------*/
+/** @defgroup USB_DESC_Exported_Defines
+  * @{
+  */
 
-#define LED_Pin GPIO_PIN_13
-#define LED_GPIO_Port GPIOC
-#define CTL_TRIGGER_Pin GPIO_PIN_1
-#define CTL_TRIGGER_GPIO_Port GPIOA
-#define CTL_AX_Pin GPIO_PIN_2
-#define CTL_AX_GPIO_Port GPIOA
-#define CTL_AY_Pin GPIO_PIN_3
-#define CTL_AY_GPIO_Port GPIOA
-#define CTL_BTN0_Pin GPIO_PIN_4
-#define CTL_BTN0_GPIO_Port GPIOA
-#define CTL_BTN1_Pin GPIO_PIN_5
-#define CTL_BTN1_GPIO_Port GPIOA
-#define CTL_BTN2_Pin GPIO_PIN_6
-#define CTL_BTN2_GPIO_Port GPIOA
-#define CTL_BTN3_Pin GPIO_PIN_7
-#define CTL_BTN3_GPIO_Port GPIOA
-#define CTL_BTN4_Pin GPIO_PIN_0
-#define CTL_BTN4_GPIO_Port GPIOB
-#define CTL_BTN5_Pin GPIO_PIN_1
-#define CTL_BTN5_GPIO_Port GPIOB
-#define CTL_BTN6_Pin GPIO_PIN_2
-#define CTL_BTN6_GPIO_Port GPIOB
-#define I2C_SCL_Pin GPIO_PIN_10
-#define I2C_SCL_GPIO_Port GPIOB
-#define I2C_SDA_Pin GPIO_PIN_11
-#define I2C_SDA_GPIO_Port GPIOB
-#define CTL_VIBRATE_Pin GPIO_PIN_12
-#define CTL_VIBRATE_GPIO_Port GPIOB
-#define SPI_SCK_Pin GPIO_PIN_13
-#define SPI_SCK_GPIO_Port GPIOB
-#define SPI_MISO_Pin GPIO_PIN_14
-#define SPI_MISO_GPIO_Port GPIOB
-#define SPI_MOSI_Pin GPIO_PIN_15
-#define SPI_MOSI_GPIO_Port GPIOB
-#define IR_SENS0_Pin GPIO_PIN_8
-#define IR_SENS0_GPIO_Port GPIOA
-#define IR_SENS1_Pin GPIO_PIN_9
-#define IR_SENS1_GPIO_Port GPIOA
-#define IR_SENS2_Pin GPIO_PIN_10
-#define IR_SENS2_GPIO_Port GPIOA
-#define IR_SENS5_Pin GPIO_PIN_13
-#define IR_SENS5_GPIO_Port GPIOA
-#define IR_SENS5A14_Pin GPIO_PIN_14
-#define IR_SENS5A14_GPIO_Port GPIOA
-#define IR_SENS4_Pin GPIO_PIN_15
-#define IR_SENS4_GPIO_Port GPIOA
-#define IR_SENS3_Pin GPIO_PIN_3
-#define IR_SENS3_GPIO_Port GPIOB
-#define SPI_RF_NSS_Pin GPIO_PIN_6
-#define SPI_RF_NSS_GPIO_Port GPIOB
-#define SPI_RF_CE_Pin GPIO_PIN_7
-#define SPI_RF_CE_GPIO_Port GPIOB
-#define CTL_MODE2_Pin GPIO_PIN_8
-#define CTL_MODE2_GPIO_Port GPIOB
-#define CTL_MODE1_Pin GPIO_PIN_9
-#define CTL_MODE1_GPIO_Port GPIOB
-/* USER CODE BEGIN Private defines */
+/**
+  * @}
+  */ 
 
-/* USER CODE END Private defines */
+/** @defgroup USBD_DESC_Exported_TypesDefinitions
+  * @{
+  */
+/**
+  * @}
+  */ 
+
+/** @defgroup USBD_DESC_Exported_Macros
+  * @{
+  */ 
+/**
+  * @}
+  */ 
+
+/** @defgroup USBD_DESC_Exported_Variables
+  * @{
+  */ 
+extern USBD_DescriptorsTypeDef FS_Desc;
+/**
+  * @}
+  */ 
+
+/** @defgroup USBD_DESC_Exported_FunctionsPrototype
+  * @{
+  */ 
+  
+/**
+  * @}
+  */ 
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* __USBD_DESC_H */
 
 /**
   * @}
   */ 
 
 /**
-  * @}
+* @}
 */ 
-
-#endif /* __MAIN_H */
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

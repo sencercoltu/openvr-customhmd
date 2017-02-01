@@ -34,12 +34,15 @@ extern "C" {
 #define TRIGGER_DATA 0x40
 #define COMMAND_DATA 0x80
 
-#define CMD_NONE 			0x00
-#define CMD_VIBRATE			0x01
-#define CMD_CALIBRATE		0x02
-#define CMD_SYNC			0x03
-#define CMD_RAW_DATA		0x04
-#define CMD_STATUS			0x05
+#define CALIB_SET	(uint8_t)0x00
+#define CALIB_GET	(uint8_t)0x01
+
+#define CMD_NONE 			(uint8_t)0x00
+#define CMD_VIBRATE			(uint8_t)0x01
+#define CMD_CALIBRATE		(uint8_t)0x02
+#define CMD_SYNC			(uint8_t)0x03
+#define CMD_RAW_DATA		(uint8_t)0x04
+#define CMD_STATUS			(uint8_t)0x05
 
 
 #define BUTTON_0 0x01
@@ -47,10 +50,10 @@ extern "C" {
 #define BUTTON_2 0x04
 #define BUTTON_3 0x08
 
-#define SENSOR_NONE		0x00
-#define SENSOR_ACCEL	0x01
-#define SENSOR_GYRO		0x02
-#define SENSOR_MAG		0x03
+#define SENSOR_NONE		(uint8_t)0x00
+#define SENSOR_ACCEL	(uint8_t)0x01
+#define SENSOR_GYRO		(uint8_t)0x02
+#define SENSOR_MAG		(uint8_t)0x03
 //#define SENSOR_POSACCEL	0x08
 
 struct USBDataHeader
@@ -119,9 +122,11 @@ struct USBTriggerData
 
 struct USBCalibrationData
 {
+	uint8_t Command;	
 	uint8_t Sensor;	
-	int16_t PosScale[3];
-	int16_t NegScale[3];
+	int16_t RawMax[3];
+	int16_t RawMin[3];	
+	uint16_t Reserved;
 	//int16_t OffsetAccel[3];	
 	//uint16_t ScaleAccel[3]; //sil bunu
 	//int16_t OffsetGyro[3];
@@ -134,7 +139,7 @@ struct CalibrationCacheData
 	struct USBCalibrationData Accel;
 	struct USBCalibrationData Gyro;
 	struct USBCalibrationData Mag;
-	uint8_t Reserved;
+	uint16_t Reserved;
 };
 
 

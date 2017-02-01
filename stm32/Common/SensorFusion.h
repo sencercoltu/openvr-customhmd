@@ -9,12 +9,12 @@ struct Sensor
 {
 	Sensor()
 	{
-		OffsetMode = false;
 		Gain = 1;
 		Noise = 0;
 		Resolution = 1;	
 		for(int i=0; i<3; i++)
 		{	
+			Offset[i] = 0.0f;
 			PosScale[i] = 
 			NegScale[i] = 
 			Deviation[i] = 1.0f;
@@ -42,15 +42,10 @@ struct Sensor
 		if (Gain < 0) Gain = 0;			
 	}
 	
-	void SetOffsetMode()
-	{
-		OffsetMode = true;
-	}
-	
-	bool OffsetMode;
 	float Gain;
 	float Noise;
 	float Resolution;
+	float Offset[3];
 	float PosScale[3]; 
 	float NegScale[3];
 	float Deviation[3];
@@ -67,17 +62,14 @@ struct Sensor
 	{
 		for (int i=0; i<3; i++)
 		{
-			float rawDiff = LastRaw[i] - Raw[i];
+			float offsetCompensated = Raw[i] - Offset[i];
+			float rawDiff = LastRaw[i] - offsetCompensated;
 			rawDiff  = fabs(rawDiff);
 			if (rawDiff > Noise)
 				rawDiff = Noise; 
 			Deviation[i] = Deviation[i] * (0.9f) + rawDiff * (0.1f);
-			Compensated[i] = 
-			OffsetMode?
-				Raw[i] - PosScale[i]
-			:
-				Raw[i] * ((Raw[i] > 0) ? PosScale[i] : NegScale[i]);
-			LastRaw[i] = Raw[i];			
+			Compensated[i] = offsetCompensated * ((offsetCompensated > 0) ? PosScale[i] : NegScale[i]);
+			LastRaw[i] = offsetCompensated;			
 			if (fabs(Filtered[i] - Compensated[i]) > Deviation[i])
 				Filtered[i] = Compensated[i];
 			else
@@ -124,7 +116,6 @@ struct SensorData
 		Accel.SetResolution(aRes);
 		Accel.SetNoise(30);
 		Accel.SetGain(0.7);
-		Gyro.SetOffsetMode();
 		Gyro.SetResolution(gRes);
 		Gyro.SetGain(0.7);		
 		Gyro.SetNoise(100);
