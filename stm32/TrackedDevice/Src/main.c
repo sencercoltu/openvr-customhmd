@@ -45,6 +45,10 @@
 #include "..\\..\\Common\\usb.h"
 //#include "usbd_custom_hid_if.h"
 #include "..\\..\\Common\\eeprom_flash.h"
+
+#define CTL_VIBRATE1_GPIO_Port CTL_VIBRATE0_GPIO_Port
+#define CTL_VIBRATE1_Pin CTL_VIBRATE0_Pin
+
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -1031,10 +1035,10 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, SPI_RF_NSS_Pin|CTL_VIBRATE0_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOB, CTL_VIBRATE0_Pin|SPI_RF_CE_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, SPI_RF_CE_Pin|CTL_VIBRATE1_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(SPI_RF_NSS_GPIO_Port, SPI_RF_NSS_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin : LED_Pin */
   GPIO_InitStruct.Pin = LED_Pin;
@@ -1058,12 +1062,18 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PB0 PB1 PB2 PB12 
-                           PB3 PB4 PB5 */
-  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_12 
-                          |GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5;
+  /*Configure GPIO pins : PB0 PB1 PB2 PB3 
+                           PB4 PB5 PB8 PB9 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3 
+                          |GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_8|GPIO_PIN_9;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : CTL_VIBRATE0_Pin */
+  GPIO_InitStruct.Pin = CTL_VIBRATE0_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(CTL_VIBRATE0_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : IR_SENS0_Pin IR_SENS1_Pin IR_SENS2_Pin IR_SENS3_Pin 
                            IR_SENS4_Pin IR_SENS5_Pin */
@@ -1078,18 +1088,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : CTL_VIBRATE1_Pin */
-  GPIO_InitStruct.Pin = CTL_VIBRATE1_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(CTL_VIBRATE1_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : CTL_VIBRATE0_Pin */
-  GPIO_InitStruct.Pin = CTL_VIBRATE0_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;
-  HAL_GPIO_Init(CTL_VIBRATE0_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI4_IRQn, 0, 0);
