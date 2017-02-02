@@ -282,9 +282,11 @@ int main(void)
   MX_ADC1_Init();
   MX_SPI2_Init();
   MX_I2C2_Init();
-  MX_USB_DEVICE_Init();
 
   /* USER CODE BEGIN 2 */
+  
+  if (ctlSource == HMD_SOURCE)
+	  MX_USB_DEVICE_Init();
   
 	LedOff();	 
 
@@ -305,7 +307,7 @@ int main(void)
 //	ctlSource = HMD_SOURCE;
 //	ctlSource += (GPIO_PIN_SET == HAL_GPIO_ReadPin(CTL_MODE1_GPIO_Port, CTL_MODE1_Pin)?1:0); 
 //	ctlSource += (GPIO_PIN_SET == HAL_GPIO_ReadPin(CTL_MODE2_GPIO_Port, CTL_MODE2_Pin)?2:0); 	
-	srand(ctlSource);
+	srand(ctlSource + HAL_GetTick());
 
 
 	if (ctlSource == RIGHTCTL_SOURCE || ctlSource == LEFTCTL_SOURCE)
