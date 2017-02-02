@@ -4,35 +4,46 @@
   * Description        : Main program body
   ******************************************************************************
   *
-  * COPYRIGHT(c) 2017 STMicroelectronics
+  * Copyright (c) 2017 STMicroelectronics International N.V. 
+  * All rights reserved.
   *
-  * Redistribution and use in source and binary forms, with or without modification,
-  * are permitted provided that the following conditions are met:
-  *   1. Redistributions of source code must retain the above copyright notice,
-  *      this list of conditions and the following disclaimer.
-  *   2. Redistributions in binary form must reproduce the above copyright notice,
-  *      this list of conditions and the following disclaimer in the documentation
-  *      and/or other materials provided with the distribution.
-  *   3. Neither the name of STMicroelectronics nor the names of its contributors
-  *      may be used to endorse or promote products derived from this software
-  *      without specific prior written permission.
+  * Redistribution and use in source and binary forms, with or without 
+  * modification, are permitted, provided that the following conditions are met:
   *
-  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-  * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-  * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-  * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-  * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-  * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * 1. Redistribution of source code must retain the above copyright notice, 
+  *    this list of conditions and the following disclaimer.
+  * 2. Redistributions in binary form must reproduce the above copyright notice,
+  *    this list of conditions and the following disclaimer in the documentation
+  *    and/or other materials provided with the distribution.
+  * 3. Neither the name of STMicroelectronics nor the names of other 
+  *    contributors to this software may be used to endorse or promote products 
+  *    derived from this software without specific written permission.
+  * 4. This software, including modifications and/or derivative works of this 
+  *    software, must execute solely and exclusively on microcontroller or
+  *    microprocessor devices manufactured by or for STMicroelectronics.
+  * 5. Redistribution and use of this software other than as permitted under 
+  *    this license is void and will automatically terminate your rights under 
+  *    this license. 
+  *
+  * THIS SOFTWARE IS PROVIDED BY STMICROELECTRONICS AND CONTRIBUTORS "AS IS" 
+  * AND ANY EXPRESS, IMPLIED OR STATUTORY WARRANTIES, INCLUDING, BUT NOT 
+  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
+  * PARTICULAR PURPOSE AND NON-INFRINGEMENT OF THIRD PARTY INTELLECTUAL PROPERTY
+  * RIGHTS ARE DISCLAIMED TO THE FULLEST EXTENT PERMITTED BY LAW. IN NO EVENT 
+  * SHALL STMICROELECTRONICS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+  * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, 
+  * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF 
+  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING 
+  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   *
   ******************************************************************************
   */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32f1xx_hal.h"
+#include "usb_device.h"
 
 /* USER CODE BEGIN Includes */
 #include <stdlib.h>
@@ -43,7 +54,7 @@
 #include "..\\..\\Common\\gy8x.h"
 #include "..\\..\\Common\\nrf24l01.h"
 #include "..\\..\\Common\\usb.h"
-//#include "usbd_custom_hid_if.h"
+#include "usbd_custom_hid_if.h"
 #include "..\\..\\Common\\eeprom_flash.h"
 
 /* USER CODE END Includes */
@@ -195,11 +206,17 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	}
 }
 
-volatile uint32_t ADC_Values[2] = {0};
+uint32_t LastADCChange = 0;	
+uint32_t ADC_Values[4] = {0};
+float ADC_Value[2] = {0};
+uint32_t ADC_Cache[2] = {0};
 
-float ADC_Averages[2] = {0};
-float ADC_Offsets[2] = {0};
-int32_t ADC_Cache[2] = {0};
+//void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
+//{		
+//	if (hadc->DMA_Handle != hadc1.DMA_Handle) return;
+//	ADC_Value[0] = (uint32_t)((ADC_Values[0] + ADC_Values[2]) / 2);
+//	ADC_Value[1] = (uint32_t)((ADC_Values[1] + ADC_Values[3]) / 2);
+//}
 
 uint64_t lastRotationUpdate = 0; 
 uint64_t now = 0;     
@@ -261,6 +278,7 @@ int main(void)
   MX_ADC1_Init();
   MX_SPI2_Init();
   MX_I2C2_Init();
+  MX_USB_DEVICE_Init();
 
   /* USER CODE BEGIN 2 */
   
@@ -375,19 +393,19 @@ int main(void)
 		//start background adc conversion
 		if( HAL_ADC_Start(&hadc1) != HAL_OK)  
 			Error_Handler();
-		if (HAL_ADC_Start_DMA(&hadc1, (uint32_t*)ADC_Values, 2) != HAL_OK)  
+		if (HAL_ADC_Start_DMA(&hadc1, (uint32_t*)ADC_Values, 4) != HAL_OK)  
 			Error_Handler();
-		HAL_Delay(100);
+		HAL_Delay(1000);
 		
 		//calculate analog averages
-		for (int c=0; c<100; c++)
-		{
-			HAL_Delay(1);
-			for (int i=0; i<2; i++)
-				ADC_Averages[i] = (ADC_Averages[i] * 0.9f) + ((float)ADC_Values[i] * 0.1f);
-		}
-		for (int i=0; i<2; i++)
-			ADC_Offsets[i] = ADC_Averages[i];		
+		//for (int c=0; c<100; c++)
+		//{
+		//	HAL_Delay(1);
+			//for (int i=0; i<2; i++)
+			//	ADC_Averages[i] = (ADC_Averages[i] * 0.9f) + ((float)ADC_Values[i] * 0.1f);
+		//}
+		//for (int i=0; i<2; i++)
+		//	ADC_Offsets[i] = ADC_Averages[i];		
 	//}
 	
   /* USER CODE END 2 */
@@ -406,7 +424,6 @@ int main(void)
 	//Quaternion gravQuat(0, 0, 0, 1);
 	//RF_ReceiveMode(&hspi2, NULL); //default to receive mode			
 	uint32_t lastCommandSequence = 0;
-	uint32_t lastADCAverages = 0;	
 	uint32_t vibrationStopTime0 = 0;	
 	uint32_t vibrationStopTime1 = 0;	
 	uint64_t lastButtonRefresh = 0;		
@@ -464,23 +481,26 @@ int main(void)
 		
 		//if ((ctlSource == RIGHTCTL_SOURCE || ctlSource == LEFTCTL_SOURCE))
 		//{
-			if (ticks - lastADCAverages >= 50) //20 analog values per second
-			{
-				lastADCAverages = ticks;
-				for (int i=0; i<2; i++)
+			if (ticks - LastADCChange >= 50) //20 analog values per second
+			{				 
+				uint8_t changed = 0;
+				LastADCChange = ticks;
+				ADC_Value[0] = (((float)(ADC_Values[0] + ADC_Values[2]) / 2.0f) * 0.5f) + (ADC_Value[0] * 0.5f);
+				ADC_Value[1] = (((float)(ADC_Values[1] + ADC_Values[3]) / 2.0f) * 0.5f) + (ADC_Value[1] * 0.5f);
+				
+				uint32_t value0 = ((uint32_t)(ADC_Value[0] / 40.96f));
+				uint32_t value1 = ((uint32_t)(ADC_Value[1] / 40.96f));
+				
+				if (ADC_Cache[0] != value0) { changed = 1; ADC_Cache[0] = value0;}				
+				if (ADC_Cache[1] != value1) { changed = 1; ADC_Cache[1] = value1;}
+				if (changed)
 				{
-					ADC_Averages[i] = (ADC_Averages[i] * 0.1f) + ((float)ADC_Values[i] * 0.9f); //basic complementary filter
-					int32_t value = (int32_t)((ADC_Averages[i] - ADC_Offsets[i]) / 20.48f) ;			
-					if (ADC_Cache[i] != value)
-					{
-						//if any analog value has changes
-						ADC_Cache[i] = value;
-						//hasTriggerData = true;
-						buttonRetransmit = 5;					
-						lastButtonRefresh = ticks;
-					}
+					//if any analog value has changes
+					buttonRetransmit = 5;					
+					lastButtonRefresh = ticks;
 				}
 			}
+			
 			if (LastDigitalChange && (ticks - LastDigitalChange >= 25)) //using sw debounce 
 			{			
 				LastDigitalChange = 0;
@@ -813,8 +833,11 @@ int main(void)
 					buttonRetransmit--;				
 					USBDataPacket.Header.Type = ctlSource | TRIGGER_DATA;
 					USBDataPacket.Header.Sequence++;				
-					USBDataPacket.Trigger.Analog[0].x = ((float)ADC_Cache[0]) / 200.0f; //trigger
-					USBDataPacket.Trigger.Analog[0].y = ((float)ADC_Cache[0]) / 200.0f; //IPD
+					USBDataPacket.Trigger.Analog[0].x = ((float)ADC_Cache[0]) / 100.0f; //trigger
+					USBDataPacket.Trigger.Analog[0].y = ((float)ADC_Cache[1]) / 100.0f; //IPD
+					USBDataPacket.Trigger.Analog[1].x = 0; //reserved
+					USBDataPacket.Trigger.Analog[1].y = 0; //reserved
+					
 					USBDataPacket.Trigger.Digital = DigitalCache;
 					SetPacketCrc(&USBDataPacket);				
 					RF_SendPayload(&hspi2, (uint8_t*)&USBDataPacket, sizeof(USBPacket));				
@@ -881,8 +904,9 @@ void SystemClock_Config(void)
     Error_Handler();
   }
 
-  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_ADC;
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_ADC|RCC_PERIPHCLK_USB;
   PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV6;
+  PeriphClkInit.UsbClockSelection = RCC_USBCLKSOURCE_PLL_DIV1_5;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
   {
     Error_Handler();
@@ -924,7 +948,7 @@ static void MX_ADC1_Init(void)
     */
   sConfig.Channel = ADC_CHANNEL_0;
   sConfig.Rank = 1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_55CYCLES_5;
+  sConfig.SamplingTime = ADC_SAMPLETIME_71CYCLES_5;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -1040,23 +1064,23 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
+  /*Configure GPIO pins : PA2 PA14 PA15 */
+  GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_14|GPIO_PIN_15;
+  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
   /*Configure GPIO pins : CTL_BTN0_Pin CTL_BTN1_Pin CTL_BTN2_Pin CTL_BTN3_Pin 
-                           CTL_BTN4_Pin CTL_BTN5_Pin */
+                           CTL_BTN4_Pin */
   GPIO_InitStruct.Pin = CTL_BTN0_Pin|CTL_BTN1_Pin|CTL_BTN2_Pin|CTL_BTN3_Pin 
-                          |CTL_BTN4_Pin|CTL_BTN5_Pin;
+                          |CTL_BTN4_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : CTL_BTN6_Pin CTL_BTN7_Pin */
-  GPIO_InitStruct.Pin = CTL_BTN6_Pin|CTL_BTN7_Pin;
+  /*Configure GPIO pins : CTL_BTN5_Pin CTL_BTN6_Pin CTL_BTN7_Pin */
+  GPIO_InitStruct.Pin = CTL_BTN5_Pin|CTL_BTN6_Pin|CTL_BTN7_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : PB2 PB3 PB4 PB5 */
-  GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5;
-  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pin : IR_SYNC_Pin */
@@ -1071,10 +1095,10 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PA11 PA12 PA14 PA15 */
-  GPIO_InitStruct.Pin = GPIO_PIN_11|GPIO_PIN_12|GPIO_PIN_14|GPIO_PIN_15;
+  /*Configure GPIO pins : PB3 PB4 PB5 */
+  GPIO_InitStruct.Pin = GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pins : SPI_RF_NSS_Pin SPI_RF_CE_Pin */
   GPIO_InitStruct.Pin = SPI_RF_NSS_Pin|SPI_RF_CE_Pin;
@@ -1091,12 +1115,6 @@ static void MX_GPIO_Init(void)
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI0_IRQn);
-
-  HAL_NVIC_SetPriority(EXTI1_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(EXTI1_IRQn);
-
-  HAL_NVIC_SetPriority(EXTI2_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(EXTI2_IRQn);
 
   HAL_NVIC_SetPriority(EXTI3_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI3_IRQn);

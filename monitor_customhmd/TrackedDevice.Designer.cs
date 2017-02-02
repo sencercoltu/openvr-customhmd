@@ -32,15 +32,15 @@
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle3 = new System.Windows.Forms.DataGridViewCellStyle();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle4 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle5 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle6 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle7 = new System.Windows.Forms.DataGridViewCellStyle();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle8 = new System.Windows.Forms.DataGridViewCellStyle();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle9 = new System.Windows.Forms.DataGridViewCellStyle();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle10 = new System.Windows.Forms.DataGridViewCellStyle();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle11 = new System.Windows.Forms.DataGridViewCellStyle();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle12 = new System.Windows.Forms.DataGridViewCellStyle();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle13 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle5 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle6 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle7 = new System.Windows.Forms.DataGridViewCellStyle();
             this.cmbSwitchState = new System.Windows.Forms.ComboBox();
             this.lblVibrate = new System.Windows.Forms.Label();
             this.cmbSensor = new System.Windows.Forms.ComboBox();
@@ -60,10 +60,13 @@
             this.label3 = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
             this.dgQuaternion = new System.Windows.Forms.DataGridView();
-            this.label5 = new System.Windows.Forms.Label();
-            this.dgButtons = new System.Windows.Forms.DataGridView();
             this.dataGridViewTextBoxColumn1 = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.dataGridViewTextBoxColumn2 = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.label5 = new System.Windows.Forms.Label();
+            this.dgButtons = new System.Windows.Forms.DataGridView();
+            this.dataGridViewTextBoxColumn3 = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.ButX = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.ButY = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.label6 = new System.Windows.Forms.Label();
             this.dgRaw = new System.Windows.Forms.DataGridView();
             this.dataGridViewTextBoxColumn5 = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -71,9 +74,6 @@
             this.dataGridViewTextBoxColumn6 = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.ValueY = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.ValueZ = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.dataGridViewTextBoxColumn3 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.ButX = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.ButY = new System.Windows.Forms.DataGridViewTextBoxColumn();
             ((System.ComponentModel.ISupportInitialize)(this.dgProperties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgQuaternion)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgButtons)).BeginInit();
@@ -84,7 +84,7 @@
             // 
             this.cmbSwitchState.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbSwitchState.FormattingEnabled = true;
-            this.cmbSwitchState.Location = new System.Drawing.Point(247, 0);
+            this.cmbSwitchState.Location = new System.Drawing.Point(452, 0);
             this.cmbSwitchState.Name = "cmbSwitchState";
             this.cmbSwitchState.Size = new System.Drawing.Size(199, 21);
             this.cmbSwitchState.TabIndex = 8;
@@ -95,7 +95,7 @@
             // 
             this.lblVibrate.AutoSize = true;
             this.lblVibrate.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(162)));
-            this.lblVibrate.Location = new System.Drawing.Point(3, 405);
+            this.lblVibrate.Location = new System.Drawing.Point(195, 302);
             this.lblVibrate.Name = "lblVibrate";
             this.lblVibrate.Size = new System.Drawing.Size(55, 13);
             this.lblVibrate.TabIndex = 19;
@@ -110,14 +110,14 @@
             "ACCEL",
             "GYRO",
             "MAG"});
-            this.cmbSensor.Location = new System.Drawing.Point(181, 321);
+            this.cmbSensor.Location = new System.Drawing.Point(386, 321);
             this.cmbSensor.Name = "cmbSensor";
             this.cmbSensor.Size = new System.Drawing.Size(121, 21);
             this.cmbSensor.TabIndex = 23;
             // 
             // btnSetCalib
             // 
-            this.btnSetCalib.Location = new System.Drawing.Point(305, 320);
+            this.btnSetCalib.Location = new System.Drawing.Point(510, 320);
             this.btnSetCalib.Name = "btnSetCalib";
             this.btnSetCalib.Size = new System.Drawing.Size(70, 23);
             this.btnSetCalib.TabIndex = 24;
@@ -128,7 +128,7 @@
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(382, 276);
+            this.label1.Location = new System.Drawing.Point(587, 276);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(24, 13);
             this.label1.TabIndex = 25;
@@ -137,7 +137,7 @@
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(382, 302);
+            this.label2.Location = new System.Drawing.Point(587, 302);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(27, 13);
             this.label2.TabIndex = 26;
@@ -145,7 +145,7 @@
             // 
             // btnGetCalib
             // 
-            this.btnGetCalib.Location = new System.Drawing.Point(376, 320);
+            this.btnGetCalib.Location = new System.Drawing.Point(581, 320);
             this.btnGetCalib.Name = "btnGetCalib";
             this.btnGetCalib.Size = new System.Drawing.Size(70, 23);
             this.btnGetCalib.TabIndex = 27;
@@ -155,7 +155,7 @@
             // 
             // minX
             // 
-            this.minX.Location = new System.Drawing.Point(211, 348);
+            this.minX.Location = new System.Drawing.Point(416, 348);
             this.minX.Name = "minX";
             this.minX.Size = new System.Drawing.Size(74, 20);
             this.minX.TabIndex = 28;
@@ -163,7 +163,7 @@
             // 
             // minY
             // 
-            this.minY.Location = new System.Drawing.Point(291, 349);
+            this.minY.Location = new System.Drawing.Point(496, 349);
             this.minY.Name = "minY";
             this.minY.Size = new System.Drawing.Size(74, 20);
             this.minY.TabIndex = 29;
@@ -171,7 +171,7 @@
             // 
             // minZ
             // 
-            this.minZ.Location = new System.Drawing.Point(371, 349);
+            this.minZ.Location = new System.Drawing.Point(576, 349);
             this.minZ.Name = "minZ";
             this.minZ.Size = new System.Drawing.Size(74, 20);
             this.minZ.TabIndex = 30;
@@ -179,7 +179,7 @@
             // 
             // maxZ
             // 
-            this.maxZ.Location = new System.Drawing.Point(371, 375);
+            this.maxZ.Location = new System.Drawing.Point(576, 375);
             this.maxZ.Name = "maxZ";
             this.maxZ.Size = new System.Drawing.Size(74, 20);
             this.maxZ.TabIndex = 33;
@@ -187,7 +187,7 @@
             // 
             // maxY
             // 
-            this.maxY.Location = new System.Drawing.Point(291, 375);
+            this.maxY.Location = new System.Drawing.Point(496, 375);
             this.maxY.Name = "maxY";
             this.maxY.Size = new System.Drawing.Size(74, 20);
             this.maxY.TabIndex = 32;
@@ -195,7 +195,7 @@
             // 
             // maxX
             // 
-            this.maxX.Location = new System.Drawing.Point(211, 374);
+            this.maxX.Location = new System.Drawing.Point(416, 374);
             this.maxX.Name = "maxX";
             this.maxX.Size = new System.Drawing.Size(74, 20);
             this.maxX.TabIndex = 31;
@@ -219,7 +219,7 @@
             this.dgProperties.RowHeadersVisible = false;
             this.dgProperties.ShowEditingIcon = false;
             this.dgProperties.ShowRowErrors = false;
-            this.dgProperties.Size = new System.Drawing.Size(164, 91);
+            this.dgProperties.Size = new System.Drawing.Size(164, 270);
             this.dgProperties.TabIndex = 43;
             // 
             // Property
@@ -258,7 +258,7 @@
             // 
             this.label4.AutoSize = true;
             this.label4.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(162)));
-            this.label4.Location = new System.Drawing.Point(3, 117);
+            this.label4.Location = new System.Drawing.Point(3, 302);
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(121, 13);
             this.label4.TabIndex = 46;
@@ -275,7 +275,7 @@
             this.dgQuaternion.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.dataGridViewTextBoxColumn1,
             this.dataGridViewTextBoxColumn2});
-            this.dgQuaternion.Location = new System.Drawing.Point(6, 133);
+            this.dgQuaternion.Location = new System.Drawing.Point(6, 318);
             this.dgQuaternion.MultiSelect = false;
             this.dgQuaternion.Name = "dgQuaternion";
             this.dgQuaternion.ReadOnly = true;
@@ -284,38 +284,6 @@
             this.dgQuaternion.ShowRowErrors = false;
             this.dgQuaternion.Size = new System.Drawing.Size(164, 91);
             this.dgQuaternion.TabIndex = 45;
-            // 
-            // label5
-            // 
-            this.label5.AutoSize = true;
-            this.label5.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(162)));
-            this.label5.Location = new System.Drawing.Point(3, 227);
-            this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(50, 13);
-            this.label5.TabIndex = 48;
-            this.label5.Text = "Buttons";
-            // 
-            // dgButtons
-            // 
-            this.dgButtons.AllowUserToAddRows = false;
-            this.dgButtons.AllowUserToDeleteRows = false;
-            this.dgButtons.AllowUserToResizeColumns = false;
-            this.dgButtons.AllowUserToResizeRows = false;
-            this.dgButtons.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dgButtons.ColumnHeadersVisible = false;
-            this.dgButtons.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
-            this.dataGridViewTextBoxColumn3,
-            this.ButX,
-            this.ButY});
-            this.dgButtons.Location = new System.Drawing.Point(6, 243);
-            this.dgButtons.MultiSelect = false;
-            this.dgButtons.Name = "dgButtons";
-            this.dgButtons.ReadOnly = true;
-            this.dgButtons.RowHeadersVisible = false;
-            this.dgButtons.ShowEditingIcon = false;
-            this.dgButtons.ShowRowErrors = false;
-            this.dgButtons.Size = new System.Drawing.Size(164, 159);
-            this.dgButtons.TabIndex = 47;
             // 
             // dataGridViewTextBoxColumn1
             // 
@@ -342,11 +310,81 @@
             this.dataGridViewTextBoxColumn2.Resizable = System.Windows.Forms.DataGridViewTriState.False;
             this.dataGridViewTextBoxColumn2.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
             // 
+            // label5
+            // 
+            this.label5.AutoSize = true;
+            this.label5.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(162)));
+            this.label5.Location = new System.Drawing.Point(195, 3);
+            this.label5.Name = "label5";
+            this.label5.Size = new System.Drawing.Size(50, 13);
+            this.label5.TabIndex = 48;
+            this.label5.Text = "Buttons";
+            // 
+            // dgButtons
+            // 
+            this.dgButtons.AllowUserToAddRows = false;
+            this.dgButtons.AllowUserToDeleteRows = false;
+            this.dgButtons.AllowUserToResizeColumns = false;
+            this.dgButtons.AllowUserToResizeRows = false;
+            this.dgButtons.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dgButtons.ColumnHeadersVisible = false;
+            this.dgButtons.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
+            this.dataGridViewTextBoxColumn3,
+            this.ButX,
+            this.ButY});
+            this.dgButtons.Location = new System.Drawing.Point(198, 19);
+            this.dgButtons.MultiSelect = false;
+            this.dgButtons.Name = "dgButtons";
+            this.dgButtons.ReadOnly = true;
+            this.dgButtons.RowHeadersVisible = false;
+            this.dgButtons.ShowEditingIcon = false;
+            this.dgButtons.ShowRowErrors = false;
+            this.dgButtons.Size = new System.Drawing.Size(164, 270);
+            this.dgButtons.TabIndex = 47;
+            // 
+            // dataGridViewTextBoxColumn3
+            // 
+            this.dataGridViewTextBoxColumn3.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
+            dataGridViewCellStyle5.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            this.dataGridViewTextBoxColumn3.DefaultCellStyle = dataGridViewCellStyle5;
+            this.dataGridViewTextBoxColumn3.HeaderText = "Property";
+            this.dataGridViewTextBoxColumn3.Name = "dataGridViewTextBoxColumn3";
+            this.dataGridViewTextBoxColumn3.ReadOnly = true;
+            this.dataGridViewTextBoxColumn3.Resizable = System.Windows.Forms.DataGridViewTriState.False;
+            this.dataGridViewTextBoxColumn3.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
+            this.dataGridViewTextBoxColumn3.Width = 50;
+            // 
+            // ButX
+            // 
+            this.ButX.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
+            dataGridViewCellStyle6.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleRight;
+            dataGridViewCellStyle6.Format = "N3";
+            dataGridViewCellStyle6.NullValue = null;
+            this.ButX.DefaultCellStyle = dataGridViewCellStyle6;
+            this.ButX.HeaderText = "ButX";
+            this.ButX.Name = "ButX";
+            this.ButX.ReadOnly = true;
+            this.ButX.Resizable = System.Windows.Forms.DataGridViewTriState.False;
+            this.ButX.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
+            this.ButX.Width = 50;
+            // 
+            // ButY
+            // 
+            this.ButY.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
+            dataGridViewCellStyle7.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleRight;
+            dataGridViewCellStyle7.Format = "N3";
+            this.ButY.DefaultCellStyle = dataGridViewCellStyle7;
+            this.ButY.HeaderText = "ButY";
+            this.ButY.Name = "ButY";
+            this.ButY.ReadOnly = true;
+            this.ButY.Resizable = System.Windows.Forms.DataGridViewTriState.False;
+            this.ButY.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
+            // 
             // label6
             // 
             this.label6.AutoSize = true;
             this.label6.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(162)));
-            this.label6.Location = new System.Drawing.Point(178, 3);
+            this.label6.Location = new System.Drawing.Point(383, 3);
             this.label6.Name = "label6";
             this.label6.Size = new System.Drawing.Size(63, 13);
             this.label6.TabIndex = 50;
@@ -373,7 +411,7 @@
             this.dataGridViewTextBoxColumn6,
             this.ValueY,
             this.ValueZ});
-            this.dgRaw.Location = new System.Drawing.Point(181, 19);
+            this.dgRaw.Location = new System.Drawing.Point(386, 19);
             this.dgRaw.MultiSelect = false;
             this.dgRaw.Name = "dgRaw";
             this.dgRaw.ReadOnly = true;
@@ -446,44 +484,6 @@
             this.ValueZ.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
             this.ValueZ.Width = 60;
             // 
-            // dataGridViewTextBoxColumn3
-            // 
-            this.dataGridViewTextBoxColumn3.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
-            dataGridViewCellStyle5.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            this.dataGridViewTextBoxColumn3.DefaultCellStyle = dataGridViewCellStyle5;
-            this.dataGridViewTextBoxColumn3.HeaderText = "Property";
-            this.dataGridViewTextBoxColumn3.Name = "dataGridViewTextBoxColumn3";
-            this.dataGridViewTextBoxColumn3.ReadOnly = true;
-            this.dataGridViewTextBoxColumn3.Resizable = System.Windows.Forms.DataGridViewTriState.False;
-            this.dataGridViewTextBoxColumn3.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
-            this.dataGridViewTextBoxColumn3.Width = 50;
-            // 
-            // ButX
-            // 
-            this.ButX.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
-            dataGridViewCellStyle6.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleRight;
-            dataGridViewCellStyle6.Format = "N3";
-            dataGridViewCellStyle6.NullValue = null;
-            this.ButX.DefaultCellStyle = dataGridViewCellStyle6;
-            this.ButX.HeaderText = "ButX";
-            this.ButX.Name = "ButX";
-            this.ButX.ReadOnly = true;
-            this.ButX.Resizable = System.Windows.Forms.DataGridViewTriState.False;
-            this.ButX.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
-            this.ButX.Width = 50;
-            // 
-            // ButY
-            // 
-            this.ButY.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
-            dataGridViewCellStyle7.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleRight;
-            dataGridViewCellStyle7.Format = "N3";
-            this.ButY.DefaultCellStyle = dataGridViewCellStyle7;
-            this.ButY.HeaderText = "ButY";
-            this.ButY.Name = "ButY";
-            this.ButY.ReadOnly = true;
-            this.ButY.Resizable = System.Windows.Forms.DataGridViewTriState.False;
-            this.ButY.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
-            // 
             // TrackedDevice
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -510,7 +510,7 @@
             this.Controls.Add(this.lblVibrate);
             this.Controls.Add(this.cmbSwitchState);
             this.Name = "TrackedDevice";
-            this.Size = new System.Drawing.Size(449, 423);
+            this.Size = new System.Drawing.Size(655, 423);
             ((System.ComponentModel.ISupportInitialize)(this.dgProperties)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgQuaternion)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgButtons)).EndInit();

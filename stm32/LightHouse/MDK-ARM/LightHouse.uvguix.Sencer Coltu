@@ -11,17 +11,17 @@
     <View>
       <WinId>38003</WinId>
       <ViewName>Registers</ViewName>
-      <TableColWidths>115 166</TableColWidths>
+      <TableColWidths>115 115</TableColWidths>
     </View>
     <View>
       <WinId>346</WinId>
       <ViewName>Code Coverage</ViewName>
-      <TableColWidths>1010 160</TableColWidths>
+      <TableColWidths>1010 656</TableColWidths>
     </View>
     <View>
       <WinId>204</WinId>
       <ViewName>Performance Analyzer</ViewName>
-      <TableColWidths>1170</TableColWidths>
+      <TableColWidths>1170 175 175 146</TableColWidths>
     </View>
   </SECTreeCtrl>
 
@@ -36,7 +36,7 @@
       <WinId>1936</WinId>
       <ViewName>Watch 1</ViewName>
       <UserString></UserString>
-      <TableColWidths>80 80 80</TableColWidths>
+      <TableColWidths>146 80 80</TableColWidths>
     </View>
     <View>
       <WinId>1937</WinId>
@@ -74,8 +74,8 @@
     <sActiveDebugView></sActiveDebugView>
     <WindowPosition>
       <length>44</length>
-      <flags>0</flags>
-      <showCmd>1</showCmd>
+      <flags>2</flags>
+      <showCmd>3</showCmd>
       <MinPosition>
         <xPos>-32000</xPos>
         <yPos>-32000</yPos>
@@ -85,17 +85,17 @@
         <yPos>-1</yPos>
       </MaxPosition>
       <NormalPosition>
-        <Top>52</Top>
-        <Left>3</Left>
-        <Right>1561</Right>
-        <Bottom>930</Bottom>
+        <Top>110</Top>
+        <Left>174</Left>
+        <Right>1732</Right>
+        <Bottom>988</Bottom>
       </NormalPosition>
     </WindowPosition>
     <MDIClientArea>
       <RegID>0</RegID>
       <MDITabState>
         <Len>246</Len>
-        <Data>01000000040000000100000001000000010000000100000000000000020000000000000001000000010000000000000028000000280000000100000001000000000000000100000032443A5C50726F6A656374735C53544D33325C537465616D56525C547261636B65644465766963655C5372635C6D61696E2E6300000000066D61696E2E6300000000FFDC7800FFFFFFFF0100000010000000C5D4F200FFDC7800BECEA100F0A0A100BCA8E1009CC1B600F7B88600D9ADC200A5C2D700B3A6BE00EAD6A300F6FA7D00B5E99D005FC3CF00C1838300CACAD50001000000000000000200000032010000A20000001106000092020000</Data>
+        <Data>01000000040000000100000001000000010000000100000000000000020000000000000001000000010000000000000028000000280000000100000001000000000000000100000032443A5C50726F6A656374735C53544D33325C537465616D56525C547261636B65644465766963655C5372635C6D61696E2E6300000000066D61696E2E6300000000C5D4F200FFFFFFFF0100000010000000C5D4F200FFDC7800BECEA100F0A0A100BCA8E1009CC1B600F7B88600D9ADC200A5C2D700B3A6BE00EAD6A300F6FA7D00B5E99D005FC3CF00C1838300CACAD50001000000000000000200000066010000660000008007000011030000</Data>
       </MDITabState>
     </MDIClientArea>
     <ViewEx>

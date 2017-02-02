@@ -50,6 +50,12 @@ namespace monitor_customhmd
         private int OutgoingPackets;
         private ushort LastSequence;
         private int MissedPackets;
+
+        private int CommandPackets;
+        private int TriggerPackets;
+        private int RotationPackets;
+        private int PositionPackets;
+
         private readonly byte DeviceType;
         private DateTime VibrateEnd = DateTime.MinValue;
 
@@ -64,6 +70,10 @@ namespace monitor_customhmd
             dgProperties.Rows.Add("Outgoing Packets", 0);
             dgProperties.Rows.Add("Missed Packets", 0);
             dgProperties.Rows.Add("Last Sequence", 0);
+            dgProperties.Rows.Add("Rotation", 0);
+            dgProperties.Rows.Add("Trigger", 0);
+            dgProperties.Rows.Add("Command", 0);
+            dgProperties.Rows.Add("Position", 0);
 
             dgQuaternion.Rows.Add("W", 0.0f);
             dgQuaternion.Rows.Add("X", 0.0f);
@@ -120,15 +130,22 @@ namespace monitor_customhmd
             switch (typ)
             {
                 case POSITION_DATA:
+                    PositionPackets++;
+                    dgProperties.Rows[7].Cells[1].Value = PositionPackets;
                     //sonra
                     break;
                 case ROTATION_DATA:
+                    RotationPackets++;
+                    dgProperties.Rows[4].Cells[1].Value = RotationPackets;
+
                     dgQuaternion.Rows[0].Cells[1].Value = packet.Rotation.w;
                     dgQuaternion.Rows[1].Cells[1].Value = packet.Rotation.x;
                     dgQuaternion.Rows[2].Cells[1].Value = packet.Rotation.y;
                     dgQuaternion.Rows[3].Cells[1].Value = packet.Rotation.z;
                     break;
                 case TRIGGER_DATA:
+                    TriggerPackets++;
+                    dgProperties.Rows[5].Cells[1].Value = TriggerPackets;
                     //var digital = "";
                     //var d = packet.Trigger.Digital;
                     //for (int i = 0; i < sizeof(ushort) * 8; i++)
@@ -150,6 +167,8 @@ namespace monitor_customhmd
 
                     break;
                 case COMMAND_DATA:
+                    CommandPackets++;
+                    dgProperties.Rows[6].Cells[1].Value = CommandPackets;
                     switch (packet.Command.Command)
                     {
                         case CMD_VIBRATE:
