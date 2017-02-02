@@ -49,6 +49,10 @@ extern "C" {
 #define BUTTON_1 0x02
 #define BUTTON_2 0x04
 #define BUTTON_3 0x08
+#define BUTTON_4 0x10
+#define BUTTON_5 0x20
+#define BUTTON_6 0x40
+#define BUTTON_7 0x80
 
 #define SENSOR_NONE		(uint8_t)0x00
 #define SENSOR_ACCEL	(uint8_t)0x01

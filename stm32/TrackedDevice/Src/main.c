@@ -201,6 +201,10 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		case CTL_BTN1_Pin:
 		case CTL_BTN2_Pin:
 		case CTL_BTN3_Pin:
+		case CTL_BTN4_Pin:
+		case CTL_BTN5_Pin:
+		case CTL_BTN6_Pin:
+		case CTL_BTN7_Pin:
 			LastDigitalChange = HAL_GetTick();
 			break;
 	}
@@ -508,7 +512,11 @@ int main(void)
 				if (HAL_GPIO_ReadPin(CTL_BTN0_GPIO_Port, CTL_BTN0_Pin) == GPIO_PIN_SET) DigitalValues |= BUTTON_0;
 				if (HAL_GPIO_ReadPin(CTL_BTN1_GPIO_Port, CTL_BTN1_Pin) == GPIO_PIN_SET) DigitalValues |= BUTTON_1;
 				if (HAL_GPIO_ReadPin(CTL_BTN2_GPIO_Port, CTL_BTN2_Pin) == GPIO_PIN_SET) DigitalValues |= BUTTON_2;
-				if (HAL_GPIO_ReadPin(CTL_BTN3_GPIO_Port, CTL_BTN3_Pin) == GPIO_PIN_SET) DigitalValues |= BUTTON_3;
+				if (HAL_GPIO_ReadPin(CTL_BTN3_GPIO_Port, CTL_BTN3_Pin) == GPIO_PIN_SET) DigitalValues |= BUTTON_3;				
+				if (HAL_GPIO_ReadPin(CTL_BTN4_GPIO_Port, CTL_BTN4_Pin) == GPIO_PIN_SET) DigitalValues |= BUTTON_4;
+				if (HAL_GPIO_ReadPin(CTL_BTN5_GPIO_Port, CTL_BTN5_Pin) == GPIO_PIN_SET) DigitalValues |= BUTTON_5;
+				if (HAL_GPIO_ReadPin(CTL_BTN6_GPIO_Port, CTL_BTN6_Pin) == GPIO_PIN_SET) DigitalValues |= BUTTON_6;
+				if (HAL_GPIO_ReadPin(CTL_BTN7_GPIO_Port, CTL_BTN7_Pin) == GPIO_PIN_SET) DigitalValues |= BUTTON_7;
 				
 				if (DigitalCache != DigitalValues)
 				{
@@ -1115,6 +1123,12 @@ static void MX_GPIO_Init(void)
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI0_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI1_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI2_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI2_IRQn);
 
   HAL_NVIC_SetPriority(EXTI3_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI3_IRQn);

@@ -84,6 +84,7 @@ namespace monitor_customhmd.DriverComm
                 _status.State = state;
                 _driverTimestamp = _status.DriverTime;
                 if (_driverTimestamp != _prevDriverTimestamp) DriverTime = DateTime.Now;
+                _prevDriverTimestamp = _driverTimestamp;
                 _accessor.Write(_statusOffset, ref _status);
                 _accessLock.ReleaseMutex();
             }
@@ -93,7 +94,7 @@ namespace monitor_customhmd.DriverComm
         {
             get
             {
-                return (DateTime.Now - DriverTime).TotalSeconds < 5;
+                return (DateTime.Now - DriverTime).TotalSeconds < 2;
             }
         }
 
@@ -104,6 +105,7 @@ namespace monitor_customhmd.DriverComm
                 _accessor.Read(_statusOffset, out _status);
                 _driverTimestamp = _status.DriverTime;
                 if (_driverTimestamp != _prevDriverTimestamp) DriverTime = DateTime.Now;
+                _prevDriverTimestamp = _driverTimestamp;
                 _status.EnableWatchDog = en ? 1 : 0;
                 _accessor.Write(_statusOffset, ref _status);
                 _accessLock.ReleaseMutex();
@@ -118,6 +120,7 @@ namespace monitor_customhmd.DriverComm
                 _status.State = CommState.Active;
                 _driverTimestamp = _status.DriverTime;
                 if (_driverTimestamp != _prevDriverTimestamp) DriverTime = DateTime.Now;
+                _prevDriverTimestamp = _driverTimestamp;
                 if (_status.IncomingPackets < _maxPackets)
                 {
                     var offset = _incomingOffset + (_status.IncomingPackets * _packetSize);
@@ -145,6 +148,7 @@ namespace monitor_customhmd.DriverComm
                 _accessor.Read(_statusOffset, out _status);
                 _driverTimestamp = _status.DriverTime;
                 if (_driverTimestamp != _prevDriverTimestamp) DriverTime = DateTime.Now;
+                _prevDriverTimestamp = _driverTimestamp;
                 if (_status.OutgoingPackets > 0)
                 {
                     result = new List<byte[]>();

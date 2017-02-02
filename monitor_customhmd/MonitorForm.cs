@@ -61,15 +61,18 @@ namespace monitor_customhmd
             _trayIcon.Text = "Custom HMD Monitor";
             _trayIcon.DoubleClick += _trayIcon_DoubleClick;
             _trayIcon.ContextMenuStrip = trayMenu;
-            SetTrayIcon();
+            SetStateIcon();
             _trayIcon.Visible = true;
         }
 
-        private void SetTrayIcon()
+        private void SetStateIcon()
         {
             var ico = StateIcons[State];
             if (_trayIcon.Icon != ico)
+            {
+                Icon = ico;
                 _trayIcon.Icon = ico;
+            }
         }
 
         private void _trayIcon_DoubleClick(object sender, EventArgs e)
@@ -83,6 +86,7 @@ namespace monitor_customhmd
         private void MonitorForm_Load(object sender, EventArgs e)
         {
             _sharedMem = new ShMem();
+            _sharedMem.EnableWatchDog(false);
             IsVisible = true;
             _thread = new Thread(USBProcessor);
             _running = true;
@@ -189,7 +193,7 @@ namespace monitor_customhmd
 
         private void tmrConsumer_Tick(object sender, EventArgs e)
         {
-            SetTrayIcon();
+            SetStateIcon();
             //bool done = false;
             //bool last = false;            
 

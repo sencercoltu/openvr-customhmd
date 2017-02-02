@@ -47,6 +47,10 @@ namespace monitor_customhmd
         public const byte BUTTON_1 = 0x02;
         public const byte BUTTON_2 = 0x04;
         public const byte BUTTON_3 = 0x08;
+        public const byte BUTTON_4 = 0x10;
+        public const byte BUTTON_5 = 0x20;
+        public const byte BUTTON_6 = 0x40;
+        public const byte BUTTON_7 = 0x80;
 
         public const byte SENSOR_NONE = 0x00;
         public const byte SENSOR_ACCEL = 0x01;
@@ -127,7 +131,7 @@ namespace monitor_customhmd
         {
             public static int Size { get { return Marshal.SizeOf(typeof(USBTriggerData)); } }
             public ushort Digital;
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 3, ArraySubType = UnmanagedType.Struct)]
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 2, ArraySubType = UnmanagedType.Struct)]
             public USBAxisData[] Analog;
         }
 

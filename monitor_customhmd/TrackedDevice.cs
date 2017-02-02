@@ -82,11 +82,14 @@ namespace monitor_customhmd
 
             dgButtons.Rows.Add("Analog 0", 0.0f);
             dgButtons.Rows.Add("Analog 1", 0.0f);
-            dgButtons.Rows.Add("Analog 2", 0.0f);
             dgButtons.Rows.Add("Digital 0", "OFF");
             dgButtons.Rows.Add("Digital 1", "OFF");
             dgButtons.Rows.Add("Digital 2", "OFF");
             dgButtons.Rows.Add("Digital 3", "OFF");
+            dgButtons.Rows.Add("Digital 4", "OFF");
+            dgButtons.Rows.Add("Digital 5", "OFF");
+            dgButtons.Rows.Add("Digital 6", "OFF");
+            dgButtons.Rows.Add("Digital 7", "OFF");
 
             dgRaw.Rows.Add("Accel", "", "", "", "");
             dgRaw.Rows.Add("", "Min", "", "", "");
@@ -158,12 +161,15 @@ namespace monitor_customhmd
                     dgButtons.Rows[0].Cells[2].Value = packet.Trigger.Analog[0].y;
                     dgButtons.Rows[1].Cells[1].Value = packet.Trigger.Analog[1].x;
                     dgButtons.Rows[1].Cells[2].Value = packet.Trigger.Analog[1].y;
-                    dgButtons.Rows[2].Cells[1].Value = packet.Trigger.Analog[2].x;
-                    dgButtons.Rows[2].Cells[2].Value = packet.Trigger.Analog[2].y;                    
-                    dgButtons.Rows[3].Cells[1].Value = ((packet.Trigger.Digital & BUTTON_0) == BUTTON_0) ? "ON" : "OFF";
-                    dgButtons.Rows[4].Cells[1].Value = ((packet.Trigger.Digital & BUTTON_1) == BUTTON_1) ? "ON" : "OFF";
-                    dgButtons.Rows[5].Cells[1].Value = ((packet.Trigger.Digital & BUTTON_2) == BUTTON_2) ? "ON" : "OFF";
-                    dgButtons.Rows[6].Cells[1].Value = ((packet.Trigger.Digital & BUTTON_3) == BUTTON_3) ? "ON" : "OFF";
+                    dgButtons.Rows[2].Cells[1].Value = ((packet.Trigger.Digital & BUTTON_0) == BUTTON_0) ? "ON" : "OFF";
+                    dgButtons.Rows[3].Cells[1].Value = ((packet.Trigger.Digital & BUTTON_1) == BUTTON_1) ? "ON" : "OFF";
+                    dgButtons.Rows[4].Cells[1].Value = ((packet.Trigger.Digital & BUTTON_2) == BUTTON_2) ? "ON" : "OFF";
+                    dgButtons.Rows[5].Cells[1].Value = ((packet.Trigger.Digital & BUTTON_3) == BUTTON_3) ? "ON" : "OFF";
+                    dgButtons.Rows[6].Cells[1].Value = ((packet.Trigger.Digital & BUTTON_4) == BUTTON_4) ? "ON" : "OFF";
+                    dgButtons.Rows[7].Cells[1].Value = ((packet.Trigger.Digital & BUTTON_5) == BUTTON_5) ? "ON" : "OFF";
+                    dgButtons.Rows[8].Cells[1].Value = ((packet.Trigger.Digital & BUTTON_6) == BUTTON_6) ? "ON" : "OFF";
+                    dgButtons.Rows[9].Cells[1].Value = ((packet.Trigger.Digital & BUTTON_7) == BUTTON_7) ? "ON" : "OFF";
+
 
                     break;
                 case COMMAND_DATA:
