@@ -137,7 +137,7 @@ struct USBCalibrationData
 	//int16_t OffsetMag[3];	
 };
 
-struct CalibrationCacheData
+struct EepromData
 {
 	uint32_t Magic;
 	struct USBCalibrationData Accel;

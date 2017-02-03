@@ -295,6 +295,7 @@ namespace monitor_customhmd
         private void btnGetCalib_Click(object sender, EventArgs e)
         {
             if (cmbSensor.SelectedIndex < 1) return;
+            minX.Text = ""; maxX.Text = ""; minY.Text = ""; maxY.Text = ""; minZ.Text = ""; maxZ.Text = "";
             var calibData = new USBCalibrationData();
             calibData.Init();
             calibData.Command = (byte)CALIB_GET;
@@ -316,12 +317,12 @@ namespace monitor_customhmd
             calibData.Init();
             calibData.Command = (byte)CALIB_SET;
             calibData.Sensor = (byte)cmbSensor.SelectedIndex;
-            calibData.RawMin[0] = short.Parse(minX.Text);
-            calibData.RawMin[1] = short.Parse(minY.Text);
-            calibData.RawMin[2] = short.Parse(minZ.Text);
-            calibData.RawMax[0] = short.Parse(maxX.Text);
-            calibData.RawMax[1] = short.Parse(maxY.Text);
-            calibData.RawMax[2] = short.Parse(maxZ.Text);
+            short.TryParse(minX.Text, out calibData.RawMin[0]);
+            short.TryParse(minY.Text, out calibData.RawMin[1]);
+            short.TryParse(minZ.Text, out calibData.RawMin[2]);
+            short.TryParse(maxX.Text, out calibData.RawMax[0]);
+            short.TryParse(maxY.Text, out calibData.RawMax[1]);
+            short.TryParse(maxZ.Text, out calibData.RawMax[2]);
             var command = USBCommandData.Create(CMD_CALIBRATE, calibData);
             var packet = USBPacket.Create((byte)(COMMAND_DATA | DeviceType), (ushort)(DateTime.Now.Ticks / 1000), command);
             var d = StructToBytes(packet);
@@ -330,6 +331,11 @@ namespace monitor_customhmd
             //Array.Copy(d, 1, data, 0, USBPacket.Size);                           
             lock (MonitorForm.OutgoingPackets)
                 MonitorForm.OutgoingPackets.Enqueue(d);
+        }
+
+        private void TrackedDevice_Load(object sender, EventArgs e)
+        {
+
         }
     }
 }

@@ -95,8 +95,6 @@
 #define IR_SENS1_GPIO_Port GPIOA
 #define IR_SENS2_Pin GPIO_PIN_10
 #define IR_SENS2_GPIO_Port GPIOA
-#define IR_SENS3_Pin GPIO_PIN_13
-#define IR_SENS3_GPIO_Port GPIOA
 #define SPI_RF_NSS_Pin GPIO_PIN_6
 #define SPI_RF_NSS_GPIO_Port GPIOB
 #define SPI_RF_CE_Pin GPIO_PIN_7

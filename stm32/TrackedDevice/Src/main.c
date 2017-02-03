@@ -191,8 +191,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 			break;
 		case IR_SENS2_Pin:
 			break;
-		case IR_SENS3_Pin:
-			break;
+		//case IR_SENS3_Pin: disabled for SWJ-IO
+		//	break;
 		case IR_SENS4_Pin:
 			break;
 		case IR_SENS5_Pin:
@@ -230,7 +230,7 @@ uint32_t nextSend = 0;
 uint32_t sndCounter = 0;
 uint32_t rcvCounter = 0;
 
-CalibrationCacheData calibrationCache = {0};
+EepromData eepromData = {0};
 bool isCalibrated = false;
 bool isPositionReady = false;
 
@@ -238,27 +238,35 @@ void CalibrateSensors(void)
 {
 	for(int i=0; i<3; i++)
 	{
-		if (calibrationCache.Accel.Sensor == SENSOR_ACCEL)
+		if (eepromData.Accel.Sensor == SENSOR_ACCEL)
 		{
-			tSensorData.Accel.Offset[i] = (float)(calibrationCache.Accel.RawMax[i] + calibrationCache.Accel.RawMin[i]) / 2.0f;			
-			tSensorData.Accel.PosScale[i] = calibrationCache.Accel.RawMax[i] == 0? 1.0f : (1.0f / aRes) / (float)(calibrationCache.Accel.RawMax[i] - tSensorData.Accel.Offset[i]);
-			tSensorData.Accel.NegScale[i] = calibrationCache.Accel.RawMin[i] == 0? 1.0f : (1.0f / aRes) / (float)(calibrationCache.Accel.RawMin[i] - tSensorData.Accel.Offset[i]);
+			tSensorData.Accel.Offset[i] = (float)(eepromData.Accel.RawMax[i] + eepromData.Accel.RawMin[i]) / 2.0f;			
+			tSensorData.Accel.PosScale[i] = eepromData.Accel.RawMax[i] == 0? 1.0f : (1.0f / aRes) / (float)(eepromData.Accel.RawMax[i] - tSensorData.Accel.Offset[i]);
+			tSensorData.Accel.NegScale[i] = eepromData.Accel.RawMin[i] == 0? 1.0f : (1.0f / aRes) / (float)(eepromData.Accel.RawMin[i] - tSensorData.Accel.Offset[i]);
 		}
-		if (calibrationCache.Gyro.Sensor == SENSOR_GYRO)
+		if (eepromData.Gyro.Sensor == SENSOR_GYRO)
 		{
-			tSensorData.Gyro.Offset[i] = (float)(calibrationCache.Gyro.RawMax[i]);
+			tSensorData.Gyro.Offset[i] = (float)(eepromData.Gyro.RawMax[i]);
 			tSensorData.Gyro.PosScale[i] = 1.0f;
 			tSensorData.Gyro.NegScale[i] = 1.0f;
 		}
-		if (calibrationCache.Mag.Sensor == SENSOR_MAG)
+		if (eepromData.Mag.Sensor == SENSOR_MAG)
 		{
-			tSensorData.Mag.Offset[i] = (float)(calibrationCache.Mag.RawMax[i] + calibrationCache.Mag.RawMin[i]) / 2.0f;			
-			tSensorData.Mag.PosScale[i] = calibrationCache.Mag.RawMax[i] == 0? 1.0f : (1.0f / mRes) / (float)(calibrationCache.Mag.RawMax[i] - tSensorData.Mag.Offset[i]);
-			tSensorData.Mag.NegScale[i] = calibrationCache.Mag.RawMin[i] == 0? 1.0f : (1.0f / mRes) / (float)(calibrationCache.Mag.RawMin[i] - tSensorData.Mag.Offset[i]);
+			tSensorData.Mag.Offset[i] = (float)(eepromData.Mag.RawMax[i] + eepromData.Mag.RawMin[i]) / 2.0f;			
+			tSensorData.Mag.PosScale[i] = eepromData.Mag.RawMax[i] == 0? 1.0f : (1.0f / mRes) / (float)(eepromData.Mag.RawMax[i] - tSensorData.Mag.Offset[i]);
+			tSensorData.Mag.NegScale[i] = eepromData.Mag.RawMin[i] == 0? 1.0f : (1.0f / mRes) / (float)(eepromData.Mag.RawMin[i] - tSensorData.Mag.Offset[i]);
 		}
 	}		
 	isCalibrated = true;	
 }
+
+void ResetSensorCalibration()
+{
+	memset(&eepromData, 0, sizeof(eepromData));	
+	tSensorData.ResetCalibration();
+	isCalibrated = false;		
+}	
+
 
 /* USER CODE END 0 */
 
@@ -292,17 +300,19 @@ int main(void)
 
 
 	//load eeprom calibration data	
-	char *eepromBytes = (char *)&calibrationCache;	
+	char *eepromBytes = (char *)&eepromData;	
 	int addr = 0;
-	for (int i=0; i<sizeof(calibrationCache); i+=sizeof(uint32_t))
+	for (int i=0; i<sizeof(eepromData); i+=sizeof(uint32_t))
 	{
 		*((uint32_t *)(&eepromBytes[i])) = readEEPROMWord(addr);
 		addr += sizeof(uint32_t);
 	}
 	
 	
-	if (calibrationCache.Magic == VALID_EEPROM_MAGIC)	
+	if (eepromData.Magic == VALID_EEPROM_MAGIC)	
 		CalibrateSensors();		
+	else
+		ResetSensorCalibration();
 	
 //	ctlSource = HMD_SOURCE;
 //	ctlSource += (GPIO_PIN_SET == HAL_GPIO_ReadPin(CTL_MODE1_GPIO_Port, CTL_MODE1_Pin)?1:0); 
@@ -472,11 +482,11 @@ int main(void)
 		if (eepromSaveTime && eepromSaveTime >= ticks)
 		{
 			CalibrateSensors();
-			calibrationCache.Magic = VALID_EEPROM_MAGIC;
+			eepromData.Magic = VALID_EEPROM_MAGIC;
 			enableEEPROMWriting();
-			char *eepromData = (char *)&calibrationCache;	
+			char *eepromData = (char *)&eepromData;	
 			int addr = 0;
-			for (int i=0; i<sizeof(calibrationCache); i+=sizeof(uint32_t))
+			for (int i=0; i<sizeof(eepromData); i+=sizeof(uint32_t))
 			{
 				writeEEPROMWord(addr, *((uint32_t *)(&eepromData[i])));
 				addr += sizeof(uint32_t);
@@ -679,11 +689,11 @@ int main(void)
 									if (sensorId == SENSOR_NONE)
 										break;
 									else if (sensorId == SENSOR_ACCEL)
-										calibrationCache.Accel = pUSBCommandPacket->Command.Data.Calibration;
+										eepromData.Accel = pUSBCommandPacket->Command.Data.Calibration;
 									else if (sensorId == SENSOR_GYRO)
-										calibrationCache.Gyro = pUSBCommandPacket->Command.Data.Calibration;
+										eepromData.Gyro = pUSBCommandPacket->Command.Data.Calibration;
 									else if (sensorId == SENSOR_MAG)
-										calibrationCache.Mag = pUSBCommandPacket->Command.Data.Calibration;
+										eepromData.Mag = pUSBCommandPacket->Command.Data.Calibration;
 									eepromSaveTime = ticks + 1000; //save after 1 second
 									//lastPositionIntegrateTime = 
 									//lastPositionSend = now;
@@ -725,11 +735,11 @@ int main(void)
 					USBDataPacket.Header.Sequence++;				
 					USBDataPacket.Command.Command = CMD_CALIBRATE;
 					if (SensorCalibRequest == SENSOR_ACCEL)
-						USBDataPacket.Command.Data.Calibration = calibrationCache.Accel;
+						USBDataPacket.Command.Data.Calibration = eepromData.Accel;
 					else if (SensorCalibRequest == SENSOR_GYRO)
-						USBDataPacket.Command.Data.Calibration = calibrationCache.Gyro;
+						USBDataPacket.Command.Data.Calibration = eepromData.Gyro;
 					else if (SensorCalibRequest == SENSOR_MAG)
-						USBDataPacket.Command.Data.Calibration = calibrationCache.Mag;
+						USBDataPacket.Command.Data.Calibration = eepromData.Mag;
 					USBDataPacket.Command.Data.Calibration.Command = CALIB_GET;
 					USBDataPacket.Command.Data.Calibration.Sensor = SensorCalibRequest;
 					SensorCalibRequest = 0xFF;
@@ -1074,8 +1084,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PA2 PA14 PA15 */
-  GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_14|GPIO_PIN_15;
+  /*Configure GPIO pins : PA2 PA13 PA14 PA15 */
+  GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
@@ -1099,8 +1109,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(IR_SYNC_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : IR_SENS0_Pin IR_SENS1_Pin IR_SENS2_Pin IR_SENS3_Pin */
-  GPIO_InitStruct.Pin = IR_SENS0_Pin|IR_SENS1_Pin|IR_SENS2_Pin|IR_SENS3_Pin;
+  /*Configure GPIO pins : IR_SENS0_Pin IR_SENS1_Pin IR_SENS2_Pin */
+  GPIO_InitStruct.Pin = IR_SENS0_Pin|IR_SENS1_Pin|IR_SENS2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);

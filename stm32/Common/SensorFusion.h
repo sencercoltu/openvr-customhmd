@@ -25,6 +25,16 @@ struct Sensor
 		}		
 	}
 	
+	void ResetCalibration()
+	{
+		for(int i=0; i<3; i++)
+		{	
+			Offset[i] = 0.0f;
+			PosScale[i] = 
+			NegScale[i] = 1.0f;
+		}
+	}
+	
 	void SetResolution(float res)
 	{
 		Resolution = res;
@@ -90,26 +100,12 @@ struct Sensor
 
 struct SensorData
 {
-//	SensorData()
-//	{
-//		for(int i=0; i<3; i++)
-//		{
-//			PosScaleAccel[i] = 
-//			NegScaleAccel[i] = 
-//			PosScaleGyro[i] = 
-//			NegScaleGyro[i] = 
-//			PosScaleMag[i] = 
-//			NegScaleMag[i] = 1;		
-//			
-//			Accel[i] = 
-//			Gyro[i] = 
-//			Mag[i] = 0;
-//			
-//			AccelFiltered[i] = 
-//			GyroFiltered[i] = 
-//			MagFiltered[i] = 0;
-//		}
-//	}
+	void ResetCalibration()
+	{		
+		Accel.ResetCalibration();
+		Gyro.ResetCalibration();
+		Mag.ResetCalibration();
+	}
 	
 	void Setup(float aRes, float gRes, float mRes)
 	{

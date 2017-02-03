@@ -34,10 +34,10 @@
             this.lblSequence = new System.Windows.Forms.ToolStripStatusLabel();
             this.tabSources = new System.Windows.Forms.TabControl();
             this.tabDefault = new System.Windows.Forms.TabPage();
+            this.chkWatchDog = new System.Windows.Forms.CheckBox();
             this.trayMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.mnuDebug = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuExit = new System.Windows.Forms.ToolStripMenuItem();
-            this.chkWatchDog = new System.Windows.Forms.CheckBox();
             this.tabSources.SuspendLayout();
             this.tabDefault.SuspendLayout();
             this.trayMenu.SuspendLayout();
@@ -53,7 +53,7 @@
             // 
             this.statusStrip1.Location = new System.Drawing.Point(0, 460);
             this.statusStrip1.Name = "statusStrip1";
-            this.statusStrip1.Size = new System.Drawing.Size(542, 22);
+            this.statusStrip1.Size = new System.Drawing.Size(663, 22);
             this.statusStrip1.TabIndex = 1;
             this.statusStrip1.Text = "statusStrip1";
             // 
@@ -70,7 +70,7 @@
             this.tabSources.Location = new System.Drawing.Point(0, 0);
             this.tabSources.Name = "tabSources";
             this.tabSources.SelectedIndex = 0;
-            this.tabSources.Size = new System.Drawing.Size(542, 460);
+            this.tabSources.Size = new System.Drawing.Size(663, 460);
             this.tabSources.TabIndex = 25;
             // 
             // tabDefault
@@ -79,10 +79,21 @@
             this.tabDefault.Location = new System.Drawing.Point(4, 22);
             this.tabDefault.Name = "tabDefault";
             this.tabDefault.Padding = new System.Windows.Forms.Padding(3);
-            this.tabDefault.Size = new System.Drawing.Size(534, 434);
+            this.tabDefault.Size = new System.Drawing.Size(655, 434);
             this.tabDefault.TabIndex = 0;
             this.tabDefault.Text = "General";
             this.tabDefault.UseVisualStyleBackColor = true;
+            // 
+            // chkWatchDog
+            // 
+            this.chkWatchDog.AutoSize = true;
+            this.chkWatchDog.Location = new System.Drawing.Point(9, 7);
+            this.chkWatchDog.Name = "chkWatchDog";
+            this.chkWatchDog.Size = new System.Drawing.Size(114, 17);
+            this.chkWatchDog.TabIndex = 0;
+            this.chkWatchDog.Text = "Enable WatchDog";
+            this.chkWatchDog.UseVisualStyleBackColor = true;
+            this.chkWatchDog.CheckedChanged += new System.EventHandler(this.chkWatchDog_CheckedChanged);
             // 
             // trayMenu
             // 
@@ -106,22 +117,11 @@
             this.mnuExit.Text = "Exit";
             this.mnuExit.Click += new System.EventHandler(this.mnuExit_Click);
             // 
-            // chkWatchDog
-            // 
-            this.chkWatchDog.AutoSize = true;
-            this.chkWatchDog.Location = new System.Drawing.Point(9, 7);
-            this.chkWatchDog.Name = "chkWatchDog";
-            this.chkWatchDog.Size = new System.Drawing.Size(114, 17);
-            this.chkWatchDog.TabIndex = 0;
-            this.chkWatchDog.Text = "Enable WatchDog";
-            this.chkWatchDog.UseVisualStyleBackColor = true;
-            this.chkWatchDog.CheckedChanged += new System.EventHandler(this.chkWatchDog_CheckedChanged);
-            // 
             // MonitorForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(542, 482);
+            this.ClientSize = new System.Drawing.Size(663, 482);
             this.Controls.Add(this.tabSources);
             this.Controls.Add(this.statusStrip1);
             this.Name = "MonitorForm";
