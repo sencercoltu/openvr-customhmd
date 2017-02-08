@@ -126,11 +126,11 @@ struct USBTriggerData
 
 struct USBCalibrationData
 {
-	uint8_t Command;	
-	uint8_t Sensor;	
-	int16_t RawMax[3];
-	int16_t RawMin[3];	
-	uint16_t Reserved;
+	uint8_t Command;	//1
+	uint8_t Sensor;	//1
+	int16_t RawMax[3];	//6
+	int16_t RawMin[3];	//6
+	uint16_t Reserved;	//2
 	//int16_t OffsetAccel[3];	
 	//uint16_t ScaleAccel[3]; //sil bunu
 	//int16_t OffsetGyro[3];
@@ -139,11 +139,10 @@ struct USBCalibrationData
 
 struct EepromData
 {
-	uint32_t Magic;
-	struct USBCalibrationData Accel;
-	struct USBCalibrationData Gyro;
-	struct USBCalibrationData Mag;
-	uint16_t Reserved;
+	uint32_t Magic; //4
+	struct USBCalibrationData Accel; //16
+	struct USBCalibrationData Gyro; //16
+	struct USBCalibrationData Mag; //16	
 };
 
 

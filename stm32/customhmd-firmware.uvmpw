@@ -8,11 +8,6 @@
   <WorkspaceName>WorkSpace</WorkspaceName>
 
   <project>
-    <PathAndName>.\BaseStation\MDK-ARM\BaseStation.uvprojx</PathAndName>
-    <NodeIsExpanded>1</NodeIsExpanded>
-  </project>
-
-  <project>
     <PathAndName>.\TrackedDevice\MDK-ARM\TrackedDevice.uvprojx</PathAndName>
     <NodeIsActive>1</NodeIsActive>
     <NodeIsExpanded>1</NodeIsExpanded>
@@ -20,7 +15,6 @@
 
   <project>
     <PathAndName>.\LightHouse\MDK-ARM\LightHouse.uvprojx</PathAndName>
-    <NodeIsExpanded>1</NodeIsExpanded>
   </project>
 
 </ProjectWorkspace>

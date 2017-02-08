@@ -692,6 +692,21 @@ void CTrackedHMD::PacketReceived(USBPacket *pPacket, HmdVector3d_t *pCenterEuler
 {
 	if ((pPacket->Header.Type & 0x0F) != HMD_SOURCE)
 		return;
+
+	unsigned int now = GetTickCount();
+	
+
+	if (m_HMDData.LastIPDPress && (now - m_HMDData.LastIPDProcess >= 250))
+	{
+		auto diff = (now - m_HMDData.LastIPDPress) / 250.0f;
+		if (diff <= 4) diff = 1.0f;
+		if (diff > 20) diff = 20.0f;
+		UserIpdMeters += 0.0001f * m_HMDData.LastIPDSign * diff;
+		m_HMDData.LastIPDProcess = now;
+		SET_PROP(Float, UserIpdMeters, );
+	}
+
+
 	if (WAIT_OBJECT_0 == WaitForSingleObject(m_HMDData.hPoseLock, INFINITE))
 	{
 		switch (pPacket->Header.Type & 0xF0)
@@ -720,8 +735,38 @@ void CTrackedHMD::PacketReceived(USBPacket *pPacket, HmdVector3d_t *pCenterEuler
 				break;
 			case TRIGGER_DATA:
 			{
-				m_HMDData.LastState.Trigger = pPacket->Trigger;
 				//handle IPD and seated pos center button here
+				if ((pPacket->Trigger.Digital & BUTTON_0) == BUTTON_0)
+				{
+					
+				}
+				bool ipdState = false;
+				if ((pPacket->Trigger.Digital & BUTTON_1) == BUTTON_1)
+				{
+					//down
+					ipdState = true;
+					if (!m_HMDData.LastIPDPress)
+					{
+						m_HMDData.LastIPDSign = -1.0f;
+						UserIpdMeters -= 0.0001f;
+						m_HMDData.LastIPDProcess = m_HMDData.LastIPDPress = now;
+						SET_PROP(Float, UserIpdMeters, );
+					}
+				}
+				if ((pPacket->Trigger.Digital & BUTTON_2) == BUTTON_2)
+				{
+					//up
+					ipdState = true;
+					if (!m_HMDData.LastIPDPress)
+					{
+						m_HMDData.LastIPDSign = 1.0f;
+						UserIpdMeters += 0.0001f;
+						m_HMDData.LastIPDProcess = m_HMDData.LastIPDPress = now;
+						SET_PROP(Float, UserIpdMeters, );
+					}
+				}
+				if (!ipdState)
+					m_HMDData.LastIPDPress = 0;				
 			}
 			break;
 		}

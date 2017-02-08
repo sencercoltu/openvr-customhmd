@@ -11,16 +11,6 @@ class CTrackedController :
 private:
 	ETrackedControllerRole m_Role;
 	ControllerData m_ControllerData;
-	struct SendButtonData
-	{
-		EVRButtonId k_EButton;
-		CTrackedController *pController;
-		int Duration;
-	};
-
-	typedef void (vr::IVRServerDriverHost::*ButtonUpdate)(uint32_t unWhichDevice, vr::EVRButtonId eButtonId, double eventTimeOffset);
-
-	void SendButtonUpdates(ButtonUpdate ButtonEvent, uint64_t ulMask);
 public:
 	CTrackedController(ETrackedControllerRole role, std::string displayName, CServerDriver *pServer);
 	~CTrackedController();

@@ -110,10 +110,10 @@ struct SensorData
 	void Setup(float aRes, float gRes, float mRes)
 	{
 		Accel.SetResolution(aRes);
-		Accel.SetNoise(30);
-		Accel.SetGain(0.7);
+		Accel.SetNoise(10);
+		Accel.SetGain(0.5);
 		Gyro.SetResolution(gRes);
-		Gyro.SetGain(0.7);		
+		Gyro.SetGain(0.1);		
 		Gyro.SetNoise(100);
 		Mag.SetResolution(mRes);
 	}

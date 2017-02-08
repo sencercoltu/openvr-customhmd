@@ -310,3 +310,15 @@ void CTrackedDevice::EnterStandby()
 {
 	DriverLog(__FUNCTION__" %s", m_DisplayName.c_str());
 }
+
+void CTrackedDevice::SendButtonUpdates(ButtonUpdate ButtonEvent, uint64_t ulMask)
+{
+	for (int i = 0; i < vr::k_EButton_Max; i++)
+	{
+		vr::EVRButtonId button = (vr::EVRButtonId)i;
+		uint64_t bit = ButtonMaskFromId(button);
+		if (bit & ulMask)
+			(m_pDriverHost->*ButtonEvent)(m_unObjectId, button, 0.0);
+	}
+}
+

@@ -204,9 +204,10 @@ struct HMDData : TrackerData
 	int ScreenHeight;
 	float Frequency;
 	float AspectRatio;	
-	float SuperSample;
-	//CDriverLog *Logger;
-	//float IPDValue;
+	float SuperSample;		
+	unsigned int LastIPDPress;
+	unsigned int LastIPDProcess;
+	float LastIPDSign;
 	USBDataCache LastState;
 };
 

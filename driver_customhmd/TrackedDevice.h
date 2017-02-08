@@ -46,6 +46,15 @@ protected:
 
 	virtual void PacketReceived(USBPacket *pPacket, HmdVector3d_t *pCenterEuler, HmdVector3d_t *pRelativePos) = 0;
 protected:	
+	struct SendButtonData
+	{
+		EVRButtonId k_EButton;
+		CTrackedDevice *pController;
+		int Duration;
+	};
+	typedef void (vr::IVRServerDriverHost::*ButtonUpdate)(uint32_t unWhichDevice, vr::EVRButtonId eButtonId, double eventTimeOffset);
+
+	void SendButtonUpdates(ButtonUpdate ButtonEvent, uint64_t ulMask);
 	CVRPropertyHelpers *m_pProperties;
 	virtual void SetDefaultProperties();
 	PropertyContainerHandle_t m_ulPropertyContainer;

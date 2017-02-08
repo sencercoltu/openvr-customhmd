@@ -445,17 +445,6 @@ void CTrackedController::RunFrame(DWORD currTick)
 	}
 }
 
-void CTrackedController::SendButtonUpdates(ButtonUpdate ButtonEvent, uint64_t ulMask)
-{
-	for (int i = 0; i < vr::k_EButton_Max; i++)
-	{
-		vr::EVRButtonId button = (vr::EVRButtonId)i;
-		uint64_t bit = ButtonMaskFromId(button);
-		if (bit & ulMask)
-			(m_pDriverHost->*ButtonEvent)(m_unObjectId, button, 0.0);
-	}
-}
-
 void CTrackedController::PacketReceived(USBPacket *pPacket, HmdVector3d_t *pCenterEuler, HmdVector3d_t *pRelativePos)
 {
 	if ((pPacket->Header.Type & 0x0F) != m_Role)
