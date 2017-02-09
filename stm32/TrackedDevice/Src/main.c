@@ -110,9 +110,9 @@ uint16_t ChannelStateFlags = 0;
 SensorData tSensorData;
 int32_t blinkDelay = 1000;
 extern uint8_t USB_RX_Buffer[CUSTOM_HID_EPIN_SIZE];
-
+extern USBD_HandleTypeDef hUsbDeviceFS;
 USBPacket *pFromUSBPacket = (USBPacket *) USB_RX_Buffer;
-USBPacket USBDataPacket = {0};
+USBPacket FromDevicePacket = {0};
 USBPacket FromRFPacket = {0};
 USBPositionData position = {0};
 
@@ -160,7 +160,23 @@ EepromData eepromData = {0};
 bool isCalibrated = false;
 bool isPositionReady = false;
 
-int extraDelay = 10;	
+int extraDelay = 2
+#if IS_CONTROLLER
+	+8
+#endif //IS_CONTROLLER
+	;
+
+
+#define READY_ROT 0x01
+#define READY_BUT 0x02
+#define READY_POS 0x04
+#define READY_RAW 0x08
+#define READY_CAL 0x10
+
+uint8_t ReadyMask = 0;
+uint8_t ProcessMask = 0;
+
+uint32_t LastUsbTransmit = 0;
 
 bool hasRotationData = false;
 bool hasPositionData = false;
@@ -186,12 +202,13 @@ void SystemClock_Config(void);
 void Error_Handler(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
-static void MX_ADC1_Init(void);
 static void MX_SPI2_Init(void);
 static void MX_I2C2_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
+static void MX_ADC1_Init(void);
+
 RF_InitTypeDef RF_InitStruct = {0};
 unsigned char NRF24L01_Init (void)
 {	
@@ -298,7 +315,7 @@ inline void ProcessOwnPacket(USBPacket *pPacket)
 		switch (pPacket->Command.Command)
 		{
 			case CMD_RAW_DATA:								
-				feedRawMode = (RawModes) pPacket->Command.Data.Raw.State;
+				feedRawMode = (RawModes) pPacket->Command.Data.Raw.State;				
 				break;
 			case CMD_VIBRATE:
 #if IS_CONTROLLER
@@ -367,7 +384,8 @@ inline void ForwardUSBPacket(USBPacket *pPacket)
 		{
 			blinkDelay = 100;
 			pChannel->lastInSequence = pPacket->Header.Sequence;
-			USBD_CUSTOM_HID_SendReport_FS((uint8_t*)pPacket,(uint16_t) sizeof(USBPacket)); //forward incoming					
+			USBD_CUSTOM_HID_SendReport_FS((uint8_t*)pPacket,(uint16_t) sizeof(USBPacket)); //forward incoming	
+			LastUsbTransmit = HAL_GetTick();
 		}
 		else
 			return;
@@ -446,6 +464,7 @@ inline void ProcessSensors()
 		
 		if (hasRotationData) // recalc position if still has position data to be sent
 		{
+			ReadyMask |= READY_ROT;			
 			tSensorData.Accel.ProcessNew();
 			tSensorData.Gyro.ProcessNew();
 			tSensorData.Mag.ProcessNew();
@@ -497,7 +516,8 @@ inline void ProcessSensors()
 						
 						positionQuat = (orientQuat * positionQuat) * orientQuat.conjugate();
 						
-						hasPositionData = true;							
+						hasPositionData = true;	
+						ReadyMask |= READY_POS;						
 						//lastPositionSend = now;	
 					}
 					
@@ -529,7 +549,7 @@ inline void ProcessADC()
 		{
 			//if any analog value has changes
 			buttonRetransmit = 5;					
-			lastButtonRefresh = ticks;
+			lastButtonRefresh = ticks;			
 		}
 	}
 }
@@ -569,17 +589,13 @@ inline void ResetSensorCalibration()
 }	
 
 
+
 /* USER CODE END 0 */
 
 int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-#if IS_HMD
-	uint16_t usbDescLen = 0;
-	uint8_t *usbDesc = USBD_CUSTOM_HID.GetFSConfigDescriptor(&usbDescLen);
-	usbDesc[33] = usbDesc[40] = 1;	//1 ms poll interval
-#endif //IS_HMD
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -593,15 +609,21 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
-  MX_ADC1_Init();
   MX_SPI2_Init();
   MX_I2C2_Init();
 
   /* USER CODE BEGIN 2 */
   
-#if IS_HMD
+#if IS_HMD		
+	uint16_t usbDescLen = 0;
+	uint8_t *usbDesc = USBD_CUSTOM_HID.GetFSConfigDescriptor(&usbDescLen);
+	usbDesc[33] = usbDesc[40] = 1;	//1 ms poll interval
 	MX_USB_DEVICE_Init();
 #endif //IS_HMD
+
+//#if IS_CONTROLLER
+	MX_ADC1_Init();
+//#endif //IS_CONTROLLER
 
 	DigitalValues = DigitalCache = 0;
 	LedOff();	 
@@ -649,8 +671,14 @@ int main(void)
 	BlinkRease(20);
 	HAL_GPIO_WritePin(CTL_VIBRATE0_GPIO_Port, CTL_VIBRATE0_Pin, GPIO_PIN_RESET);
 	HAL_Delay(100);
-#endif //IS_CONTROLLER
-	
+
+	//start background adc conversion
+	if( HAL_ADC_Start(&hadc1) != HAL_OK)  
+		Error_Handler();
+	if (HAL_ADC_Start_DMA(&hadc1, (uint32_t*)ADC_Values, 4) != HAL_OK)  
+		Error_Handler();
+	HAL_Delay(100);
+#endif //IS_CONTROLLER		
 
 	tSensorData.Setup(aRes, gRes, mRes);
 	
@@ -669,15 +697,6 @@ int main(void)
 		HAL_Delay(10);
 	}
 	
-#if IS_CONTROLLER
-		//start background adc conversion
-		if( HAL_ADC_Start(&hadc1) != HAL_OK)  
-			Error_Handler();
-		if (HAL_ADC_Start_DMA(&hadc1, (uint32_t*)ADC_Values, 4) != HAL_OK)  
-			Error_Handler();
-		HAL_Delay(1000);
-#endif //IS_CONTROLLER		
-	
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -689,7 +708,7 @@ int main(void)
 		blinkDelay = 1000;
 		
 		now = HAL_GetMicros();
-		ticks = now / 1000;
+		ticks = HAL_GetTick(); //now / 1000;
 		
 		if (eepromSaveTime && (ticks >= eepromSaveTime))
 		{
@@ -745,7 +764,7 @@ int main(void)
 				+4
 #endif //IS_CONTROLLER
 				;
-				lastButtonRefresh = ticks;
+				lastButtonRefresh = ticks;				
 			}
 		}
 #if IS_CONTROLLER		
@@ -753,7 +772,7 @@ int main(void)
 		{
 			//update button status every 250ms.
 			buttonRetransmit++;
-			lastButtonRefresh = ticks;
+			lastButtonRefresh = ticks;			
 		}
 #endif //IS_CONTROLLER
 		ProcessSensors();
@@ -797,7 +816,9 @@ int main(void)
 		{
 			rfStatus = RF_FifoStatus(&hspi2);
 			readyToReceive = (rfStatus & RF_RX_FIFO_EMPTY_Bit) == 0x00 ? 1: 0;
-			while (readyToReceive)
+			rcvCounter = 0;
+			while ((rcvCounter < 3) && readyToReceive) //max 3 packets 
+			//if (readyToReceive) //one rf packet at a time
 			{			
 				rcvCounter++;
 				//receive command
@@ -813,6 +834,7 @@ int main(void)
 					else
 					{
 						//forward from RF to USB
+						while (HAL_GetTick() - LastUsbTransmit <= extraDelay) {};
 						ForwardPacket(&FromRFPacket);
 					}
 #endif //IS_HMD	
@@ -824,16 +846,33 @@ int main(void)
 		BroadcastRFPackets();
 #endif //IS_HMD	
 		
-		if (((SensorCalibRequest != 0xFF) || hasRotationData || feedRawMode || hasPositionData || buttonRetransmit) && ticks >= nextSend)
+		
+		if (!ProcessMask)
+		{
+			if (buttonRetransmit)
+				ReadyMask |= READY_BUT;
+			if (feedRawMode)
+				ReadyMask |= READY_RAW;
+			if (SensorCalibRequest != 0xFF)
+				ReadyMask |= READY_CAL;
+			if (ReadyMask)
+			{
+				ProcessMask = ReadyMask;
+				ReadyMask = 0;
+			}
+		}
+		ticks = HAL_GetTick(); 
+		if (ProcessMask && (ticks >= nextSend))
 		{			
 #if IS_CONTROLLER
-			rfStatus = RF_FifoStatus(&hspi2); readyToSend = (rfStatus & RF_TX_FIFO_FULL_Bit) == 0x00 ? 1 : 0;			
+			rfStatus = RF_FifoStatus(&hspi2); 
+			readyToSend = (rfStatus & RF_TX_FIFO_FULL_Bit) == 0x00 ? 1 : 0;			
 #endif //IS_CONTROLLER			
 #if IS_HMD
-			readyToSend = 1; //usb always ready
+			while (HAL_GetTick() - LastUsbTransmit <= extraDelay) {};
+			readyToSend = 1;
 #endif //IS_HMD
-		}
-		
+		}	
 		
 		if (readyToSend)
 		{
@@ -845,30 +884,30 @@ int main(void)
 
 			sndCounter++;
 			
-			if (SensorCalibRequest != 0xFF)
+			if (ProcessMask & READY_CAL)
 			{
-				USBDataPacket.Header.Type = THIS_DEVICE | COMMAND_DATA;
-				USBDataPacket.Header.Sequence++;				
-				USBDataPacket.Command.Command = CMD_CALIBRATE;
+				FromDevicePacket.Header.Type = THIS_DEVICE | COMMAND_DATA;
+				FromDevicePacket.Header.Sequence++;				
+				FromDevicePacket.Command.Command = CMD_CALIBRATE;
 				if (SensorCalibRequest == SENSOR_ACCEL)
-					USBDataPacket.Command.Data.Calibration = eepromData.Accel;
+					FromDevicePacket.Command.Data.Calibration = eepromData.Accel;
 				else if (SensorCalibRequest == SENSOR_GYRO)
-					USBDataPacket.Command.Data.Calibration = eepromData.Gyro;
+					FromDevicePacket.Command.Data.Calibration = eepromData.Gyro;
 				else if (SensorCalibRequest == SENSOR_MAG)
-					USBDataPacket.Command.Data.Calibration = eepromData.Mag;
-				USBDataPacket.Command.Data.Calibration.Command = CALIB_GET;
-				USBDataPacket.Command.Data.Calibration.Sensor = SensorCalibRequest;
+					FromDevicePacket.Command.Data.Calibration = eepromData.Mag;
+				FromDevicePacket.Command.Data.Calibration.Command = CALIB_GET;
+				FromDevicePacket.Command.Data.Calibration.Sensor = SensorCalibRequest;
 				SensorCalibRequest = 0xFF;
-				SetPacketCrc(&USBDataPacket);
-				ForwardPacket(&USBDataPacket);
+				SetPacketCrc(&FromDevicePacket);
+				ForwardPacket(&FromDevicePacket);
+				ProcessMask &= ~READY_CAL;
 			}
-			
-			if (feedRawMode)
+			else if (ProcessMask & READY_RAW)
 			{	
-				USBDataPacket.Header.Type = THIS_DEVICE | COMMAND_DATA;
-				USBDataPacket.Header.Sequence++;				
-				USBDataPacket.Command.Command = CMD_RAW_DATA;
-				USBDataPacket.Command.Data.Raw.State = feedRawMode;
+				FromDevicePacket.Header.Type = THIS_DEVICE | COMMAND_DATA;
+				FromDevicePacket.Header.Sequence++;				
+				FromDevicePacket.Command.Command = CMD_RAW_DATA;
+				FromDevicePacket.Command.Data.Raw.State = feedRawMode;
 				for (int idx=0; idx<3; idx++)
 				{
 					switch(feedRawMode)
@@ -878,102 +917,107 @@ int main(void)
 						case RawMode_Raw:
 						{
 							//raw sensor values
-							USBDataPacket.Command.Data.Raw.Accel[idx] = tSensorData.Accel.Raw[idx];
-							USBDataPacket.Command.Data.Raw.Gyro[idx] = tSensorData.Gyro.Raw[idx];
-							USBDataPacket.Command.Data.Raw.Mag[idx] = tSensorData.Mag.Raw[idx];
+							FromDevicePacket.Command.Data.Raw.Accel[idx] = tSensorData.Accel.Raw[idx];
+							FromDevicePacket.Command.Data.Raw.Gyro[idx] = tSensorData.Gyro.Raw[idx];
+							FromDevicePacket.Command.Data.Raw.Mag[idx] = tSensorData.Mag.Raw[idx];
 							break;
 						}
 						case RawMode_Filtered:
 						{
 							//filtered sensor data
-							USBDataPacket.Command.Data.Raw.Accel[idx] = tSensorData.Accel.Filtered[idx];
-							USBDataPacket.Command.Data.Raw.Gyro[idx] = tSensorData.Gyro.Filtered[idx];
-							USBDataPacket.Command.Data.Raw.Mag[idx] = tSensorData.Mag.Filtered[idx];
+							FromDevicePacket.Command.Data.Raw.Accel[idx] = tSensorData.Accel.Filtered[idx];
+							FromDevicePacket.Command.Data.Raw.Gyro[idx] = tSensorData.Gyro.Filtered[idx];
+							FromDevicePacket.Command.Data.Raw.Mag[idx] = tSensorData.Mag.Filtered[idx];
 							break;
 						}
 						case RawMode_Compensated:
 						{
 							//compensated sensor data
-							USBDataPacket.Command.Data.Raw.Accel[idx] = tSensorData.Accel.Compensated[idx];
-							USBDataPacket.Command.Data.Raw.Gyro[idx] = tSensorData.Gyro.Compensated[idx];
-							USBDataPacket.Command.Data.Raw.Mag[idx] = tSensorData.Mag.Compensated[idx];
+							FromDevicePacket.Command.Data.Raw.Accel[idx] = tSensorData.Accel.Compensated[idx];
+							FromDevicePacket.Command.Data.Raw.Gyro[idx] = tSensorData.Gyro.Compensated[idx];
+							FromDevicePacket.Command.Data.Raw.Mag[idx] = tSensorData.Mag.Compensated[idx];
 							break;
 						}
 						case RawMode_DRVectors:
 						{
 							//deadreckoning vectors
-							USBDataPacket.Command.Data.Raw.Accel[idx] = (int16_t)(GravityVector[idx] / aRes);
-							USBDataPacket.Command.Data.Raw.Gyro[idx] = (int16_t)(CompAccelVector[idx] / aRes); //in m/s2
-							USBDataPacket.Command.Data.Raw.Mag[idx] = VelocityVector[idx] * 1000; //in mm/s
+							FromDevicePacket.Command.Data.Raw.Accel[idx] = (int16_t)(GravityVector[idx] / aRes);
+							FromDevicePacket.Command.Data.Raw.Gyro[idx] = (int16_t)(CompAccelVector[idx] / aRes); //in m/s2
+							FromDevicePacket.Command.Data.Raw.Mag[idx] = VelocityVector[idx] * 1000; //in mm/s
 							break;
 						}
 					}
 				}
-				SetPacketCrc(&USBDataPacket);
-				ForwardPacket(&USBDataPacket);
-			}
-			
-			if (hasPositionData)
+				SetPacketCrc(&FromDevicePacket);
+				ForwardPacket(&FromDevicePacket);
+				ProcessMask &= ~READY_RAW;
+			}			
+			else if (ProcessMask & READY_POS)
 			{					
 				hasPositionData = false;				
-				USBDataPacket.Header.Type = THIS_DEVICE | POSITION_DATA;
-				USBDataPacket.Header.Sequence++;
+				FromDevicePacket.Header.Type = THIS_DEVICE | POSITION_DATA;
+				FromDevicePacket.Header.Sequence++;
 				
 				//remap
-				USBDataPacket.Position.Position[0] = positionQuat.x; //position.Position[0];
-				USBDataPacket.Position.Position[1] = positionQuat.z; //position.Position[2];
-				USBDataPacket.Position.Position[2] = -positionQuat.y; //-position.Position[1];
-				SetPacketCrc(&USBDataPacket);
-				ForwardPacket(&USBDataPacket);
+				FromDevicePacket.Position.Position[0] = positionQuat.x; //position.Position[0];
+				FromDevicePacket.Position.Position[1] = positionQuat.z; //position.Position[2];
+				FromDevicePacket.Position.Position[2] = -positionQuat.y; //-position.Position[1];
+				SetPacketCrc(&FromDevicePacket);
+				ForwardPacket(&FromDevicePacket);
+				ProcessMask &= ~READY_POS;
 			}
-
-			if (hasRotationData)
+			else if (ProcessMask & READY_ROT)
 			{			
 				//send rot data
 				hasRotationData = false;				
-				USBDataPacket.Header.Type = THIS_DEVICE | ROTATION_DATA;
-				USBDataPacket.Header.Sequence++;
+				FromDevicePacket.Header.Type = THIS_DEVICE | ROTATION_DATA;
+				FromDevicePacket.Header.Sequence++;
 				//remap				
-				USBDataPacket.Rotation.w = orientQuat.w;
-				USBDataPacket.Rotation.x = orientQuat.x;
-				USBDataPacket.Rotation.y = orientQuat.z;
-				USBDataPacket.Rotation.z = -orientQuat.y;					
-				SetPacketCrc(&USBDataPacket);
-				ForwardPacket(&USBDataPacket);
-			}			
-
-			if (buttonRetransmit)
+				FromDevicePacket.Rotation.w = orientQuat.w;
+				FromDevicePacket.Rotation.x = orientQuat.x;
+				FromDevicePacket.Rotation.y = orientQuat.z;
+				FromDevicePacket.Rotation.z = -orientQuat.y;					
+				SetPacketCrc(&FromDevicePacket);
+				ForwardPacket(&FromDevicePacket);
+				ProcessMask &= ~READY_ROT;
+			}		
+			else if (ProcessMask & READY_BUT)
 			{			
 				buttonRetransmit--;				
-				USBDataPacket.Header.Type = THIS_DEVICE | TRIGGER_DATA;
-				USBDataPacket.Header.Sequence++;
+				FromDevicePacket.Header.Type = THIS_DEVICE | TRIGGER_DATA;
+				FromDevicePacket.Header.Sequence++;
 #if IS_HMD					
-				USBDataPacket.Trigger.Analog[0].x = 0;
-				USBDataPacket.Trigger.Analog[0].y = 0;
-				USBDataPacket.Trigger.Analog[1].x = 0; //reserved
-				USBDataPacket.Trigger.Analog[1].y = 0; //reserved
+				FromDevicePacket.Trigger.Analog[0].x = 0;
+				FromDevicePacket.Trigger.Analog[0].y = 0;
+				FromDevicePacket.Trigger.Analog[1].x = 0; //reserved
+				FromDevicePacket.Trigger.Analog[1].y = 0; //reserved
 #endif //IS_HMD					
 
 #if IS_CONTROLLER					
-				USBDataPacket.Trigger.Analog[0].x = ((float)ADC_Cache[0]) / 100.0f; //trigger
-				USBDataPacket.Trigger.Analog[0].y = ((float)ADC_Cache[1]) / 100.0f; //IPD
-				USBDataPacket.Trigger.Analog[1].x = 0; //reserved
-				USBDataPacket.Trigger.Analog[1].y = 0; //reserved
+				FromDevicePacket.Trigger.Analog[0].x = ((float)ADC_Cache[0]) / 100.0f; //trigger
+				FromDevicePacket.Trigger.Analog[0].y = ((float)ADC_Cache[1]) / 100.0f; //IPD
+				FromDevicePacket.Trigger.Analog[1].x = 0; //reserved
+				FromDevicePacket.Trigger.Analog[1].y = 0; //reserved
 #endif //IS_CONTROLLER
 				
-				USBDataPacket.Trigger.Digital = DigitalCache;
-				SetPacketCrc(&USBDataPacket);
-				ForwardPacket(&USBDataPacket);
+				FromDevicePacket.Trigger.Digital = DigitalCache;
+				SetPacketCrc(&FromDevicePacket);
+				ForwardPacket(&FromDevicePacket);
+				ProcessMask &= ~READY_BUT;
 //#if IS_CONTROLLER				
 				//rfStatus = RF_FifoStatus(&hspi2); readyToSend = (rfStatus & RF_TX_FIFO_FULL_Bit) == 0x00 ? 1 : 0;									
 //#endif //IS_CONTROLLER				
 			}
 
+			if (!ProcessMask)
 #if IS_CONTROLLER			
+				nextSend = ticks + (extraDelay + (rand() % 10)); //for next RF packet
 			do { rfStatus = RF_FifoStatus(&hspi2); } while ((rfStatus & RF_TX_FIFO_EMPTY_Bit) != RF_TX_FIFO_EMPTY_Bit); //wait for send complete			
 #endif //IS_CONTROLLER			
-			if (!(feedRawMode || hasPositionData || hasRotationData || buttonRetransmit))
-				nextSend = ticks + (extraDelay + (rand() % 10));
+#if IS_HMD
+				nextSend = ticks + extraDelay; //for next USB packet
+#endif //IS_HMD
+			
 			readyToSend = 0;
 #if IS_CONTROLLER
 			HAL_MicroDelay(10);
