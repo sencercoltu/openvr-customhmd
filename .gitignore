@@ -48,3 +48,4 @@ stm32/**/*.map
 *.opendb
 stm32/TrackedDevice - Copy
 stm32/TrackedDevice - Copy2
+stm32/TrackedDevice/MDK-ARM/TrackedDevice
