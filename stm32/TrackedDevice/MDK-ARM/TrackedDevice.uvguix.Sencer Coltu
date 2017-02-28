@@ -74,8 +74,8 @@
     <sActiveDebugView></sActiveDebugView>
     <WindowPosition>
       <length>44</length>
-      <flags>0</flags>
-      <showCmd>1</showCmd>
+      <flags>2</flags>
+      <showCmd>3</showCmd>
       <MinPosition>
         <xPos>-1</xPos>
         <yPos>-1</yPos>
@@ -85,10 +85,10 @@
         <yPos>-1</yPos>
       </MaxPosition>
       <NormalPosition>
-        <Top>76</Top>
-        <Left>248</Left>
-        <Right>1806</Right>
-        <Bottom>954</Bottom>
+        <Top>185</Top>
+        <Left>221</Left>
+        <Right>1778</Right>
+        <Bottom>1063</Bottom>
       </NormalPosition>
     </WindowPosition>
     <MDIClientArea>

@@ -1,9 +1,11 @@
-#include <stdint.h>
+#ifndef _USB_H_
+#define _USB_H_
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+#include <stdint.h>
 	
 #ifndef CUSTOM_HID_EPIN_SIZE
 #define CUSTOM_HID_EPIN_SIZE 32
@@ -213,3 +215,4 @@ uint8_t CheckPacketCrc(struct USBPacket *pPacket);
 }
 #endif
 
+#endif //_USB_H_

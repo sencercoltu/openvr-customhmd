@@ -1,3 +1,10 @@
+#ifndef _HMC5883_H_
+#define _HMC5883_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "i2c.h"
 #include "led.h"
 
@@ -31,3 +38,10 @@ bool checkHMC5883L();
 bool selfTestHMC5883L();
 bool readHMC5883LData(int16_t *destination);
 float getHMC5883Lres();
+
+#ifdef __cplusplus
+}
+#endif
+
+
+#endif //_HMC5883_H_

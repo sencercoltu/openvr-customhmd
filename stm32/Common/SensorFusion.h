@@ -1,3 +1,5 @@
+#ifndef _SENSORFUSION_H_
+#define _SENSORFUSION_H_
 
 #include <stdint.h>
 #include <math.h>
@@ -199,3 +201,5 @@ private:
 extern float invSqrt(float x);
 extern void SmoothSensorData(float *newData, float *oldData, float mag);
 
+
+#endif //_SENSORFUSION_H_

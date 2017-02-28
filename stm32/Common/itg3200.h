@@ -1,3 +1,11 @@
+#ifndef _IT3200_H_
+#define _IT3200_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+	
 #include "i2c.h"
 #include "led.h"
 
@@ -36,3 +44,9 @@ void initITG3200();
 bool checkITG3200();
 bool readITG3200Data(int16_t *destination);
 float getITG3200res();
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif //_IT3200_H_

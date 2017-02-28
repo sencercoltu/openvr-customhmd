@@ -1,7 +1,15 @@
+#ifndef _NRF24_H_
+#define _NRF24_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include "stm32f1xx_hal.h"
 #include "spilib.h"
 
+extern void HAL_MicroDelay(uint64_t delay);
+	
 #define Config_Reg_Reset_Value	0x0E
 #define Max_Data_Len 			32		//maximum Bytes in Payload, typ. 32
 #define Max_Adress_Len 			5		//maximum Bytes in Data Adress, typ. 5
@@ -186,3 +194,9 @@ uint8_t RF_FifoStatus(SPI_HandleTypeDef* SPIx);
 
 uint8_t RF_TransmitMode(SPI_HandleTypeDef* SPIx, uint8_t *address);
 uint8_t RF_ReceiveMode(SPI_HandleTypeDef* SPIx, uint8_t *address);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif //_NRF24_H_

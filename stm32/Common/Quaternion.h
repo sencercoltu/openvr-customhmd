@@ -26,7 +26,7 @@ struct Quaternion
 	//Quaternion
 	// -default constructor
 	// -creates a new quaternion with all parts equal to zero
-	Quaternion(void);
+	Quaternion();
 
 	//Quaternion
 	// -constructor
@@ -167,4 +167,5 @@ struct Quaternion
 	static Quaternion FromEuler(const Vector3f &e);
 };
 
-#endif
+
+#endif //_QUATERNION_H_

@@ -1314,7 +1314,7 @@ void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler */
   /* User can add his own implementation to report the HAL error return state */
-	BlinkRease(80, false);
+	BlinkRease2(80, false);
 	LedOff();
 	NVIC_SystemReset();
   /* USER CODE END Error_Handler */ 

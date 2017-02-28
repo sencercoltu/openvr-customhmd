@@ -1,6 +1,11 @@
 #ifndef __EEPROM_FLASH_H
 #define __EEPROM_FLASH_H
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+	
 #include "stm32f1xx_hal.h"
 
 //#define EEPROM_START_ADDRESS   ((uint32_t)0x08019000) // EEPROM emulation start address: after 100KByte of used Flash memory
@@ -18,4 +23,8 @@ HAL_StatusTypeDef writeEEPROMWord(uint32_t address, uint32_t data);
 uint16_t readEEPROMHalfWord(uint32_t address);
 uint32_t readEEPROMWord(uint32_t address);
 
+#ifdef __cplusplus
+}
+#endif
+	
 #endif

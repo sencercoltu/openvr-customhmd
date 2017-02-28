@@ -1,3 +1,10 @@
+#ifndef _L3G4200_H_
+#define _L3G4200_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "i2c.h"
 #include "led.h"
 
@@ -60,3 +67,9 @@ void initL3G4200D();
 bool checkL3G4200D();
 bool readL3G4200DData(int16_t *destination);
 float getL3G4200Dres();
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif //_L3G4200_H_

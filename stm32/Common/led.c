@@ -1,6 +1,5 @@
 #include "led.h"
 
-
 uint32_t _ledTicks = 0;
 GPIO_PinState _ledState = GPIO_PIN_SET;
 float _ledIntensity = 100;
@@ -43,10 +42,10 @@ void LedOff(void)
 
 void BlinkRease(int count)
 {
-	BlinkRease(count, false);
+	BlinkRease2(count, false);
 }
 
-void BlinkRease(int count, bool reverse)
+void BlinkRease2(int count, bool reverse)
 {		
 	int cnt = count;
 	if (reverse)

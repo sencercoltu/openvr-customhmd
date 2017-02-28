@@ -1,3 +1,10 @@
+#ifndef _ADXL345_H_
+#define _ADXL345_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "i2c.h"
 #include "led.h"
 
@@ -64,3 +71,9 @@ extern void resetADXL345Offset();
 extern bool checkADXL345();
 extern bool readADXL345Data(int16_t *destination);
 extern float getADXL345res();
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif //_ADXL345_H_

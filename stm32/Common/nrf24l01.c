@@ -15,8 +15,6 @@ void RF_CE_LOW();
 void RF_NSS_HIGH();
 void RF_NSS_LOW();
 
-extern void HAL_MicroDelay(uint64_t delay);
-
 uint8_t RF_TransmitMode(SPI_HandleTypeDef* SPIx, uint8_t *address)
 {
 	uint8_t tmp = RF_Read_Cmd(SPIx, CONFIG_REG);
@@ -257,3 +255,6 @@ unsigned char RF_FifoStatus(SPI_HandleTypeDef* SPIx)
 {
 	return RF_Read_Cmd(SPIx, FIFO_STATUS_REG);
 }
+
+
+

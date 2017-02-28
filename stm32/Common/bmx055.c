@@ -438,3 +438,4 @@ int16_t compensate_BMX055_Z(int16_t mag_data_z, uint16_t data_r)
 	}
 	return (int16_t)retval;
 }
+
