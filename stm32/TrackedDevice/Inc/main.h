@@ -104,7 +104,6 @@
 #define CTL_VIBRATE0_Pin GPIO_PIN_9
 #define CTL_VIBRATE0_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
-
 /* USER CODE END Private defines */
 
 /**
