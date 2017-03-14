@@ -6,6 +6,16 @@ CTrackedController::CTrackedController(ETrackedControllerRole role, std::string 
 	DriverLog(__FUNCTION__);
 	m_Role = role;
 
+	NamedIconPathDeviceOff = "{customhmd}controller_status_off.png";
+	NamedIconPathDeviceSearching = "{customhmd}controller_status_searching.gif";
+	NamedIconPathDeviceSearchingAlert = "{customhmd}controller_status_searching_alert.gif";
+	NamedIconPathDeviceReady = "{customhmd}controller_status_ready.png";
+	NamedIconPathDeviceReadyAlert = "{customhmd}controller_status_ready_alert.png";
+	NamedIconPathDeviceNotReady = "{customhmd}controller_status_error.png";
+	NamedIconPathDeviceStandby = "{customhmd}controller_status_ready_alert.png";
+	NamedIconPathDeviceAlertLow = "{customhmd}controller_status_ready_low.png";
+	
+
 	TrackingSystemName = "Custom Controller";
 	ModelNumber = "Custom";
 	SerialNumber = std::string(role == TrackedControllerRole_LeftHand ? "L" : "R").append("CTR-1244244");
@@ -31,8 +41,8 @@ CTrackedController::CTrackedController(ETrackedControllerRole role, std::string 
 		ButtonMaskFromId(k_EButton_System) |
 		ButtonMaskFromId(k_EButton_ApplicationMenu) |
 		ButtonMaskFromId(k_EButton_Grip) |
-		ButtonMaskFromId(k_EButton_Axis0) |
-		ButtonMaskFromId(k_EButton_Axis1) |
+		//ButtonMaskFromId(k_EButton_Axis0) |
+		ButtonMaskFromId(k_EButton_SteamVR_Trigger) |
 		//ButtonMaskFromId(k_EButton_Axis2) |
 		//ButtonMaskFromId(k_EButton_Axis3) |
 		//ButtonMaskFromId(k_EButton_Axis4) |
@@ -41,7 +51,7 @@ CTrackedController::CTrackedController(ETrackedControllerRole role, std::string 
 		ButtonMaskFromId(k_EButton_DPad_Right) |
 		ButtonMaskFromId(k_EButton_DPad_Down) |
 		ButtonMaskFromId(k_EButton_A);
-	Axis0Type = EVRControllerAxisType::k_eControllerAxis_Joystick;
+	Axis0Type = EVRControllerAxisType::k_eControllerAxis_None; //EVRControllerAxisType::k_eControllerAxis_Joystick;
 	Axis1Type = EVRControllerAxisType::k_eControllerAxis_Trigger;
 	Axis2Type = EVRControllerAxisType::k_eControllerAxis_None;
 	Axis3Type = EVRControllerAxisType::k_eControllerAxis_None;
@@ -99,9 +109,20 @@ void CTrackedController::SetDefaultProperties()
 {
 	ETrackedPropertyError error;
 	CTrackedDevice::SetDefaultProperties();
+
+	error = SET_PROP(String, NamedIconPathDeviceOff, .c_str());
+	error = SET_PROP(String, NamedIconPathDeviceSearching, .c_str());
+	error = SET_PROP(String, NamedIconPathDeviceSearchingAlert, .c_str());
+	error = SET_PROP(String, NamedIconPathDeviceReady, .c_str());
+	error = SET_PROP(String, NamedIconPathDeviceReadyAlert, .c_str());
+	error = SET_PROP(String, NamedIconPathDeviceNotReady, .c_str());
+	error = SET_PROP(String, NamedIconPathDeviceStandby, .c_str());
+	error = SET_PROP(String, NamedIconPathDeviceAlertLow, .c_str());
+
 	error = SET_PROP(String, AttachedDeviceId, .c_str());
 	error = SET_PROP(Uint64, SupportedButtons, );
 	error = SET_PROP(Int32, Axis0Type, );
+	error = SET_PROP(Int32, Axis1Type, );
 	error = SET_PROP(Int32, Axis2Type, );
 	error = SET_PROP(Int32, Axis3Type, );
 	error = SET_PROP(Int32, Axis4Type, );
@@ -462,28 +483,37 @@ void CTrackedController::PacketReceived(USBPacket *pPacket, HmdVector3d_t *pCent
 			if ((pPacket->Trigger.Digital & BUTTON_0) == BUTTON_0)
 				newState.ulButtonPressed |= vr::ButtonMaskFromId(k_EButton_System);
 			if ((pPacket->Trigger.Digital & BUTTON_1) == BUTTON_1)
-				newState.ulButtonPressed |= vr::ButtonMaskFromId(k_EButton_A);
+				newState.ulButtonPressed |= vr::ButtonMaskFromId(k_EButton_ApplicationMenu);				
 			if ((pPacket->Trigger.Digital & BUTTON_2) == BUTTON_2)
-				newState.ulButtonPressed |= vr::ButtonMaskFromId(k_EButton_ApplicationMenu);
+				newState.ulButtonPressed |= vr::ButtonMaskFromId(k_EButton_Grip);				
 			if ((pPacket->Trigger.Digital & BUTTON_3) == BUTTON_3)
-				newState.ulButtonPressed |= vr::ButtonMaskFromId(k_EButton_Grip);
+				newState.ulButtonPressed |= vr::ButtonMaskFromId(k_EButton_DPad_Left);
+			if ((pPacket->Trigger.Digital & BUTTON_4) == BUTTON_4)
+				newState.ulButtonPressed |= vr::ButtonMaskFromId(k_EButton_DPad_Up);
+			if ((pPacket->Trigger.Digital & BUTTON_5) == BUTTON_5)
+				newState.ulButtonPressed |= vr::ButtonMaskFromId(k_EButton_DPad_Right);
+			if ((pPacket->Trigger.Digital & BUTTON_6) == BUTTON_6)
+				newState.ulButtonPressed |= vr::ButtonMaskFromId(k_EButton_DPad_Down);
+			if ((pPacket->Trigger.Digital & BUTTON_7) == BUTTON_7)
+				newState.ulButtonPressed |= vr::ButtonMaskFromId(k_EButton_A);
+
 
 			if (pPacket->Trigger.Analog[0].x > 0)
 				newState.ulButtonPressed |= vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger);
 			else
 				newState.ulButtonPressed &= ~vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger);
-			newState.rAxis[1].x = pPacket->Trigger.Analog[0].x;
+			newState.rAxis[0].x = pPacket->Trigger.Analog[0].x;
 
-			newState.rAxis[0].x = pPacket->Trigger.Analog[1].x;
-			newState.rAxis[0].y = pPacket->Trigger.Analog[1].y;
+			//newState.rAxis[0].x = pPacket->Trigger.Analog[1].x;
+			//newState.rAxis[0].y = pPacket->Trigger.Analog[1].y;
 
 			newState.unPacketNum = m_ControllerData.State.unPacketNum + 1;
 			uint64_t ulChangedPressed = newState.ulButtonPressed ^ m_ControllerData.State.ulButtonPressed;
 
-			if (newState.rAxis[1].x != m_ControllerData.State.rAxis[1].x)
-				m_pDriverHost->TrackedDeviceAxisUpdated(m_unObjectId, 1, newState.rAxis[1]); //trigger update
-			if (newState.rAxis[0].x != m_ControllerData.State.rAxis[0].x || newState.rAxis[0].y != m_ControllerData.State.rAxis[0].y)
-				m_pDriverHost->TrackedDeviceAxisUpdated(m_unObjectId, 0, newState.rAxis[0]); //joystick update
+			if (newState.rAxis[0].x != m_ControllerData.State.rAxis[0].x)
+				m_pDriverHost->TrackedDeviceAxisUpdated(m_unObjectId, 1, newState.rAxis[0]); //trigger update
+			//if (newState.rAxis[0].x != m_ControllerData.State.rAxis[0].x || newState.rAxis[0].y != m_ControllerData.State.rAxis[0].y)
+			//	m_pDriverHost->TrackedDeviceAxisUpdated(m_unObjectId, 0, newState.rAxis[0]); //joystick update
 
 			if (ulChangedPressed)
 			{

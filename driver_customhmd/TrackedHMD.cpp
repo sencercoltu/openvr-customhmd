@@ -6,6 +6,15 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 {
 	vr::EVRSettingsError error;
 
+	NamedIconPathDeviceOff = "{customhmd}headset_status_off.png";
+	NamedIconPathDeviceSearching = "{customhmd}headset_status_searching.gif";
+	NamedIconPathDeviceSearchingAlert = "{customhmd}headset_status_searching_alert.gif";
+	NamedIconPathDeviceReady = "{customhmd}headset_status_ready.png";
+	NamedIconPathDeviceReadyAlert = "{customhmd}headset_status_ready_alert.png";
+	NamedIconPathDeviceNotReady = "{customhmd}headset_status_error.png";
+	NamedIconPathDeviceStandby = "{customhmd}headset_status_standby.png";
+	NamedIconPathDeviceAlertLow = "{customhmd}headset_status_error.png";
+
 	TrackingSystemName = "Sony HMZ-T2 HMD";
 	ModelNumber = "HMZ-T2";
 	SerialNumber = "HMD-1244244";
@@ -187,6 +196,16 @@ void CTrackedHMD::SetDefaultProperties()
 {
 	CTrackedDevice::SetDefaultProperties();
 	ETrackedPropertyError error;
+
+
+	error = SET_PROP(String, NamedIconPathDeviceOff, .c_str());
+	error = SET_PROP(String, NamedIconPathDeviceSearching, .c_str());
+	error = SET_PROP(String, NamedIconPathDeviceSearchingAlert, .c_str());
+	error = SET_PROP(String, NamedIconPathDeviceReady, .c_str());
+	error = SET_PROP(String, NamedIconPathDeviceReadyAlert, .c_str());
+	error = SET_PROP(String, NamedIconPathDeviceNotReady, .c_str());
+	error = SET_PROP(String, NamedIconPathDeviceStandby, .c_str());
+	error = SET_PROP(String, NamedIconPathDeviceAlertLow, .c_str());
 
 	error = SET_PROP(Bool, ReportsTimeSinceVSync,);
 	error = SET_PROP(Bool, IsOnDesktop, );
@@ -696,7 +715,7 @@ void CTrackedHMD::PacketReceived(USBPacket *pPacket, HmdVector3d_t *pCenterEuler
 	unsigned int now = GetTickCount();
 	
 
-	if (m_HMDData.LastIPDPress && (now - m_HMDData.LastIPDProcess >= 250))
+	/*if (m_HMDData.LastIPDPress && (now - m_HMDData.LastIPDProcess >= 250))
 	{
 		auto diff = (now - m_HMDData.LastIPDPress) / 250.0f;
 		if (diff <= 4) diff = 1.0f;
@@ -704,7 +723,7 @@ void CTrackedHMD::PacketReceived(USBPacket *pPacket, HmdVector3d_t *pCenterEuler
 		UserIpdMeters += 0.0001f * m_HMDData.LastIPDSign * diff;
 		m_HMDData.LastIPDProcess = now;
 		SET_PROP(Float, UserIpdMeters, );
-	}
+	}*/
 
 
 	if (WAIT_OBJECT_0 == WaitForSingleObject(m_HMDData.hPoseLock, INFINITE))
@@ -732,41 +751,47 @@ void CTrackedHMD::PacketReceived(USBPacket *pPacket, HmdVector3d_t *pCenterEuler
 			}
 			break;
 			case COMMAND_DATA:
+				if (pPacket->Command.Command == CMD_IPD)
+				{
+					UserIpdMeters += 0.001f * ((float)pPacket->Command.Data.IPD.Direction);					
+					SET_PROP(Float, UserIpdMeters, );
+				}
+
 				break;
 			case TRIGGER_DATA:
 			{
 				//handle IPD and seated pos center button here
 				if ((pPacket->Trigger.Digital & BUTTON_0) == BUTTON_0)
 				{
-					
+					//seated center 
 				}
-				bool ipdState = false;
-				if ((pPacket->Trigger.Digital & BUTTON_1) == BUTTON_1)
-				{
-					//down
-					ipdState = true;
-					if (!m_HMDData.LastIPDPress)
-					{
-						m_HMDData.LastIPDSign = -1.0f;
-						UserIpdMeters -= 0.0001f;
-						m_HMDData.LastIPDProcess = m_HMDData.LastIPDPress = now;
-						SET_PROP(Float, UserIpdMeters, );
-					}
-				}
-				if ((pPacket->Trigger.Digital & BUTTON_2) == BUTTON_2)
-				{
-					//up
-					ipdState = true;
-					if (!m_HMDData.LastIPDPress)
-					{
-						m_HMDData.LastIPDSign = 1.0f;
-						UserIpdMeters += 0.0001f;
-						m_HMDData.LastIPDProcess = m_HMDData.LastIPDPress = now;
-						SET_PROP(Float, UserIpdMeters, );
-					}
-				}
-				if (!ipdState)
-					m_HMDData.LastIPDPress = 0;				
+				//bool ipdState = false;
+				//if ((pPacket->Trigger.Digital & BUTTON_1) == BUTTON_1)
+				//{
+				//	//down
+				//	ipdState = true;
+				//	if (!m_HMDData.LastIPDPress)
+				//	{
+				//		m_HMDData.LastIPDSign = -1.0f;
+				//		UserIpdMeters -= 0.0001f;
+				//		m_HMDData.LastIPDProcess = m_HMDData.LastIPDPress = now;
+				//		SET_PROP(Float, UserIpdMeters, );
+				//	}
+				//}
+				//if ((pPacket->Trigger.Digital & BUTTON_2) == BUTTON_2)
+				//{
+				//	//up
+				//	ipdState = true;
+				//	if (!m_HMDData.LastIPDPress)
+				//	{
+				//		m_HMDData.LastIPDSign = 1.0f;
+				//		UserIpdMeters += 0.0001f;
+				//		m_HMDData.LastIPDProcess = m_HMDData.LastIPDPress = now;
+				//		SET_PROP(Float, UserIpdMeters, );
+				//	}
+				//}
+				//if (!ipdState)
+				//	m_HMDData.LastIPDPress = 0;				
 			}
 			break;
 		}

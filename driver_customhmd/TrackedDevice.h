@@ -7,12 +7,12 @@
 #include "ServerDriver.h"	
 #include "Quaternion.h"
 
-using namespace vr; 
+using namespace vr;
 
 //#define SET_ERROR(a) if (pError) *pError = a;
 #define SET_PROP(t,p,e) m_pProperties->Set##t##Property(m_ulPropertyContainer, Prop_##p##_##t##, ##p####e##);
 
-class CTrackedDevice :	
+class CTrackedDevice :
 	public ITrackedDeviceServerDriver,
 	public CDriverLog
 {
@@ -20,9 +20,9 @@ class CTrackedDevice :
 public:
 	CTrackedDevice(std::string displayName, CServerDriver *pServer);
 	virtual ~CTrackedDevice();
-	
+
 	//std::string m_Id;
-	virtual void RunFrame(DWORD currTick) {}	
+	virtual void RunFrame(DWORD currTick) {}
 	//EVRInitError Activate(uint32_t unObjectId) override;
 	//void Deactivate() override;
 	void EnterStandby() override;
@@ -37,7 +37,7 @@ public:
 //	uint64_t GetUint64TrackedDeviceProperty(ETrackedDeviceProperty prop, ETrackedPropertyError * pError) override;
 //	HmdMatrix34_t GetMatrix34TrackedDeviceProperty(ETrackedDeviceProperty prop, ETrackedPropertyError * pError) override;
 
-protected:	
+protected:
 	//virtual std::string GetStringProperty(vr::ETrackedDeviceProperty prop, vr::ETrackedPropertyError *pError) = 0;
 	//virtual bool GetBoolProperty(vr::ETrackedDeviceProperty prop, vr::ETrackedPropertyError *pError) = 0;
 	//virtual float GetFloatProperty(ETrackedDeviceProperty prop, ETrackedPropertyError * pError) = 0; 
@@ -45,7 +45,7 @@ protected:
 	//virtual uint64_t GetUint64Property(ETrackedDeviceProperty prop, ETrackedPropertyError * pError) = 0;
 
 	virtual void PacketReceived(USBPacket *pPacket, HmdVector3d_t *pCenterEuler, HmdVector3d_t *pRelativePos) = 0;
-protected:	
+protected:
 	struct SendButtonData
 	{
 		EVRButtonId k_EButton;
@@ -66,6 +66,16 @@ protected:
 
 	std::string m_DisplayName;
 
+	std::string NamedIconPathDeviceOff;
+	std::string NamedIconPathDeviceSearching;
+	std::string NamedIconPathDeviceSearchingAlert;
+	std::string NamedIconPathDeviceReady;
+	std::string NamedIconPathDeviceReadyAlert;
+	std::string NamedIconPathDeviceNotReady;
+	std::string NamedIconPathDeviceStandby;
+	std::string NamedIconPathDeviceAlertLow;
+
+	std::string IconPathName;
 	std::string TrackingSystemName;
 	std::string ModelNumber;
 	std::string SerialNumber;

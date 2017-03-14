@@ -22,6 +22,7 @@ CTrackedDevice::CTrackedDevice(std::string displayName, CServerDriver *pServer)
 	m_unObjectId = k_unTrackedDeviceIndexInvalid;
 	m_ulPropertyContainer = 0;
 	
+	IconPathName = "icons";
 	TrackingSystemName = "Custom HMD";
 	ModelNumber = "0";
 	SerialNumber = "0";
@@ -64,6 +65,8 @@ void CTrackedDevice::SetDefaultProperties()
 {
 	ETrackedPropertyError error;
 	m_ulPropertyContainer = m_pProperties->TrackedDeviceToPropertyContainer(m_unObjectId);
+	
+	error = SET_PROP(String, IconPathName, .c_str());
 	error = SET_PROP(String, TrackingSystemName, .c_str());
 	error = SET_PROP(String, ModelNumber, .c_str());
 	error = SET_PROP(String, SerialNumber, .c_str());
