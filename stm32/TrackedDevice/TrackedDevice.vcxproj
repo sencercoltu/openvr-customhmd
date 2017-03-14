@@ -37,6 +37,7 @@
     <ClCompile>
       <AdditionalIncludeDirectories>Inc;%(ClCompile.AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>DEBUG=1;USE_HAL_DRIVER;STM32F103xB;%(ClCompile.PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Optimization>Og</Optimization>
     </ClCompile>
     <Link>
       <AdditionalLinkerInputs>;%(Link.AdditionalLinkerInputs)</AdditionalLinkerInputs>
@@ -63,6 +64,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\..\Programs\VisualGDB\gcc_compat.h" />
+    <ClInclude Include="..\..\..\..\Programs\VisualGDB\Toolchains\arm-eabi\arm-eabi\include\c++\6.2.0\stdlib.h" />
+    <ClInclude Include="..\..\..\..\Programs\VisualGDB\Toolchains\arm-eabi\arm-eabi\sys-include\string.h" />
+    <ClInclude Include="..\..\..\..\Programs\VisualGDB\Toolchains\arm-eabi\arm-eabi\sys-include\_ansi.h" />
     <ClInclude Include="..\Common\adxl345.h" />
     <ClInclude Include="..\Common\bmx055.h" />
     <ClInclude Include="..\Common\eeprom_flash.h" />
@@ -145,6 +150,7 @@
     <ClInclude Include="C:\Users\Sencer Coltu\AppData\Local\VisualGDB\EmbeddedBSPs\arm-eabi\com.sysprogs.arm.stm32\STM32F1xxxx\STM32F1xx_HAL_Driver\Inc\stm32f1xx_ll_fsmc.h" />
     <ClInclude Include="C:\Users\Sencer Coltu\AppData\Local\VisualGDB\EmbeddedBSPs\arm-eabi\com.sysprogs.arm.stm32\STM32F1xxxx\STM32F1xx_HAL_Driver\Inc\stm32f1xx_ll_sdmmc.h" />
     <ClInclude Include="C:\Users\Sencer Coltu\AppData\Local\VisualGDB\EmbeddedBSPs\arm-eabi\com.sysprogs.arm.stm32\STM32F1xxxx\STM32F1xx_HAL_Driver\Inc\stm32f1xx_ll_usb.h" />
+    <ClInclude Include="C:\Users\Sencer Coltu\AppData\Local\VisualGDB\EmbeddedBSPs\arm-eabi\com.sysprogs.arm.stm32\STM32_USB_Device_Library\Class\CustomHID\Inc\usbd_customhid.h" />
     <ClInclude Include="C:\Users\Sencer Coltu\AppData\Local\VisualGDB\EmbeddedBSPs\arm-eabi\com.sysprogs.arm.stm32\STM32_USB_Device_Library\Core\Inc\usbd_core.h" />
     <ClInclude Include="C:\Users\Sencer Coltu\AppData\Local\VisualGDB\EmbeddedBSPs\arm-eabi\com.sysprogs.arm.stm32\STM32_USB_Device_Library\Core\Inc\usbd_ctlreq.h" />
     <ClInclude Include="C:\Users\Sencer Coltu\AppData\Local\VisualGDB\EmbeddedBSPs\arm-eabi\com.sysprogs.arm.stm32\STM32_USB_Device_Library\Core\Inc\usbd_def.h" />

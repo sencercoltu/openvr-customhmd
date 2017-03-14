@@ -61,6 +61,8 @@
 #define CTL_XTRA_GPIO_Port GPIOA
 #define CTL_TRIGGER_Pin GPIO_PIN_1
 #define CTL_TRIGGER_GPIO_Port GPIOA
+#define CTL_BTN7_Pin GPIO_PIN_2
+#define CTL_BTN7_GPIO_Port GPIOA
 #define CTL_BTN0_Pin GPIO_PIN_3
 #define CTL_BTN0_GPIO_Port GPIOA
 #define CTL_BTN1_Pin GPIO_PIN_4
@@ -75,8 +77,6 @@
 #define CTL_BTN5_GPIO_Port GPIOB
 #define CTL_BTN6_Pin GPIO_PIN_1
 #define CTL_BTN6_GPIO_Port GPIOB
-#define CTL_BTN7_Pin GPIO_PIN_2
-#define CTL_BTN7_GPIO_Port GPIOB
 #define I2C_SCL_Pin GPIO_PIN_10
 #define I2C_SCL_GPIO_Port GPIOB
 #define I2C_SDA_Pin GPIO_PIN_11

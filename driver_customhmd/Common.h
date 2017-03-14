@@ -205,9 +205,9 @@ struct HMDData : TrackerData
 	float Frequency;
 	float AspectRatio;	
 	float SuperSample;		
-	unsigned int LastIPDPress;
-	unsigned int LastIPDProcess;
-	float LastIPDSign;
+	//unsigned int LastIPDPress;
+	//unsigned int LastIPDProcess;
+	//float LastIPDSign;
 	USBDataCache LastState;
 };
 

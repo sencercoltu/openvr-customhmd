@@ -83,6 +83,7 @@ extern "C" {
 #define CMD_SYNC			(uint8_t)0x03
 #define CMD_RAW_DATA		(uint8_t)0x04
 #define CMD_STATUS			(uint8_t)0x05
+#define CMD_IPD				(uint8_t)0x06
 
 
 #define BUTTON_0 0x01
@@ -198,6 +199,11 @@ struct USBStatusData
 	
 };
 
+struct USBIPDData
+{
+	int32_t Direction;
+};
+
 union CommandData
 {
 	struct USBVibrationData Vibration;
@@ -205,6 +211,7 @@ union CommandData
 	struct USBCalibrationData Calibration;
 	struct USBRawData Raw;
 	struct USBStatusData Status;	
+	struct USBIPDData IPD;
 };
 
 struct USBCommandData

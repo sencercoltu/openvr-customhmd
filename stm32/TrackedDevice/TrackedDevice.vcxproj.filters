@@ -325,6 +325,21 @@
     <ClInclude Include="Src\usbd_customhid.h">
       <Filter>Header files</Filter>
     </ClInclude>
+    <ClInclude Include="C:\Users\Sencer Coltu\AppData\Local\VisualGDB\EmbeddedBSPs\arm-eabi\com.sysprogs.arm.stm32\STM32_USB_Device_Library\Class\CustomHID\Inc\usbd_customhid.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Programs\VisualGDB\Toolchains\arm-eabi\arm-eabi\sys-include\string.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Programs\VisualGDB\Toolchains\arm-eabi\arm-eabi\include\c++\6.2.0\stdlib.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Programs\VisualGDB\Toolchains\arm-eabi\arm-eabi\sys-include\_ansi.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Programs\VisualGDB\gcc_compat.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="TrackedDevice-Debug.vgdbsettings">

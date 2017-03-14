@@ -148,6 +148,7 @@ void getMres()
 bool initSensors()
 {
 	hasBMX055 = checkBMX055(); if (hasBMX055) {initBMX055();}
+	/*
 	if (!hasBMX055)
 	{
 		hasADXL345 = checkADXL345(); if (hasADXL345) initADXL345();
@@ -156,6 +157,7 @@ bool initSensors()
 		if (!hasL3G4200D) //same address as hasITG3200
 			hasITG3200 = checkITG3200(); if (hasITG3200) initITG3200();
 	}
+	*/
 	getAres();
 	getGres();
 	getMres();

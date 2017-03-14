@@ -335,7 +335,7 @@
               <MiscControls />
               <Define>USE_HAL_DRIVER,STM32F103xB</Define>
               <Undefine />
-              <IncludePath>../Inc;  "C:/Users/Sencer Coltu/STM32Cube/Repository/STM32Cube_FW_F1_V1.4.0/Drivers/STM32F1xx_HAL_Driver/Inc";  "C:/Users/Sencer Coltu/STM32Cube/Repository/STM32Cube_FW_F1_V1.4.0/Drivers/STM32F1xx_HAL_Driver/Inc/Legacy";  "C:/Users/Sencer Coltu/STM32Cube/Repository/STM32Cube_FW_F1_V1.4.0/Middlewares/ST/STM32_USB_Device_Library/Core/Inc";  "C:/Users/Sencer Coltu/STM32Cube/Repository/STM32Cube_FW_F1_V1.4.0/Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc";  "C:/Users/Sencer Coltu/STM32Cube/Repository/STM32Cube_FW_F1_V1.4.0/Drivers/CMSIS/Device/ST/STM32F1xx/Include";  "C:/Users/Sencer Coltu/STM32Cube/Repository/STM32Cube_FW_F1_V1.4.0/Drivers/CMSIS/Include"</IncludePath>
+              <IncludePath>../Inc;        "C:/Users/Sencer Coltu/STM32Cube/Repository/STM32Cube_FW_F1_V1.4.0/Drivers/STM32F1xx_HAL_Driver/Inc";        "C:/Users/Sencer Coltu/STM32Cube/Repository/STM32Cube_FW_F1_V1.4.0/Drivers/STM32F1xx_HAL_Driver/Inc/Legacy";        "C:/Users/Sencer Coltu/STM32Cube/Repository/STM32Cube_FW_F1_V1.4.0/Middlewares/ST/STM32_USB_Device_Library/Core/Inc";        "C:/Users/Sencer Coltu/STM32Cube/Repository/STM32Cube_FW_F1_V1.4.0/Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc";        "C:/Users/Sencer Coltu/STM32Cube/Repository/STM32Cube_FW_F1_V1.4.0/Drivers/CMSIS/Device/ST/STM32F1xx/Include";        "C:/Users/Sencer Coltu/STM32Cube/Repository/STM32Cube_FW_F1_V1.4.0/Drivers/CMSIS/Include"</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>

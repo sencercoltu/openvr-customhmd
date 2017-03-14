@@ -71,9 +71,10 @@
 //#end
 #endif
 
-#define THIS_DEVICE (HMD_SOURCE)
+//#define THIS_DEVICE (HMD_SOURCE)
 //#define THIS_DEVICE LEFTCTL_SOURCE
-#define IS_CONTROLLER (THIS_DEVICE == LEFTCTL_SOURCE || RIGHT_DEVICE == LEFTCTL_SOURCE)
+#define THIS_DEVICE RIGHTCTL_SOURCE
+#define IS_CONTROLLER (THIS_DEVICE == LEFTCTL_SOURCE || THIS_DEVICE == RIGHTCTL_SOURCE)
 #define IS_HMD (THIS_DEVICE == HMD_SOURCE)
 /* USER CODE END Includes */
 
@@ -87,6 +88,8 @@ SPI_HandleTypeDef hspi2;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
+
+
 enum RawModes
 {
 	RawMode_Off = 0,
@@ -145,6 +148,13 @@ uint64_t lastButtonRefresh = 0;
 volatile uint32_t LastDigitalChange = 0;
 uint16_t DigitalValues = 0;
 uint16_t DigitalCache = 0;
+
+#ifdef IS_HMD
+int32_t KnobState = 0;
+int32_t KnobCount = 0;
+uint64_t LastKnobChange = 0;
+#endif //IS_HMD
+
 //float AccelVector[3] = {0};
 float GravityVector[3] = { 0 };
 float CompAccelVector[3] = { 0 };
@@ -153,7 +163,7 @@ float VelocityVector[3] = { 0 };
 //float ComplimentaryVelocityVector[3] = {0};
 
 uint64_t lastRotationUpdate = 0;
-uint64_t now = 0;
+volatile uint64_t now = 0;
 uint32_t ticks = 0;
 uint32_t nextSend = 0;
 
@@ -170,12 +180,13 @@ int extraDelay = 2
 #endif //IS_CONTROLLER
 ;
 
-
+//processmask flags
 #define READY_ROT 0x01
 #define READY_BUT 0x02
 #define READY_POS 0x04
 #define READY_RAW 0x08
 #define READY_CAL 0x10
+#define READY_IPD 0x20
 
 uint8_t ReadyMask = 0;
 uint8_t ProcessMask = 0;
@@ -209,11 +220,11 @@ void SystemClock_Config(void);
 void Error_Handler(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
-static void MX_SPI2_Init(void);
 static void MX_I2C2_Init(void);
+static void MX_SPI2_Init(void);
 
 /* USER CODE BEGIN PFP */
-	/* Private function prototypes -----------------------------------------------*/
+		/* Private function prototypes -----------------------------------------------*/
 
 #ifdef __cplusplus
 }
@@ -300,16 +311,31 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		break;
 	case IR_SENS2_Pin:
 		break;
-		//case IR_SENS3_Pin: disabled for SWJ-IO
+		//case IR_SENS3_Pin: temporarily disabled for SWJ-IO
 		//	break;
 	case IR_SENS4_Pin:
 		break;
 	case IR_SENS5_Pin:
 		break;
+#if IS_HMD
+		//first 3 pins are for IPD rotary knob if device is HMD
+	case CTL_BTN0_Pin: //re-center seated pos
+		LastDigitalChange = HAL_GetTick();
+		break;
+	case CTL_BTN1_Pin: // IPD up
+	case CTL_BTN2_Pin: // IPD down
+	{
+		//read both pins
+		LastKnobChange = HAL_GetTick();
+		KnobCount++;
+		break;
+	}
+#endif //IS_HMD
+
+#if IS_CONTROLLER
 	case CTL_BTN0_Pin:
 	case CTL_BTN1_Pin:
 	case CTL_BTN2_Pin:
-		//first 3 pins are for IPD rotary knob if device is HMD
 	case CTL_BTN3_Pin:
 	case CTL_BTN4_Pin:
 	case CTL_BTN5_Pin:
@@ -317,11 +343,12 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	case CTL_BTN7_Pin:
 		LastDigitalChange = HAL_GetTick();
 		break;
+#endif //IS_CONTROLLER
 	}
 }
 
 
-inline void ProcessOwnPacket(USBPacket *pPacket)
+/*inline*/ void ProcessOwnPacket(USBPacket *pPacket)
 {
 	if (lastCommandSequence != pPacket->Header.Sequence) //discard duplicates
 	{
@@ -378,20 +405,20 @@ inline void ProcessOwnPacket(USBPacket *pPacket)
 }
 
 #if IS_CONTROLLER
-inline void ForwardRFPacket(USBPacket *pPacket)
+/*inline*/ void ForwardRFPacket(USBPacket *pPacket)
 {
 	RF_SendPayload(&hspi2, (uint8_t*)pPacket, sizeof(USBPacket));
 }
 #endif //IS_CONTROLLER
 
 #if IS_HMD
-inline void ForwardUSBPacket(USBPacket *pPacket)
+/*inline*/ void ForwardUSBPacket(USBPacket *pPacket)
 {
 	uint8_t channelIndex = pPacket->Header.Type & 0x0F;
 	if (channelIndex < MAX_SOURCE)
 	{
 		CommChannel *pChannel = &Channels[channelIndex];
-		pChannel->lastReceive = now;
+		pChannel->lastReceive = ticks;
 		//if (channelIndex == HMD_SOURCE)
 		//	pChannel->lastInSequence = pPacket->Header.Sequence - 1;
 		if (pChannel->lastInSequence != pPacket->Header.Sequence) //skip duplicates for same channel
@@ -406,7 +433,7 @@ inline void ForwardUSBPacket(USBPacket *pPacket)
 	}
 }
 
-inline void BroadcastRFPackets()
+/*inline*/ void BroadcastRFPackets()
 {
 	//send everything in channel buffer without checking sequence
 	for (uint8_t channelIndex = 0; channelIndex < MAX_SOURCE; channelIndex++)
@@ -421,7 +448,7 @@ inline void BroadcastRFPackets()
 			ChannelStateFlags &= ~(1 << channelIndex); //clear flags
 			continue;
 		}
-		if (now - pChannel->lastReceive > 10000)
+		if (ticks - pChannel->lastReceive > 10000)
 		{
 			// skip if timedout. (powered off controller etc)
 			memset(&pChannel->lastCommand, 0, sizeof(USBPacket));
@@ -434,7 +461,7 @@ inline void BroadcastRFPackets()
 			rfStatus = RF_FifoStatus(&hspi2);
 			readyToSend = ((rfStatus & RF_TX_FIFO_EMPTY_Bit) == RF_TX_FIFO_EMPTY_Bit); //if empty 
 		}
-		if (readyToSend && pChannel->remainingTransmits > 0 && now > pChannel->nextTransmit)
+		if (readyToSend && (pChannel->remainingTransmits > 0) && (ticks > pChannel->nextTransmit))
 		{
 			readyToSend = false;
 			pChannel->nextTransmit = HAL_GetTick() + (rand() % 10); //max 10 ms for retransmit
@@ -455,7 +482,7 @@ inline void BroadcastRFPackets()
 }
 #endif //IS_HMD
 
-inline void ForwardPacket(USBPacket *pPacket)
+/*inline*/ void ForwardPacket(USBPacket *pPacket)
 {
 #if IS_HMD
 	ForwardUSBPacket(pPacket);
@@ -465,7 +492,7 @@ inline void ForwardPacket(USBPacket *pPacket)
 #endif //IS_CONTROLLER				
 }
 
-inline void ProcessSensors()
+/*inline*/ void ProcessSensors()
 {
 	float elapsedTime = (now - lastRotationUpdate) / 1000000.0f; // set integration time by time elapsed since last filter update				
 
@@ -545,7 +572,7 @@ inline void ProcessSensors()
 }
 
 #if IS_CONTROLLER
-inline void ProcessADC()
+/*inline*/ void ProcessADC()
 {
 	if (ticks - LastADCChange >= 50) //20 analog values per second
 	{
@@ -569,7 +596,7 @@ inline void ProcessADC()
 }
 #endif //IS_CONTROLLER
 
-inline void CalibrateSensors(void)
+/*inline*/ void CalibrateSensors(void)
 {
 	for (int i = 0; i < 3; i++)
 	{
@@ -595,7 +622,7 @@ inline void CalibrateSensors(void)
 	isCalibrated = true;
 }
 
-inline void ResetSensorCalibration()
+/*inline*/ void ResetSensorCalibration()
 {
 	memset(&eepromData, 0, sizeof(eepromData));
 	tSensorData.ResetCalibration();
@@ -610,6 +637,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
+
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -623,8 +651,8 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
-  MX_SPI2_Init();
   MX_I2C2_Init();
+  MX_SPI2_Init();
 
   /* USER CODE BEGIN 2 */
 
@@ -699,6 +727,9 @@ int main(void)
 #if IS_CONTROLLER
 	MX_ADC1_Init();
 #endif //IS_CONTROLLER
+
+
+	
 
 	DigitalValues = DigitalCache = 0;
 	LedOff();
@@ -816,31 +847,48 @@ int main(void)
 		ProcessADC();
 #endif //IS_CONTROLLER
 
-		if (LastDigitalChange && (ticks - LastDigitalChange >= 25)) //using sw debounce 
+#if IS_HMD
+		if (LastKnobChange && (ticks - LastKnobChange >= 2)) //using sw debounce 2 ms
+		{			
+			LastKnobChange = 0;
+			uint8_t btnUp = HAL_GPIO_ReadPin(CTL_BTN1_GPIO_Port, CTL_BTN1_Pin) == GPIO_PIN_SET ? 1 : 0;
+			uint8_t btnDown = HAL_GPIO_ReadPin(CTL_BTN2_GPIO_Port, CTL_BTN2_Pin) == GPIO_PIN_SET ? 1 : 0;
+			if (btnUp && !btnDown)
+			{
+				//up
+				if (KnobState < 0) KnobState = 0;
+				KnobState += KnobCount / 4;				
+				if (KnobState == 0) KnobState = 1;
+				//KnobCache &= ~BUTTON_2;
+			}
+			else if (!btnUp && btnDown)
+			{
+				//down
+				//KnobCache &= ~BUTTON_1;
+				if (KnobState > 0) KnobState = 0;
+				KnobState -= KnobCount / 4;
+				if (KnobState == 0) KnobState = -1;
+			}
+			KnobCount = 0;
+		}
+#endif //IS_HMD
+
+
+		if (LastDigitalChange && (ticks - LastDigitalChange >= 25)) //using sw debounce 25ms (appx. 40 cps)
 		{
 			LastDigitalChange = 0;
 			DigitalValues = 0;
 			if (HAL_GPIO_ReadPin(CTL_BTN0_GPIO_Port, CTL_BTN0_Pin) == GPIO_PIN_SET) DigitalValues |= BUTTON_0;
+#if IS_CONTROLLER
 			if (HAL_GPIO_ReadPin(CTL_BTN1_GPIO_Port, CTL_BTN1_Pin) == GPIO_PIN_SET) DigitalValues |= BUTTON_1;
 			if (HAL_GPIO_ReadPin(CTL_BTN2_GPIO_Port, CTL_BTN2_Pin) == GPIO_PIN_SET) DigitalValues |= BUTTON_2;
 			if (HAL_GPIO_ReadPin(CTL_BTN3_GPIO_Port, CTL_BTN3_Pin) == GPIO_PIN_SET) DigitalValues |= BUTTON_3;
 			if (HAL_GPIO_ReadPin(CTL_BTN4_GPIO_Port, CTL_BTN4_Pin) == GPIO_PIN_SET) DigitalValues |= BUTTON_4;
 			if (HAL_GPIO_ReadPin(CTL_BTN5_GPIO_Port, CTL_BTN5_Pin) == GPIO_PIN_SET) DigitalValues |= BUTTON_5;
 			if (HAL_GPIO_ReadPin(CTL_BTN6_GPIO_Port, CTL_BTN6_Pin) == GPIO_PIN_SET) DigitalValues |= BUTTON_6;
-			if (HAL_GPIO_ReadPin(CTL_BTN7_GPIO_Port, CTL_BTN7_Pin) == GPIO_PIN_SET) DigitalValues |= BUTTON_7;
-
-			if (DigitalCache != DigitalValues)
-			{
-				//if any digital value has changes
-				DigitalCache = DigitalValues;
-				//hasTriggerData = true;
-				buttonRetransmit = 1
-#if IS_CONTROLLER						
-					+ 4
+			if ((DigitalValues & ~BUTTON_0) == 0) //middle button only if no direction is pressed
+				if (HAL_GPIO_ReadPin(CTL_BTN7_GPIO_Port, CTL_BTN7_Pin) == GPIO_PIN_SET) DigitalValues |= BUTTON_7;
 #endif //IS_CONTROLLER
-					;
-				lastButtonRefresh = ticks;
-			}
 		}
 #if IS_CONTROLLER		
 		if (ticks - lastButtonRefresh >= buttonRefreshTimeout)
@@ -850,6 +898,21 @@ int main(void)
 			lastButtonRefresh = ticks;
 		}
 #endif //IS_CONTROLLER
+
+		if (DigitalCache != DigitalValues)
+		{
+			//if any digital value has changes
+			DigitalCache = DigitalValues;
+			//hasTriggerData = true;
+			buttonRetransmit = 1
+#if IS_CONTROLLER						
+				+ 4
+#endif //IS_CONTROLLER
+				;
+			lastButtonRefresh = ticks;
+		}
+
+
 		ProcessSensors();
 
 #if IS_HMD
@@ -868,13 +931,13 @@ int main(void)
 					//forward from USB to RF
 					CommChannel *pChannel = &Channels[channelIndex];
 					//only send if active more than 1 sec
-					if (pChannel->lastOutSequence != pFromUSBPacket->Header.Sequence && now - pChannel->lastReceive <= 1000)
+					if ((pChannel->lastOutSequence != pFromUSBPacket->Header.Sequence) && ((ticks - pChannel->lastReceive) <= 1000))
 					{
 						//got packet from usb, forward to trackeddevice
 						memcpy(&pChannel->lastCommand, pFromUSBPacket, sizeof(USBPacket));
 						//send same packet a few times
 						pChannel->remainingTransmits = 5;
-						pChannel->nextTransmit = now;
+						pChannel->nextTransmit = ticks;
 						pChannel->lastOutSequence = pFromUSBPacket->Header.Sequence;
 						ChannelStateFlags |= 1 << channelIndex;
 					}
@@ -930,6 +993,8 @@ int main(void)
 				ReadyMask |= READY_RAW;
 			if (SensorCalibRequest != 0xFF)
 				ReadyMask |= READY_CAL;
+			if (KnobState)
+				ReadyMask |= READY_IPD;
 			if (ReadyMask)
 			{
 				ProcessMask = ReadyMask;
@@ -1069,8 +1134,8 @@ int main(void)
 #endif //IS_HMD					
 
 #if IS_CONTROLLER					
-				FromDevicePacket.Trigger.Analog[0].x = ((float)ADC_Cache[0]) / 100.0f; //trigger
-				FromDevicePacket.Trigger.Analog[0].y = ((float)ADC_Cache[1]) / 100.0f; //IPD
+				FromDevicePacket.Trigger.Analog[0].x = ((float)ADC_Cache[1]) / 100.0f; //trigger
+				FromDevicePacket.Trigger.Analog[0].y = ((float)ADC_Cache[0]) / 100.0f; //Extra
 				FromDevicePacket.Trigger.Analog[1].x = 0; //reserved
 				FromDevicePacket.Trigger.Analog[1].y = 0; //reserved
 #endif //IS_CONTROLLER
@@ -1079,10 +1144,20 @@ int main(void)
 				SetPacketCrc(&FromDevicePacket);
 				ForwardPacket(&FromDevicePacket);
 				ProcessMask &= ~READY_BUT;
-				//#if IS_CONTROLLER				
-								//rfStatus = RF_FifoStatus(&hspi2); readyToSend = (rfStatus & RF_TX_FIFO_FULL_Bit) == 0x00 ? 1 : 0;									
-				//#endif //IS_CONTROLLER				
 			}
+			else if (ProcessMask & READY_IPD)
+			{				
+				FromDevicePacket.Header.Type = THIS_DEVICE | COMMAND_DATA;
+				FromDevicePacket.Command.Command = CMD_IPD;
+				FromDevicePacket.Header.Sequence++;				
+				FromDevicePacket.Command.Data.IPD.Direction = KnobState;
+				KnobState = 0;
+				SetPacketCrc(&FromDevicePacket);
+				ForwardPacket(&FromDevicePacket);
+				ProcessMask &= ~READY_IPD;
+			}
+
+
 
 			if (!ProcessMask)
 #if IS_CONTROLLER			
@@ -1295,7 +1370,7 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin : LED_Pin */
   GPIO_InitStruct.Pin = LED_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LED_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : IR_SENS4_Pin IR_SENS5_Pin */
@@ -1304,23 +1379,23 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PA2 PA13 PA14 PA15 */
-  GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15;
+  /*Configure GPIO pins : CTL_BTN7_Pin CTL_BTN0_Pin CTL_BTN1_Pin CTL_BTN2_Pin 
+                           CTL_BTN3_Pin CTL_BTN4_Pin */
+  GPIO_InitStruct.Pin = CTL_BTN7_Pin|CTL_BTN0_Pin|CTL_BTN1_Pin|CTL_BTN2_Pin 
+                          |CTL_BTN3_Pin|CTL_BTN4_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : CTL_BTN5_Pin CTL_BTN6_Pin */
+  GPIO_InitStruct.Pin = CTL_BTN5_Pin|CTL_BTN6_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PB2 PB3 PB4 PB5 */
+  GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : CTL_BTN0_Pin CTL_BTN1_Pin CTL_BTN2_Pin CTL_BTN3_Pin 
-                           CTL_BTN4_Pin */
-  GPIO_InitStruct.Pin = CTL_BTN0_Pin|CTL_BTN1_Pin|CTL_BTN2_Pin|CTL_BTN3_Pin 
-                          |CTL_BTN4_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
-  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : CTL_BTN5_Pin CTL_BTN6_Pin CTL_BTN7_Pin */
-  GPIO_InitStruct.Pin = CTL_BTN5_Pin|CTL_BTN6_Pin|CTL_BTN7_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
-  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pin : IR_SYNC_Pin */
@@ -1335,19 +1410,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PB3 PB4 PB5 */
-  GPIO_InitStruct.Pin = GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5;
+  /*Configure GPIO pins : PA13 PA14 PA15 */
+  GPIO_InitStruct.Pin = GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : SPI_RF_NSS_Pin SPI_RF_CE_Pin */
-  GPIO_InitStruct.Pin = SPI_RF_NSS_Pin|SPI_RF_CE_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : CTL_VIBRATE1_Pin CTL_VIBRATE0_Pin */
-  GPIO_InitStruct.Pin = CTL_VIBRATE1_Pin|CTL_VIBRATE0_Pin;
+  /*Configure GPIO pins : SPI_RF_NSS_Pin SPI_RF_CE_Pin CTL_VIBRATE1_Pin CTL_VIBRATE0_Pin */
+  GPIO_InitStruct.Pin = SPI_RF_NSS_Pin|SPI_RF_CE_Pin|CTL_VIBRATE1_Pin|CTL_VIBRATE0_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
@@ -1390,8 +1459,8 @@ extern "C"
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler */
-	/* User can add his own implementation to report the HAL error return state */
-	BlinkRease2(80, false);
+	  /* User can add his own implementation to report the HAL error return state */
+	BlinkRease2(50, false);
 	LedOff();
 	NVIC_SystemReset();
   /* USER CODE END Error_Handler */ 
@@ -1409,8 +1478,8 @@ void Error_Handler(void)
 void assert_failed(uint8_t* file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
-	  /* User can add his own implementation to report the file name and line number,
-	  ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
+		/* User can add his own implementation to report the file name and line number,
+		ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
   /* USER CODE END 6 */
 
 }
