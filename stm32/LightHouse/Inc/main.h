@@ -59,8 +59,6 @@
 #define SYNC_SEND_GPIO_Port GPIOA
 #define SYNC_RECV_Pin GPIO_PIN_9
 #define SYNC_RECV_GPIO_Port GPIOA
-#define LH_ID_Pin GPIO_PIN_9
-#define LH_ID_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
