@@ -1,7 +1,7 @@
 /**
   ******************************************************************************
   * @file           : usbd_desc.c
-  * @version        : v1.0_Cube
+  * @version        : v2.0_Cube
   * @brief          : This file implements the USB Device descriptors
   ******************************************************************************
   *
@@ -68,12 +68,12 @@
   */ 
 #define USBD_VID     0x1974
 #define USBD_LANGID_STRING     1033
-#define USBD_MANUFACTURER_STRING     (uint8_t *)"Coltu"
+#define USBD_MANUFACTURER_STRING     "Coltu"
 #define USBD_PID_FS     0x0001
-#define USBD_PRODUCT_STRING_FS     (uint8_t *)"Custom HMD"
-#define USBD_SERIALNUMBER_STRING_FS     (uint8_t *)"20170125-B"
-#define USBD_CONFIGURATION_STRING_FS     (uint8_t *)"Custom HMD HID Config"
-#define USBD_INTERFACE_STRING_FS     (uint8_t *)"Custom HMD HID Interface"
+#define USBD_PRODUCT_STRING_FS     "Custom HMD"
+#define USBD_SERIALNUMBER_STRING_FS     "20170125-B"
+#define USBD_CONFIGURATION_STRING_FS     "Custom HMD HID Config"
+#define USBD_INTERFACE_STRING_FS     "Custom HMD HID Interface"
 
 /* USER CODE BEGIN 0 */
 
