@@ -6,6 +6,7 @@
 
 EVRInitError CServerDriver::Init(IVRDriverContext *pDriverContext) //IVRDriverLog * pDriverLog, IServerDriverHost * pDriverHost, const char * pchUserDriverConfigDir, const char * pchDriverInstallDir)
 {	
+	pSharedMem = nullptr;
 	VR_INIT_SERVER_DRIVER_CONTEXT(pDriverContext);
 	InitDriverLog(vr::VRDriverLog());
 
@@ -38,6 +39,8 @@ EVRInitError CServerDriver::Init(IVRDriverContext *pDriverContext) //IVRDriverLo
 
 	if (!hmd->IsConnected())
 		return VRInitError_Init_HmdNotFound;
+
+	pSharedMem = new CShMem();
 
 	m_TrackedDevices.push_back(hmd); //seems steamvr wont init without adding hmd device on init??	
 
@@ -79,6 +82,10 @@ void CServerDriver::Cleanup()
 	timeEndPeriod(1);
 	CleanupDriverLog();
 	VR_CLEANUP_SERVER_DRIVER_CONTEXT();
+
+	if (pSharedMem)
+		delete pSharedMem;
+	pSharedMem = nullptr;
 }
 
 unsigned int WINAPI CServerDriver::ProcessThread(void *p)
@@ -90,9 +97,19 @@ unsigned int WINAPI CServerDriver::ProcessThread(void *p)
 	return 0;
 }
 
+bool CServerDriver::IsMonitorConnected() 
+{
+	return pSharedMem->_status.State == Active;
+}
+
 void CServerDriver::SendDriverCommand(USBPacket *command)
 {
 	m_CommandQueue.push_back(command);
+}
+
+void CServerDriver::SendScreen(EVREye eye, int stride, int width, int height, char *screenData)
+{
+	pSharedMem->WriteScreen(eye, stride, width, height, screenData);
 }
 
 void CServerDriver::ScanSyncReceived(uint64_t syncTime)
@@ -125,14 +142,14 @@ void CServerDriver::Run()
 
 	//USBCalibrationData calibrationData[3] = { 0 };
 
-	CShMem mem;
+	
 	auto state = CommState::Disconnected;
 	auto prevState = state;
 
 	while (m_IsRunning)
 	{
 		prevState = state;
-		state = mem.GetState();
+		state = pSharedMem->GetState();
 		if (state == CommState::Disconnected)
 		{
 			Sleep(100);
@@ -146,14 +163,14 @@ void CServerDriver::Run()
 			//buf[0] = 0x00;
 			USBPacket *pPacket = m_CommandQueue.front();
 			//*((USBPacket*)(buf + 1)) = *pPacket;
-			mem.WriteOutgoingPacket((char *)pPacket);
+			pSharedMem->WriteOutgoingPacket((char *)pPacket);
 			m_CommandQueue.pop_front();
 			delete pPacket;
 			//res = hid_write(pHandle, buf, sizeof(buf));
 		}
 
 		int total = 0;
-		char *packets = mem.ReadIncomingPackets(&total);
+		char *packets = pSharedMem->ReadIncomingPackets(&total);
 		//res = hid_read_timeout(pHandle, buf, sizeof(buf), 10); 
 		if (total == 0)
 		{

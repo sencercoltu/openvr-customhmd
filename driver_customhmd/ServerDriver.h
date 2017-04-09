@@ -13,6 +13,7 @@ class CServerDriver :
 	public CDriverLog	
 {		
 private:	
+	CShMem *pSharedMem;
 	EVRInitError Init(IVRDriverContext *pDriverContext); // IVRDriverLog * pDriverLog, IServerDriverHost * pDriverHost, const char * pchUserDriverConfigDir, const char * pchDriverInstallDir) override;
 	void Cleanup() override;
 	//uint32_t GetTrackedDeviceCount() override;
@@ -26,8 +27,10 @@ private:
 public:
 	//CDriverLog *m_pLog;
 	IVRServerDriverHost *m_pDriverHost;
+	bool IsMonitorConnected();
 	void AlignHMD(HmdVector3d_t *pAlign);
 	void SendDriverCommand(USBPacket *command);
+	void SendScreen(EVREye eye, int stride, int width, int height, char *screenData);
 	void RemoveTrackedDevice(CTrackedDevice *pDevice);
 private:	
 	//std::string m_UserDriverConfigDir;

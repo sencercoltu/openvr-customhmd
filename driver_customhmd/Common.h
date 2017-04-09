@@ -193,7 +193,7 @@ struct HMDData : TrackerData
 {
 	CTrackedHMD *pHMDDriver;
 	WCHAR DisplayName[CCHDEVICENAME];
-	WCHAR Model[128];	
+	WCHAR Model[128];		
 	bool IsConnected;
 	bool Windowed;
 	bool DirectMode;
@@ -205,10 +205,8 @@ struct HMDData : TrackerData
 	float Frequency;
 	float AspectRatio;	
 	float SuperSample;		
-	//unsigned int LastIPDPress;
-	//unsigned int LastIPDProcess;
-	//float LastIPDSign;
 	USBDataCache LastState;
+	bool IsRemoteDisplay;
 };
 
 struct ControllerData : TrackerData

@@ -35,7 +35,11 @@
 #include "stm32f1xx_hal.h"
 
 /* USER CODE BEGIN Includes */
-#include "..\..\Common\led.h"
+#undef UNUSED
+#define UNUSED(x) ;
+
+#include "..\\..\\Common\\led.h"
+#include "..\\..\\Common\\eeprom_flash.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -45,8 +49,9 @@ TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim2;
 
 /* USER CODE BEGIN PV */
-/* Private variables ---------------------------------------------------------*/
-
+#ifdef __cplusplus
+extern "C" {
+#endif
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -63,6 +68,9 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
+#ifdef __cplusplus
+}
+#endif
 
 /* USER CODE END PFP */
 
@@ -85,11 +93,11 @@ void HAL_MicroDelay(uint64_t delay)
 }
 
 volatile int step = 0;
-#define SYNC_MARK 0xD3
-#define VERT 0x21
-#define HORZ 0x41
-#define REVERSE 0x08
-#define PULSE_WIDTH 600
+#define SYNC_MARK (0xD3)
+#define VERT (0x21)
+#define HORZ (0x41)
+#define REVERSE (0x08)
+#define PULSE_WIDTH (600)
 
 volatile bool selfSync = false; 
 
@@ -211,7 +219,7 @@ void SetLedDuty(float x)
 	TIM3->CCR4 = (uint32_t)(((float)(TIM3->ARR) / 100.0f) * x);
 	
 }
-#define SERVO_90 130
+#define SERVO_90 (130)
 /* USER CODE END 0 */
 
 int main(void)
@@ -254,14 +262,20 @@ int main(void)
 	uint8_t direction = 0;
 	uint32_t angle = 2000;
 	
-	uint8_t lightHouseId = (GPIO_PIN_SET == HAL_GPIO_ReadPin(LH_ID_GPIO_Port, LH_ID_Pin)? 0x10 : 0x00); 
+	uint8_t lightHouseId = 0; // (GPIO_PIN_SET == HAL_GPIO_ReadPin(LH_ID_GPIO_Port, LH_ID_Pin) ? 0x10 : 0x00);
 	//uint32_t lastCommandTime = HAL_GetTick();
 	
 	if (!lightHouseId) SyncCommand = HORZ;
-	TIM1->CCR1 = 0; //set %0 duty
+	TIM1->CCR1 = 38; //set %0 duty
+
+	uint32_t v = 5000; //50000 = 1hz
+	TIM2->ARR = v - 1;
+	TIM2->CCR1 = v / 2; //set %0 duty
+	TIM2->CCR2 = v / 2; //set %0 duty
 	
 	while (true)
-	{		
+	{	
+		continue;
 		uint32_t now = HAL_GetTick();
 		if (now > NextTurn) SyncCommand = HORZ;			
 		if (SyncCommand == 0) continue;
@@ -272,7 +286,9 @@ int main(void)
 				angle = 10;
 			else
 				angle = 20;			
-			direction = (angle == 10)? 0: REVERSE;				
+			direction = (angle == 10)? 0: REVERSE;		
+
+			angle = 50;
 			
 			HAL_Delay(SERVO_90); // wait until remote finish
 			LedOn();
@@ -298,7 +314,7 @@ int main(void)
 			HAL_GPIO_WritePin(LASER_HORZ_GPIO_Port, LASER_HORZ_Pin, GPIO_PIN_RESET); //turn off horz laser
 			
 			LedOff();	
-			NextTurn = HAL_GetTick() + ((SERVO_90 + 21) * 2) + 10;
+			NextTurn = HAL_GetTick(); // +((SERVO_90 + 21) * 2) + 10;
 		}
 		SyncCommand = 0;
 		
@@ -323,7 +339,6 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;
@@ -458,7 +473,7 @@ static void MX_TIM2_Init(void)
   htim2.Instance = TIM2;
   htim2.Init.Prescaler = 71;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 19999;
+  htim2.Init.Period = 3190;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
   {
@@ -484,7 +499,7 @@ static void MX_TIM2_Init(void)
   }
 
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 10000;
+  sConfigOC.Pulse = 1600;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)

@@ -79,13 +79,13 @@ struct Sensor
 			rawDiff  = fabs(rawDiff);
 			if (rawDiff > Noise)
 				rawDiff = Noise; 
-			Deviation[i] = Deviation[i] * (0.9f) + rawDiff * (0.1f);
+			Deviation[i] = Deviation[i] * (0.95f) + rawDiff * (0.05f);
 			Compensated[i] = offsetCompensated * ((offsetCompensated > 0) ? PosScale[i] : NegScale[i]);
 			LastRaw[i] = offsetCompensated;			
 			if (fabs(Filtered[i] - Compensated[i]) > Deviation[i])
 				Filtered[i] = Compensated[i];
 			else
-				Filtered[i] = Filtered[i] * (1.0f - Gain) +  Compensated[i] * Gain;			
+				Filtered[i] = (Filtered[i] * (1.0f - Gain)) + (Compensated[i] * Gain);			
 			Converted[i] = Filtered[i] * Resolution;
 		}
 	}
@@ -112,11 +112,11 @@ struct SensorData
 	void Setup(float aRes, float gRes, float mRes)
 	{
 		Accel.SetResolution(aRes);
-		Accel.SetNoise(10);
-		Accel.SetGain(0.5);
+		Accel.SetNoise(5);
+		Accel.SetGain(0.2);
 		Gyro.SetResolution(gRes);
-		Gyro.SetGain(0.1);		
-		Gyro.SetNoise(100);
+		Gyro.SetGain(0.05);		
+		Gyro.SetNoise(5);
 		Mag.SetResolution(mRes);
 	}
 	
