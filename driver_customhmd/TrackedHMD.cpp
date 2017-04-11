@@ -1,18 +1,26 @@
 #include <process.h>
 #include "TrackedHMD.h"
 #include <mfapi.h>
-//#include "lz4.h"
+
+//#include <wincodec.h>
+
 
 CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTrackedDevice(displayName, pServer)
 {
 	vr::EVRSettingsError error;
+	m_hTJ = tjInitCompress();
 
+	m_SyncTexture = 0;
+	m_pSyncTexture = nullptr;
+
+
+	m_hTextureMapLock = CreateMutex(nullptr, FALSE, L"TextureMapLock");
 	m_hBufferLock = CreateMutex(nullptr, FALSE, L"DirectBufferLock");
 	m_HasDirectFrame = false;
 	//m_CompressedBufferSize = 0;
 	m_SyncTexture = 0;
-//	m_PixelBufferSize = 0;
-//	m_pPixelBuffer = nullptr;
+	//	m_PixelBufferSize = 0;
+	//	m_pPixelBuffer = nullptr;
 	m_pContext = nullptr;
 	m_pLeftTexture = nullptr;
 	m_pLeftResource = nullptr;
@@ -132,7 +140,7 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 		char value[128] = {};
 		m_pSettings->GetString("driver_customhmd", "remoteResolution", value, sizeof(value));
 		if (value[0])
-		{			
+		{
 			DriverLog("Using remote display resolution %s...", value);
 			int width = 0;
 			int height = 0;
@@ -210,63 +218,12 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 
 	DisplayFrequency = m_HMDData.Frequency;
 
+	m_HMDData.EyeWidth = m_HMDData.ScreenWidth / 2;
+
 	//one time setup to determine buffersize
 	m_Camera.Options.Setup();
 	if (IsConnected())
-	{
-
-		D3D_FEATURE_LEVEL levels[] = {
-			/*D3D_FEATURE_LEVEL_9_1,
-			D3D_FEATURE_LEVEL_9_2,
-			D3D_FEATURE_LEVEL_9_3,*/
-			D3D_FEATURE_LEVEL_10_0,
-			D3D_FEATURE_LEVEL_10_1,
-			D3D_FEATURE_LEVEL_11_0,
-			D3D_FEATURE_LEVEL_11_1
-		};
-
-		HRESULT hr = D3D11CreateDevice(
-			nullptr,
-			D3D_DRIVER_TYPE_HARDWARE,
-			nullptr,
-			0
-			// | D3D11_CREATE_DEVICE_DEBUG 
-			| D3D11_CREATE_DEVICE_BGRA_SUPPORT
-			// | D3D11_CREATE_DEVICE_SINGLETHREADED,
-			, levels,
-			ARRAYSIZE(levels),
-			D3D11_SDK_VERSION,
-			&m_pDevice,
-			&m_FeatureLevel,
-			&m_pContext);
-
-		if (m_pDevice)
-		{
-			D3D11_TEXTURE2D_DESC Desc = {};
-			Desc.ArraySize = 1;
-			Desc.Width = m_HMDData.ScreenWidth / 2;
-			Desc.Height = m_HMDData.ScreenHeight;
-			Desc.MipLevels = 1;
-			Desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-			Desc.SampleDesc.Count = 1;
-			Desc.SampleDesc.Quality = 0;
-			Desc.Usage = D3D11_USAGE_STAGING;
-			Desc.BindFlags = 0;
-			Desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE | D3D11_CPU_ACCESS_READ;
-			Desc.MiscFlags = 0;
-
-			HRESULT hr = m_pDevice->CreateTexture2D(&Desc, nullptr, &m_pLeftTexture);
-			if (hr == S_OK)
-				m_pLeftTexture->QueryInterface(__uuidof(ID3D11Resource), (void**)&m_pLeftResource);
-
-			hr = m_pDevice->CreateTexture2D(&Desc, nullptr, &m_pRightTexture);
-			if (hr == S_OK)
-				m_pRightTexture->QueryInterface(__uuidof(ID3D11Resource), (void**)&m_pRightResource);
-		}
-
-
 		m_pDriverHost->TrackedDeviceAdded(SerialNumber.c_str(), vr::TrackedDeviceClass_HMD, this);
-	}
 }
 
 bool CTrackedHMD::IsConnected()
@@ -299,6 +256,10 @@ CTrackedHMD::~CTrackedHMD()
 		m_pRightTexture->Release();
 	m_pRightTexture = nullptr;
 
+	if (m_pSyncTexture)
+		m_pSyncTexture->Release();
+	m_pSyncTexture = nullptr;
+
 	if (m_pContext)
 		m_pContext->Release();
 	m_pContext = nullptr;
@@ -307,13 +268,31 @@ CTrackedHMD::~CTrackedHMD()
 		m_pDevice->Release();
 	m_pDevice = nullptr;
 
-//	if (m_pPixelBuffer)
-//		free(m_pPixelBuffer);
-//	m_pPixelBuffer = nullptr;
+	//	if (m_pPixelBuffer)
+	//		free(m_pPixelBuffer);
+	//	m_pPixelBuffer = nullptr;
 
 	if (m_hBufferLock)
 		CloseHandle(m_hBufferLock);
 	m_hBufferLock = nullptr;
+
+	if (m_hTextureMapLock)
+		CloseHandle(m_hTextureMapLock);
+	m_hTextureMapLock = nullptr;
+
+	if (m_HMDData.pLeftDiffBuffer)
+		tjFree(m_HMDData.pLeftDiffBuffer);
+	m_HMDData.pLeftDiffBuffer = nullptr;
+
+	if (m_HMDData.pRightDiffBuffer)
+		tjFree(m_HMDData.pRightDiffBuffer);
+	m_HMDData.pRightDiffBuffer = nullptr;
+
+
+
+	if (m_hTJ)
+		tjDestroy(m_hTJ);
+	m_hTJ = nullptr;
 }
 
 EVRInitError CTrackedHMD::Activate(uint32_t unObjectId)
@@ -458,7 +437,7 @@ bool CTrackedHMD::IsDisplayRealDisplay()
 
 void CTrackedHMD::GetRecommendedRenderTargetSize(uint32_t * pnWidth, uint32_t * pnHeight)
 {
-	*pnWidth = uint32_t(m_HMDData.ScreenWidth * m_HMDData.SuperSample);
+	*pnWidth = uint32_t((m_HMDData.IsRemoteDisplay ? m_HMDData.EyeWidth : m_HMDData.ScreenWidth) * m_HMDData.SuperSample);
 	*pnHeight = uint32_t((m_HMDData.FakePackDetected ? (m_HMDData.ScreenHeight - 30) / 2 : m_HMDData.ScreenHeight) * m_HMDData.SuperSample);
 	DriverLog(__FUNCTION__" w: %d, h: %d", *pnWidth, *pnHeight);
 }
@@ -491,13 +470,13 @@ void CTrackedHMD::GetEyeOutputViewport(EVREye eEye, uint32_t * pnX, uint32_t * p
 		case EVREye::Eye_Left:
 			*pnX = 0;
 			*pnY = 0;
-			*pnWidth = m_HMDData.ScreenWidth / 2;
+			*pnWidth = m_HMDData.EyeWidth;
 			*pnHeight = m_HMDData.ScreenHeight;
 			break;
 		case EVREye::Eye_Right:
-			*pnX = 0 + (m_HMDData.ScreenWidth / 2);
+			*pnX = 0 + m_HMDData.EyeWidth;
 			*pnY = 0;
-			*pnWidth = m_HMDData.ScreenWidth / 2;
+			*pnWidth = m_HMDData.EyeWidth;
 			*pnHeight = m_HMDData.ScreenHeight;
 			break;
 		}
@@ -722,17 +701,67 @@ void CTrackedHMD::Present(void *hSyncTexture)
 
 void CTrackedHMD::CreateSwapTextureSet(uint32_t unPid, uint32_t unFormat, uint32_t unWidth, uint32_t unHeight, vr::SharedTextureHandle_t(*pSharedTextureHandles)[3])
 {
-	//DriverLog(__FUNCTION__" Create TexSwapSet %u: fmt(%u) size(%ux%u)", unPid, unFormat, unWidth, unHeight);
+	DriverLog(__FUNCTION__" Create TexSwapSet %u: fmt(%u) size(%ux%u)", unPid, unFormat, unWidth, unHeight);
 
+	if (!m_pDevice)
+	{
+		D3D_FEATURE_LEVEL levels[] = {
+			D3D_FEATURE_LEVEL_10_0,
+			D3D_FEATURE_LEVEL_10_1,
+			D3D_FEATURE_LEVEL_11_0,
+			D3D_FEATURE_LEVEL_11_1
+		};
 
-	if (!m_pDevice) return;
+		HRESULT hr = D3D11CreateDevice(
+			nullptr,
+			D3D_DRIVER_TYPE_HARDWARE,
+			nullptr,
+			D3D11_CREATE_DEVICE_BGRA_SUPPORT,
+			levels,
+			ARRAYSIZE(levels),
+			D3D11_SDK_VERSION,
+			&m_pDevice,
+			&m_FeatureLevel,
+			&m_pContext);
+
+		D3D11_TEXTURE2D_DESC Desc = {};
+		Desc.ArraySize = 1;
+		Desc.Width = unWidth;
+		Desc.Height = unHeight;
+		Desc.MipLevels = 1;
+		Desc.Format = (DXGI_FORMAT) unFormat;
+		Desc.SampleDesc.Count = 1;
+		Desc.SampleDesc.Quality = 0;
+		Desc.Usage = D3D11_USAGE_STAGING;
+		Desc.BindFlags = 0;
+		Desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE | D3D11_CPU_ACCESS_READ;
+		Desc.MiscFlags = 0;
+
+		if (m_pDevice)
+		{
+			hr = m_pDevice->CreateTexture2D(&Desc, nullptr, &m_pLeftTexture);
+			if (hr == S_OK)
+				m_pLeftTexture->QueryInterface(__uuidof(ID3D11Resource), (void**)&m_pLeftResource);
+
+			hr = m_pDevice->CreateTexture2D(&Desc, nullptr, &m_pRightTexture);
+			if (hr == S_OK)
+				m_pRightTexture->QueryInterface(__uuidof(ID3D11Resource), (void**)&m_pRightResource);
+
+			m_HMDData.EyeDiffBufferSize = unWidth * unHeight * 4;
+			m_HMDData.pLeftDiffBuffer = tjAlloc(m_HMDData.EyeDiffBufferSize); //rgb
+			m_HMDData.pRightDiffBuffer = tjAlloc(m_HMDData.EyeDiffBufferSize); //rgb
+		}
+	}
+
+	if (!m_pDevice)
+		return;
 
 	auto set = new TextureSet;
 	set->Pid = unPid;
 
 	D3D11_TEXTURE2D_DESC desc = {};
 	desc.ArraySize = 1;
-	desc.Width = unWidth / 2;
+	desc.Width = unWidth;
 	desc.Height = unHeight;
 	desc.MipLevels = 1;
 	desc.Format = (DXGI_FORMAT)unFormat;
@@ -743,24 +772,30 @@ void CTrackedHMD::CreateSwapTextureSet(uint32_t unPid, uint32_t unFormat, uint32
 	desc.CPUAccessFlags = 0;
 	desc.MiscFlags = D3D11_RESOURCE_MISC_SHARED; // D3D11_RESOURCE_MISC_SHARED_KEYEDMUTEX | D3D11_RESOURCE_MISC_SHARED_NTHANDLE;
 
-	for (auto i = 0; i < 3; i++)
+	if (WAIT_OBJECT_0 == WaitForSingleObject(m_hTextureMapLock, 10000))
 	{
-		HRESULT hr = m_pDevice->CreateTexture2D(&desc, nullptr, &(set->Data[i].pTexture));
-		if (hr == S_OK)
-		{
-			set->Data[i].Index = i;
-			set->Data[i].pTexture->QueryInterface(__uuidof(ID3D11Resource), (void**)&set->Data[i].pResource);
-			set->Data[i].pTexture->QueryInterface(__uuidof(IDXGIResource1), (void**)&set->Data[i].pResource1);
-			hr = set->Data[i].pResource1->GetSharedHandle(&set->Data[i].hSharedHandle);
-			(*pSharedTextureHandles)[i] = (SharedTextureHandle_t)set->Data[i].hSharedHandle;
-			TextureLink tl = {};
-			tl.pData = &set->Data[i];
-			tl.pSet = set;
-			m_TextureMap[(SharedTextureHandle_t)set->Data[i].hSharedHandle] = tl;
-		}
-	}
 
-	m_TextureSets.push_back(set);
+		for (auto i = 0; i < 3; i++)
+		{
+			HRESULT hr = m_pDevice->CreateTexture2D(&desc, nullptr, &(set->Data[i].pTexture));
+			if (hr == S_OK)
+			{
+				set->Data[i].Index = i;
+				set->Data[i].pTexture->QueryInterface(__uuidof(ID3D11Resource), (void**)&set->Data[i].pResource);
+				set->Data[i].pTexture->QueryInterface(__uuidof(IDXGIResource1), (void**)&set->Data[i].pResource1);
+				hr = set->Data[i].pResource1->GetSharedHandle(&set->Data[i].hSharedHandle);
+				(*pSharedTextureHandles)[i] = (SharedTextureHandle_t)set->Data[i].hSharedHandle;
+				TextureLink tl = {};
+				tl.pData = &set->Data[i];
+				tl.pSet = set;
+				m_TextureMap[(SharedTextureHandle_t)set->Data[i].hSharedHandle] = tl;
+			}
+		}
+
+		m_TextureSets.push_back(set);
+
+		ReleaseMutex(m_hTextureMapLock);
+	}
 }
 
 void CTrackedHMD::DestroySwapTextureSet(SharedTextureHandle_t sharedTextureHandle)
@@ -768,71 +803,84 @@ void CTrackedHMD::DestroySwapTextureSet(SharedTextureHandle_t sharedTextureHandl
 	//DriverLog(__FUNCTION__" Handle: %lu", sharedTextureHandle);
 	if (sharedTextureHandle)
 	{
-		for (auto iter = m_TextureSets.begin(); iter != m_TextureSets.end(); iter++)
+		if (WAIT_OBJECT_0 == WaitForSingleObject(m_hTextureMapLock, 10000))
 		{
-			auto pSet = (TextureSet *)*iter;
+			for (auto iter = m_TextureSets.begin(); iter != m_TextureSets.end(); iter++)
 			{
-				if (pSet->HasHandle((HANDLE)sharedTextureHandle))
+				auto pSet = (TextureSet *)*iter;
 				{
-					for (auto i = 0; i < 3; i++)
+					if (pSet->HasHandle((HANDLE)sharedTextureHandle))
 					{
-						//if (pSet->Data[i].hSharedHandle) CloseHandle(pSet->Data[i].hSharedHandle); //already closed by openvr?
-						m_TextureMap.erase((SharedTextureHandle_t)pSet->Data[i].hSharedHandle);
-						pSet->Data[i].hSharedHandle = nullptr;
-						if (pSet->Data[i].pResource) pSet->Data[i].pResource->Release();
-						pSet->Data[i].pResource = nullptr;
-						if (pSet->Data[i].pResource1) pSet->Data[i].pResource1->Release();
-						pSet->Data[i].pResource1 = nullptr;
-						if (pSet->Data[i].pTexture) pSet->Data[i].pTexture->Release();
-						pSet->Data[i].pTexture = nullptr;
+						for (auto i = 0; i < 3; i++)
+						{
+							//if (pSet->Data[i].hSharedHandle) CloseHandle(pSet->Data[i].hSharedHandle); //already closed by openvr?
+							m_TextureMap.erase((SharedTextureHandle_t)pSet->Data[i].hSharedHandle);
+							pSet->Data[i].hSharedHandle = nullptr;
+							if (pSet->Data[i].pResource) pSet->Data[i].pResource->Release();
+							pSet->Data[i].pResource = nullptr;
+							if (pSet->Data[i].pResource1) pSet->Data[i].pResource1->Release();
+							pSet->Data[i].pResource1 = nullptr;
+							if (pSet->Data[i].pTexture) pSet->Data[i].pTexture->Release();
+							pSet->Data[i].pTexture = nullptr;
+						}
+						delete pSet;
+						pSet = nullptr;
+						m_TextureSets.erase(iter);
+						break;
 					}
-					delete pSet;
-					pSet = nullptr;
-					m_TextureSets.erase(iter);
-					break;
 				}
 			}
+			ReleaseMutex(m_hTextureMapLock);
 		}
 	}
 }
 
 void CTrackedHMD::DestroyAllSwapTextureSets(uint32_t unPid)
 {
-	//DriverLog(__FUNCTION__" PID: %u", unPid);
-	for (auto iter = m_TextureSets.begin(); iter != m_TextureSets.end(); iter++)
+	if (WAIT_OBJECT_0 == WaitForSingleObject(m_hTextureMapLock, 10000))
 	{
-		auto pSet = (TextureSet *)*iter;
-		if (pSet->Pid == unPid)
+		//DriverLog(__FUNCTION__" PID: %u", unPid);
+		for (auto iter = m_TextureSets.begin(); iter != m_TextureSets.end(); iter++)
 		{
-			for (auto i = 0; i < 3; i++)
+			auto pSet = (TextureSet *)*iter;
+			if (pSet->Pid == unPid)
 			{
-				//if (pSet->Data[i].hSharedHandle) CloseHandle(pSet->Data[i].hSharedHandle);
-				m_TextureMap.erase((SharedTextureHandle_t)pSet->Data[i].hSharedHandle);
-				pSet->Data[i].hSharedHandle = nullptr;
-				if (pSet->Data[i].pResource) pSet->Data[i].pResource->Release();
-				pSet->Data[i].pResource = nullptr;
-				if (pSet->Data[i].pResource1) pSet->Data[i].pResource1->Release();
-				pSet->Data[i].pResource1 = nullptr;
-				if (pSet->Data[i].pTexture) pSet->Data[i].pTexture->Release();
-				pSet->Data[i].pTexture = nullptr;
+				for (auto i = 0; i < 3; i++)
+				{
+					//if (pSet->Data[i].hSharedHandle) CloseHandle(pSet->Data[i].hSharedHandle);
+					m_TextureMap.erase((SharedTextureHandle_t)pSet->Data[i].hSharedHandle);
+					pSet->Data[i].hSharedHandle = nullptr;
+					if (pSet->Data[i].pResource) pSet->Data[i].pResource->Release();
+					pSet->Data[i].pResource = nullptr;
+					if (pSet->Data[i].pResource1) pSet->Data[i].pResource1->Release();
+					pSet->Data[i].pResource1 = nullptr;
+					if (pSet->Data[i].pTexture) pSet->Data[i].pTexture->Release();
+					pSet->Data[i].pTexture = nullptr;
+				}
+				delete pSet;
+				pSet = nullptr;
+				m_TextureSets.erase(iter);
+				break;
 			}
-			delete pSet;
-			pSet = nullptr;
-			m_TextureSets.erase(iter);
-			break;
 		}
+		ReleaseMutex(m_hTextureMapLock);
 	}
 }
 
 void CTrackedHMD::GetNextSwapTextureSetIndex(vr::SharedTextureHandle_t sharedTextureHandles[2], uint32_t(*pIndices)[2])
 {
 	//DriverLog(__FUNCTION__" hTex1: %lu, hTex2: %lu, pIndices: %p", sharedTextureHandles[0], sharedTextureHandles[1], pIndices);
-	for (auto i = 0; i < 2; i++)
+	if (WAIT_OBJECT_0 == WaitForSingleObject(m_hTextureMapLock, 10000))
 	{
-		auto iter = m_TextureMap.find(sharedTextureHandles[i]);
-		if (iter == m_TextureMap.end()) continue;
-		auto tl = iter->second;
-		(*pIndices)[i] = tl.pData->Index;
+		for (auto i = 0; i < 2; i++)
+		{
+			auto iter = m_TextureMap.find(sharedTextureHandles[i]);
+			if (iter == m_TextureMap.end()) 
+				continue;
+			auto tl = iter->second;
+			(*pIndices)[i] = tl.pData->Index;
+		}
+		ReleaseMutex(m_hTextureMapLock);
 	}
 }
 
@@ -840,28 +888,108 @@ void CTrackedHMD::SubmitLayer(vr::SharedTextureHandle_t sharedTextureHandles[2],
 {
 	//DriverLog(__FUNCTION__" hTex1: %lu, hTex2: %lu", sharedTextureHandles[0], sharedTextureHandles[1]);
 
-	if (!m_pServer->IsMonitorConnected()) return; 
+	TextureLink* tlLeft = nullptr;
+	TextureLink* tlRight = nullptr;
 
-	auto iterLeft = m_TextureMap.find(sharedTextureHandles[0]);
-	auto iterRight = m_TextureMap.find(sharedTextureHandles[1]);
-	if (iterLeft == m_TextureMap.end() && iterRight == m_TextureMap.end()) return;
-	auto tlLeft = &iterLeft->second;
-	auto tlRight = &iterRight->second;
+	if (WAIT_OBJECT_0 == WaitForSingleObject(m_hTextureMapLock, 100))
+	{
+		auto iterLeft = m_TextureMap.find(sharedTextureHandles[0]);
+		auto iterRight = m_TextureMap.find(sharedTextureHandles[1]);
+		if (iterLeft != m_TextureMap.end()) tlLeft = &iterLeft->second;
+		if (iterRight != m_TextureMap.end()) tlRight = &iterRight->second;
+		//HRESULT hr = DirectX::SaveWICTextureToFile(m_pContext, m_pLeftResource, GUID_ContainerFormatJpeg, L"D:\\LeftEye.jpg");
+		//hr = DirectX::SaveWICTextureToFile(m_pContext, m_pRightResource, GUID_ContainerFormatJpeg, L"D:\\RightEye.jpg");
+		ReleaseMutex(m_hTextureMapLock);
+	}
 
+	if (!tlRight && !tlLeft) return;
 
 	if (WAIT_OBJECT_0 == WaitForSingleObject(m_hBufferLock, 10))
 	{
-		if (tlLeft->pData) m_pContext->CopyResource(m_pLeftResource, tlLeft->pData->pResource);
-		if (tlRight->pData) m_pContext->CopyResource(m_pRightResource, tlRight->pData->pResource);
-		m_HasDirectFrame = true;
+		HRESULT hr;
+		if (tlLeft && tlLeft->pData) m_pContext->CopyResource(m_pLeftResource, tlLeft->pData->pResource);
+		if (tlRight && tlRight->pData) m_pContext->CopyResource(m_pRightResource, tlRight->pData->pResource);
+		m_HasDirectFrame = tlLeft || tlRight;
 		ReleaseMutex(m_hBufferLock);
+	}
+
+	if (!m_SyncTexture)
+		ProcessFrame();
+}
+void CTrackedHMD::ProcessFrame()
+{
+	if (WAIT_OBJECT_0 == WaitForSingleObject(m_hBufferLock, 10))
+	{
+		unsigned long leftSize = 0, rightSize = 0;
+		//send to UDP
+		D3D11_MAPPED_SUBRESOURCE mappedResource;
+		if (SUCCEEDED(m_pContext->Map(m_pLeftResource, 0, D3D11_MAP_READ, 0, &mappedResource)))
+		{
+			D3D11_TEXTURE2D_DESC desc = {};
+			m_pLeftTexture->GetDesc(&desc);
+			leftSize = m_HMDData.EyeDiffBufferSize;
+			if (tjCompress2(m_hTJ, (const unsigned char *)mappedResource.pData, desc.Width, mappedResource.RowPitch, desc.Height, TJPF_RGBA, &m_HMDData.pLeftDiffBuffer, &leftSize, TJSAMP_422, 50, TJFLAG_BOTTOMUP))
+				leftSize = 0;
+			m_pContext->Unmap(m_pLeftResource, 0);
+		}
+		if (SUCCEEDED(m_pContext->Map(m_pRightResource, 0, D3D11_MAP_READ, 0, &mappedResource)))
+		{
+			D3D11_TEXTURE2D_DESC desc = {};
+			m_pRightTexture->GetDesc(&desc);
+			rightSize = m_HMDData.EyeDiffBufferSize;
+			if (tjCompress2(m_hTJ, (const unsigned char *)mappedResource.pData, desc.Width, mappedResource.RowPitch, desc.Height, TJPF_RGBA, &m_HMDData.pRightDiffBuffer, &rightSize, TJSAMP_422, 50, TJFLAG_BOTTOMUP))
+				rightSize = 0;
+			m_pContext->Unmap(m_pRightResource, 0);
+		}
+		m_HasDirectFrame = false;
+		ReleaseMutex(m_hBufferLock);
+
+		if (leftSize)
+		{
+			//FILE *fp = fopen("D:\\left.jpg", "wb");
+			//if (fp != nullptr)
+			//{
+			//	fwrite(m_HMDData.pLeftDiffBuffer, 1, leftSize, fp);
+			//	fclose(fp);
+			//}
+			m_pServer->SendScreen(EVREye::Eye_Left, (char *)m_HMDData.pLeftDiffBuffer, leftSize);
+		}
+		if (rightSize)
+		{
+			m_pServer->SendScreen(EVREye::Eye_Right, (char *)m_HMDData.pRightDiffBuffer, rightSize);
+		}
 	}
 }
 
 void CTrackedHMD::Present(vr::SharedTextureHandle_t syncTexture)
 {
-	if (syncTexture)
-		DriverLog(__FUNCTION__" syncTexture: %lu", syncTexture);
+	//DriverLog(__FUNCTION__" syncTexture: %lu", syncTexture);
+
+	if (m_SyncTexture != syncTexture)
+	{
+		m_SyncTexture = syncTexture;
+
+		if (m_pSyncTexture)
+		{
+			m_pSyncTexture->Release();
+			m_pSyncTexture = nullptr;
+		}
+
+		if (m_SyncTexture)
+			m_pDevice->OpenSharedResource((HANDLE)m_SyncTexture, __uuidof(ID3D11Texture2D), (void **)&m_pSyncTexture);
+	}
+
+	IDXGIKeyedMutex *pSyncMutex = NULL;
+	if (m_pSyncTexture != NULL && SUCCEEDED(m_pSyncTexture->QueryInterface(__uuidof(IDXGIKeyedMutex), (void **)&pSyncMutex)))
+	{
+		if (m_HasDirectFrame && SUCCEEDED(pSyncMutex->AcquireSync(0, 10)))
+		{
+			ProcessFrame();
+			pSyncMutex->ReleaseSync(0);
+		}
+		pSyncMutex->Release();
+
+	}
 }
 
 
@@ -983,33 +1111,6 @@ void CTrackedHMD::RunFrame(DWORD currTick)
 	//	m_KeyDown = false;
 	//	m_Delay = 500;
 	//}
-
-	if (m_HasDirectFrame)
-	{
-		if (WAIT_OBJECT_0 == WaitForSingleObject(m_hBufferLock, 10))
-		{
-			//send to UDP
-			D3D11_MAPPED_SUBRESOURCE mappedResource;
-			if (SUCCEEDED(m_pContext->Map(m_pLeftResource, 0, D3D11_MAP_READ, 0, &mappedResource)))
-			{
-				D3D11_TEXTURE2D_DESC desc = {};
-				m_pLeftTexture->GetDesc(&desc);				
-				m_pServer->SendScreen(EVREye::Eye_Left, mappedResource.RowPitch, desc.Width, desc.Height, (char *)mappedResource.pData);
-				m_pContext->Unmap(m_pLeftResource, 0);
-			}
-			if (SUCCEEDED(m_pContext->Map(m_pRightResource, 0, D3D11_MAP_READ, 0, &mappedResource)))
-			{
-				D3D11_TEXTURE2D_DESC desc = {};
-				m_pRightTexture->GetDesc(&desc);				
-				m_pServer->SendScreen(EVREye::Eye_Right, mappedResource.RowPitch, desc.Width, desc.Height, (char *)mappedResource.pData);
-				m_pContext->Unmap(m_pRightResource, 0);
-			}
-			m_HasDirectFrame = false;
-			ReleaseMutex(m_hBufferLock);
-		}
-	}
-
-
 
 	DriverPose_t pose;
 	pose.poseIsValid = false;

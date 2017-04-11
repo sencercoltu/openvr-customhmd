@@ -15,10 +15,7 @@ enum CommState
 
 struct ScreenInfo
 {
-	unsigned int Updated;
-	unsigned int Stride;
-	unsigned int Width;
-	unsigned int Height;
+	unsigned int Size;
 };
 
 struct CommStatus
@@ -37,15 +34,15 @@ class CShMem
 {
 public:
 	CShMem();
-	~CShMem();	
+	~CShMem();
 	CommStatus _status;
-	void WriteScreen(int eye, int stride, int width, int height, char *screenData);
+	void WriteScreen(int eye, char *screenData, int size);
 	void WriteOutgoingPacket(char *packet);
 	char* ReadIncomingPackets(int *count);
 	CommState GetState();
 	bool WatchDogEnabled;
 private:
-	
+
 	const int _maxPackets = 16;
 	const int _packetSize = 32;
 	const int _statusOffset = 0;
@@ -55,12 +52,12 @@ private:
 	const int _commBufferSize = 1024 * 1024;
 	HANDLE _commAccessLock;
 	HANDLE _commSharedMem;
-	char *_commAccessor;	
+	char *_commAccessor;
 
-	const int _screenBufferSize = sizeof(ScreenInfo) + (3840 * 2160 * 4); //ScreenInfo + 4K display
-	HANDLE _screenAccessLock;
-	HANDLE _screenSharedMem;
-	char *_screenAccessor;
+	const int _screenBufferSize = sizeof(ScreenInfo) + (3840 * 2160 * 4); //ScreenInfo + 4K display uncompressed
+	HANDLE _screenAccessLock[2];
+	HANDLE _screenSharedMem[2];
+	char *_screenAccessor[2];
 
 };
 

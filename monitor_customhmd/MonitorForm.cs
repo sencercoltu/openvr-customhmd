@@ -30,6 +30,9 @@ namespace monitor_customhmd
         private Thread _dispThread;
         private bool _running;
 
+        private string DisplayAddress = "127.0.0.1";
+        //private string DisplayAddress = "192.168.0.27";
+
         private CommState State = CommState.Disconnected;
 
         private Dictionary<CommState, Icon> StateIcons;
@@ -44,24 +47,25 @@ namespace monitor_customhmd
         private TcpClient _tcpClient;
         private Socket _socket;
         private bool _isConnecting;
-        private bool _isFirstConnect;
         private ScreenPartInfo _headerCache;
         //private IPAddress _serverAddr;
         //private IPEndPoint _endPoint;
 
-        private ScreenInfo _screenInfo;
-        private int _colorThreshold = 16;
+        //private ScreenInfo _screenInfo;
+        //private int _colorThreshold = 16;
 
-        
+        private byte[][] EyeBitmap = new[] { new byte[3840 * 2160 * 4], new byte[3840 * 2160 * 4] };
+
+        private Image[] EyeImage = new Image[2];
 
         public MonitorForm()
         {
-            JPEGFormat = GetEncoder(ImageFormat.Jpeg);
-            Encoder jpegEncoder = System.Drawing.Imaging.Encoder.Quality;
-            JPEGQuality = new EncoderParameters(1);
+            //JPEGFormat = GetEncoder(ImageFormat.Jpeg);
+            //Encoder jpegEncoder = System.Drawing.Imaging.Encoder.Quality;
+            //JPEGQuality = new EncoderParameters(1);
 
-            EncoderParameter qualityParameter = new EncoderParameter(jpegEncoder, 50L);
-            JPEGQuality.Param[0] = qualityParameter;
+            //EncoderParameter qualityParameter = new EncoderParameter(jpegEncoder, 60L);
+            //JPEGQuality.Param[0] = qualityParameter;
 
             InitializeComponent();
 
@@ -84,7 +88,7 @@ namespace monitor_customhmd
             _trayIcon.ContextMenuStrip = trayMenu;
             SetStateIcon();
             _trayIcon.Visible = true;
-            
+
         }
 
         private void SetStateIcon()
@@ -110,7 +114,7 @@ namespace monitor_customhmd
             //_serverAddr = IPAddress.Parse("192.168.0.27");
             //_endPoint = new IPEndPoint(_serverAddr, 2222);
 
-            
+
 
             _sharedMem = new ShMem();
             _sharedMem.EnableWatchDog(false);
@@ -126,7 +130,7 @@ namespace monitor_customhmd
 
         private void DisplayProcessor()
         {
-            var receiveThread = new Thread(() => 
+            var receiveThread = new Thread(() =>
             {
                 byte[] incoming = new byte[100 * 16];
 
@@ -134,90 +138,78 @@ namespace monitor_customhmd
                 {
                     lock (_socketLock)
                     {
+
                         if (_tcpClient != null)
                         {
-                            var rotations = Math.Min(_tcpClient.Available / 16, 100);
-
-                            if (rotations > 0)
+                            try
                             {
-                                if (State < CommState.ActiveNoDriver)
-                                    State = _sharedMem.IsDriverActive ? CommState.Active : CommState.ActiveNoDriver;
+                                var rotations = Math.Min(_tcpClient.Available / 16, 100);
 
-                                _tcpClient.Client.Receive(incoming, 0, 16 * rotations, SocketFlags.None);
-                                var rotData = StructFromBytes<USBRotationData>(incoming, 16 * (rotations - 1));
-                                //Debug.WriteLine("r:" + rotations + " w: " + rotData.w.ToString("F6") + " x: " + rotData.x.ToString("F6") + "y: " + rotData.y.ToString("F6") + "z:" + rotData.z.ToString("F6"));
-                                var packet = USBPacket.Create((byte)(ROTATION_DATA | HMD_SOURCE), dispPacketCounter++, rotData);
-                                var d = StructToBytes(packet);
-                                SetPacketCrc(ref d);
-                                _sharedMem.WriteIncomingPacket(d);
+                                if (rotations > 0)
+                                {
+                                    if (State < CommState.ActiveNoDriver)
+                                        State = _sharedMem.IsDriverActive ? CommState.Active : CommState.ActiveNoDriver;
+
+                                    _tcpClient.Client.Receive(incoming, 0, 16 * rotations, SocketFlags.None);
+                                    var rotData = StructFromBytes<USBRotationData>(incoming, 16 * (rotations - 1));
+                                    //Debug.WriteLine("r:" + rotations + " w: " + rotData.w.ToString("F6") + " x: " + rotData.x.ToString("F6") + "y: " + rotData.y.ToString("F6") + "z:" + rotData.z.ToString("F6"));
+                                    var packet = USBPacket.Create((byte)(ROTATION_DATA | HMD_SOURCE), dispPacketCounter++, rotData);
+                                    var d = StructToBytes(packet);
+                                    SetPacketCrc(ref d);
+                                    _sharedMem.WriteIncomingPacket(d);
+                                }
+                            }
+                            catch
+                            {
+
                             }
                         }
                     }
                 }
+
             });
 
             receiveThread.Start();
 
             while (_running)
             {
-                var updates = _sharedMem.GetScreenInfo(ref _screenInfo);
+                var result = (ProcessEye(0, pbLeft) || ProcessEye(1, pbRight));
                 //Debug.WriteLine("Updates: " + updates);
-                if (updates > 0)
-                {
-                    lock (_socketLock)
-                    {
-                        if (_tcpClient == null)
-                        {
-                            _isConnecting = false;
-                            _tcpClient = new TcpClient();
-                        }
-                    }
-
-                    var size = _screenInfo.Size();
-                    if (BitmapSize != size)
-                    {
-                        BitmapSize = size;
-                        LeftDiffBitmap = new byte[BitmapSize];
-                        RightDiffBitmap = new byte[BitmapSize];
-
-                        LeftBitmap = new byte[BitmapSize];
-                        RemoteLeftBitmap = new byte[BitmapSize];
-
-                        //pbLeft.Width = _screenInfo.Width;
-                        //pbLeft.Height = _screenInfo.Height;
-                        pbLeft.Tag = new Bitmap(_screenInfo.Width, _screenInfo.Height, System.Drawing.Imaging.PixelFormat.Format32bppRgb);
-
-                        RightBitmap = new byte[BitmapSize];
-                        RemoteRightBitmap = new byte[BitmapSize];
-
-                        //pbRight.Left = pbLeft.Left + pbLeft.Width;
-                        //pbRight.Width = _screenInfo.Width;
-                        //pbRight.Height = _screenInfo.Height;
-                        pbRight.Tag = new Bitmap(_screenInfo.Width, _screenInfo.Height, System.Drawing.Imaging.PixelFormat.Format32bppRgb);
-                    }
-                    _sharedMem.GetScreenBitmap(ref _screenInfo, out LeftBitmap, out RightBitmap);
-
-                    GetBitmapDifference(LeftDiffBitmap, LeftBitmap, RemoteLeftBitmap);
-                    GetBitmapDifference(RightDiffBitmap, RightBitmap, RemoteRightBitmap);
-
-                    var leftJpegBytes = SetBitmapBytes(pbLeft, RemoteLeftBitmap);
-                    var rightJPegBytes = SetBitmapBytes(pbRight, RemoteRightBitmap);
-
-                    //cnt++;
-                    //File.WriteAllBytes("D:\\x\\L" + cnt + ".jpg", leftBytes);
-                    //File.WriteAllBytes("D:\\x\\R" + cnt + ".jpg", rightBytes);
-
-
-                    SendFrame(EVREye.Eye_Left, leftJpegBytes, ref _screenInfo);
-                    SendFrame(EVREye.Eye_Right, rightJPegBytes, ref _screenInfo);
-                }
-                else
+                if (!result)
                     Thread.Sleep(10);
             }
 
             receiveThread.Join();
             receiveThread = null;
 
+        }
+
+        private bool ProcessEye(int eye, PictureBox pbx)
+        {
+            var size = _sharedMem.GetEyeImageSize(eye);
+            if (size <= 0) return false;
+
+            lock (_socketLock)
+            {
+                if (_tcpClient == null)
+                {
+                    _isConnecting = false;
+                    _tcpClient = new TcpClient();
+                }
+            }
+
+            _sharedMem.GetEyeImage(0, size, out EyeBitmap[eye]);
+
+            using (var ms = new MemoryStream(EyeBitmap[eye]))
+            {
+                EyeImage[eye] = Image.FromStream(ms);
+            }
+
+            SendFrame(eye, EyeBitmap[eye], size);
+
+            if (pbx != null && chkPreview.Checked)
+                pbx.Image = EyeImage[eye];
+            return true;
         }
 
         private void OnRemoteConnect(IAsyncResult ar)
@@ -228,10 +220,9 @@ namespace monitor_customhmd
                 try
                 {
                     _tcpClient.EndConnect(ar);
-                    BitmapSize = 0;
                     _socket = _tcpClient.Client;
-                    _isFirstConnect = true;
                     State = _sharedMem.IsDriverActive ? CommState.Active : CommState.ActiveNoDriver;
+                    ResetRotation();
                 }
                 catch
                 {
@@ -351,18 +342,8 @@ namespace monitor_customhmd
             _sharedMem.SetState(CommState.Disconnected);
         }
 
-        private int BitmapSize;
 
-        private byte[] LeftBitmap = null;
-        private byte[] RightBitmap = null;
-
-        private byte[] RemoteLeftBitmap = null;
-        private byte[] RemoteRightBitmap = null;
-
-        private byte[] LeftDiffBitmap = null;
-        private byte[] RightDiffBitmap = null;
-
-        private const int LinesPerPacket = 2;
+        //private const int LinesPerPacket = 2;
 
         private void tmrConsumer_Tick(object sender, EventArgs e)
         {
@@ -408,93 +389,93 @@ namespace monitor_customhmd
                 }
             }
         }
-        
-        private void GetBitmapDifference(byte[] diffMap, byte[] curBmp, byte[] prevBmp)
-        {
-            var bpp = (int)(_screenInfo.Stride / _screenInfo.Width);
-            byte pr, pg, pb, cr, cg, cb;
-            //long rmean, r, g, b;
-            //double d;
-            for (var y = 0; y < _screenInfo.Height; y++)
-            {
-                for (var x = 0; x < _screenInfo.Width; x++)
-                {
-                    var pos = (y * _screenInfo.Stride) + (x * bpp);
 
-                    pr = prevBmp[pos]; 
-                    pg = prevBmp[pos + 1]; 
-                    pb = prevBmp[pos + 2]; 
+        //private void GetBitmapDifference(byte[] diffMap, byte[] curBmp, byte[] prevBmp)
+        //{
+        //    var bpp = (int)(_screenInfo.Stride / _screenInfo.Width);
+        //    byte pr, pg, pb, cr, cg, cb;
+        //    //long rmean, r, g, b;
+        //    //double d;
+        //    for (var y = 0; y < _screenInfo.Height; y++)
+        //    {
+        //        for (var x = 0; x < _screenInfo.Width; x++)
+        //        {
+        //            var pos = (y * _screenInfo.Stride) + (x * bpp);
 
-                    cb = curBmp[pos]; 
-                    cg = curBmp[pos + 1]; 
-                    cr = curBmp[pos + 2];
+        //            pr = prevBmp[pos]; 
+        //            pg = prevBmp[pos + 1]; 
+        //            pb = prevBmp[pos + 2]; 
 
-                    //if (pr == 0) pr = 1; if (pg == 0) pg = 1; if (pb == 0) pb = 1;
-                    //if (cr == 0) cr = 1; if (cg == 0) cg = 1; if (cb == 0) cb = 1;
+        //            cb = curBmp[pos]; 
+        //            cg = curBmp[pos + 1]; 
+        //            cr = curBmp[pos + 2];
 
-                    //rmean = ((long)cr + (long)pr) / 2;
-                    //r = (long)cr - (long)pr;
-                    //g = (long)cg - (long)pg;
-                    //b = (long)cb - (long)pb;
+        //            //if (pr == 0) pr = 1; if (pg == 0) pg = 1; if (pb == 0) pb = 1;
+        //            //if (cr == 0) cr = 1; if (cg == 0) cg = 1; if (cb == 0) cb = 1;
 
-                    //d = Math.Sqrt((((512 + rmean) * r * r) >> 8) + 4 * g * g + (((767 - rmean) * b * b) >> 8));
+        //            //rmean = ((long)cr + (long)pr) / 2;
+        //            //r = (long)cr - (long)pr;
+        //            //g = (long)cg - (long)pg;
+        //            //b = (long)cb - (long)pb;
 
-                    //var k = 1; // diffMap[pos + 3] / 32;
-                    //if (d > _colorThreshold * k)
-                    {
-                        diffMap[pos] = prevBmp[pos] = cr; pos++; // curBmp[pos++];
-                        diffMap[pos] = prevBmp[pos] = cg; pos++; // curBmp[pos++];
-                        diffMap[pos] = prevBmp[pos] = cb; pos++; // curBmp[pos++];
-                    }
-                    //else
-                    //{
-                    //    diffMap[pos++] = diffMap[pos++] = diffMap[pos++] = 0;
-                    //}
-                    //diffMap[pos] = 255;
-                }
-            }
-        }
+        //            //d = Math.Sqrt((((512 + rmean) * r * r) >> 8) + 4 * g * g + (((767 - rmean) * b * b) >> 8));
 
-        private EncoderParameters JPEGQuality;
-        
-        private ImageCodecInfo GetEncoder(ImageFormat format)
-        {
-            ImageCodecInfo[] codecs = ImageCodecInfo.GetImageDecoders();
-            foreach (ImageCodecInfo codec in codecs)
-            {
-                if (codec.FormatID == format.Guid)
-                {
-                    return codec;
-                }
-            }
-            return null;
-        }
+        //            //var k = 1; // diffMap[pos + 3] / 32;
+        //            //if (d > _colorThreshold * k)
+        //            {
+        //                diffMap[pos] = prevBmp[pos] = cr; pos++; // curBmp[pos++];
+        //                diffMap[pos] = prevBmp[pos] = cg; pos++; // curBmp[pos++];
+        //                diffMap[pos] = prevBmp[pos] = cb; pos++; // curBmp[pos++];
+        //            }
+        //            //else
+        //            //{
+        //            //    diffMap[pos++] = diffMap[pos++] = diffMap[pos++] = 0;
+        //            //}
+        //            //diffMap[pos] = 255;
+        //        }
+        //    }
+        //}
 
-        private ImageCodecInfo JPEGFormat;
+        //private EncoderParameters JPEGQuality;
 
-        private byte[] SetBitmapBytes(PictureBox pbx, byte[] bytes)
-        {
-            var bitmap = pbx.Tag as Bitmap;
-            if (bitmap == null) return null;
-            lock (pbx)
-            {
-                var bits = bitmap.LockBits(new Rectangle(0, 0, _screenInfo.Width, _screenInfo.Height), System.Drawing.Imaging.ImageLockMode.WriteOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                Marshal.Copy(bytes, 0, bits.Scan0, Math.Min(bits.Stride * bits.Height, _screenInfo.Size()));
-                bitmap.UnlockBits(bits);
-            }                        
-            pbx.Invalidate();
-            lock (pbx)
-            {
-                using (var stream = new MemoryStream())
-                {
-                    
-                    bitmap.Save(stream, JPEGFormat, JPEGQuality);
-                    return stream.ToArray();
-                }
-            }
-        }
+        //private ImageCodecInfo GetEncoder(ImageFormat format)
+        //{
+        //    ImageCodecInfo[] codecs = ImageCodecInfo.GetImageDecoders();
+        //    foreach (ImageCodecInfo codec in codecs)
+        //    {
+        //        if (codec.FormatID == format.Guid)
+        //        {
+        //            return codec;
+        //        }
+        //    }
+        //    return null;
+        //}
 
-        private void SendFrame(EVREye eye, byte[] bytes, ref ScreenInfo info)
+        //private ImageCodecInfo JPEGFormat;
+
+        //private byte[] SetBitmapBytes(PictureBox pbx, byte[] bytes)
+        //{
+        //    var bitmap = pbx.Tag as Bitmap;
+        //    if (bitmap == null) return null;
+        //    lock (pbx)
+        //    {
+        //        var bits = bitmap.LockBits(new Rectangle(0, 0, _screenInfo.Width, _screenInfo.Height), System.Drawing.Imaging.ImageLockMode.WriteOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+        //        Marshal.Copy(bytes, 0, bits.Scan0, Math.Min(bits.Stride * bits.Height, _screenInfo.Size()));
+        //        bitmap.UnlockBits(bits);
+        //    }                        
+        //    pbx.Invalidate();
+        //    lock (pbx)
+        //    {
+        //        using (var stream = new MemoryStream())
+        //        {
+
+        //            bitmap.Save(stream, JPEGFormat, JPEGQuality);
+        //            return stream.ToArray();
+        //        }
+        //    }
+        //}
+
+        private void SendFrame(int eye, byte[] bytes, int size)
         {
             if (bytes == null) return;
 
@@ -507,29 +488,22 @@ namespace monitor_customhmd
                         if (_tcpClient == null)
                             return;
                         _isConnecting = true;
-                        _tcpClient.BeginConnect("127.0.0.1", 1974, OnRemoteConnect, null); //adb forward tcp:1974 tcp:1974                        
+                        _tcpClient.BeginConnect(DisplayAddress, 1974, OnRemoteConnect, null); //adb forward tcp:1974 tcp:1974                        
                     }
                     return;
                 }
             }
 
-            if (_isFirstConnect)
-            {
-                var infoBytes = StructToBytes(_screenInfo);
-                _isFirstConnect = false;
-                if (!SendToDisplay(infoBytes)) return;
-            }
-
             _headerCache.Eye = (int)eye;
-            _headerCache.Size = bytes.Length;                
+            _headerCache.Size = size;
             var headerBytes = StructToBytes(_headerCache);
-            if (!SendToDisplay(headerBytes)) return;
-            if (!SendToDisplay(bytes)) return;
+            if (!SendToRemoteDisplay(headerBytes)) return;
+            if (!SendToRemoteDisplay(bytes)) return;
 
 
         }
 
-        private bool SendToDisplay(byte[] data)
+        private bool SendToRemoteDisplay(byte[] data)
         {
             lock (_socketLock)
             {
@@ -622,16 +596,6 @@ namespace monitor_customhmd
             _sharedMem.EnableWatchDog(chkWatchDog.Checked);
         }
 
-
-        private void eyePaint(object sender, PaintEventArgs e)
-        {
-            var pbx = (sender as PictureBox);
-            var img = pbx.Tag as Bitmap; 
-            if (img == null) return;
-            lock(pbx)
-                e.Graphics.DrawImage(img, 0, 0, pbx.Width, pbx.Height);
-        }
-
         private void btnResetRotation_Click(object sender, EventArgs e)
         {
             ResetRotation();
@@ -651,23 +615,23 @@ namespace monitor_customhmd
             _sharedMem.WriteIncomingPacket(d);
         }
 
-        public static HmdQuaternion_t CreateFromYawPitchRoll(float yaw, float pitch, float roll)
-        {
-            float rollOver2 = roll * 0.5f;
-            float sinRollOver2 = (float)Math.Sin((double)rollOver2);
-            float cosRollOver2 = (float)Math.Cos((double)rollOver2);
-            float pitchOver2 = pitch * 0.5f;
-            float sinPitchOver2 = (float)Math.Sin((double)pitchOver2);
-            float cosPitchOver2 = (float)Math.Cos((double)pitchOver2);
-            float yawOver2 = yaw * 0.5f;
-            float sinYawOver2 = (float)Math.Sin((double)yawOver2);
-            float cosYawOver2 = (float)Math.Cos((double)yawOver2);
-            HmdQuaternion_t result;
-            result.x = cosYawOver2 * cosPitchOver2 * cosRollOver2 + sinYawOver2 * sinPitchOver2 * sinRollOver2;
-            result.y = cosYawOver2 * cosPitchOver2 * sinRollOver2 - sinYawOver2 * sinPitchOver2 * cosRollOver2;
-            result.z = cosYawOver2 * sinPitchOver2 * cosRollOver2 + sinYawOver2 * cosPitchOver2 * sinRollOver2;
-            result.w = sinYawOver2 * cosPitchOver2 * cosRollOver2 - cosYawOver2 * sinPitchOver2 * sinRollOver2;
-            return result;
-        }
+        //public static HmdQuaternion_t CreateFromYawPitchRoll(float yaw, float pitch, float roll)
+        //{
+        //    float rollOver2 = roll * 0.5f;
+        //    float sinRollOver2 = (float)Math.Sin((double)rollOver2);
+        //    float cosRollOver2 = (float)Math.Cos((double)rollOver2);
+        //    float pitchOver2 = pitch * 0.5f;
+        //    float sinPitchOver2 = (float)Math.Sin((double)pitchOver2);
+        //    float cosPitchOver2 = (float)Math.Cos((double)pitchOver2);
+        //    float yawOver2 = yaw * 0.5f;
+        //    float sinYawOver2 = (float)Math.Sin((double)yawOver2);
+        //    float cosYawOver2 = (float)Math.Cos((double)yawOver2);
+        //    HmdQuaternion_t result;
+        //    result.x = cosYawOver2 * cosPitchOver2 * cosRollOver2 + sinYawOver2 * sinPitchOver2 * sinRollOver2;
+        //    result.y = cosYawOver2 * cosPitchOver2 * sinRollOver2 - sinYawOver2 * sinPitchOver2 * cosRollOver2;
+        //    result.z = cosYawOver2 * sinPitchOver2 * cosRollOver2 + sinYawOver2 * cosPitchOver2 * sinRollOver2;
+        //    result.w = sinYawOver2 * cosPitchOver2 * cosRollOver2 - cosYawOver2 * sinPitchOver2 * sinRollOver2;
+        //    return result;
+        //}
     }
 }

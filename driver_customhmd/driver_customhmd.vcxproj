@@ -71,15 +71,19 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(MSBuildProjectDirectory)\\DirectXTex;$(MSBuildProjectDirectory)\\DirectXTK\Inc;$(MSBuildProjectDirectory)\libjpeg-turbo</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(MSBuildProjectDirectory)\\DirectXTex;$(MSBuildProjectDirectory)\\DirectXTK\Inc;$(MSBuildProjectDirectory)\libjpeg-turbo</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(MSBuildProjectDirectory)\\DirectXTex;$(MSBuildProjectDirectory)\\DirectXTK\Inc;$(MSBuildProjectDirectory)\libjpeg-turbo</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(MSBuildProjectDirectory)\\DirectXTex;$(MSBuildProjectDirectory)\\DirectXTK\Inc;$(MSBuildProjectDirectory)\libjpeg-turbo</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -93,7 +97,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>ws2_32.lib;D3D11.lib;Dxgi.lib;Winmm.lib;mfplat.lib;mf.lib;mfreadwrite.lib;mfuuid.lib;shlwapi.lib;setupapi.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(MSBuildProjectDirectory)\libjpeg-turbo\Win32\Debug\turbojpeg-static.lib;$(MSBuildProjectDirectory)\DirectXTK\bin\Desktop_2015\Win32\Debug\DirectXTK.lib;$(MSBuildProjectDirectory)\DirectXTex\bin\Desktop_2015\Win32\Debug\DirectXTex.lib;ws2_32.lib;D3D11.lib;Dxgi.lib;Winmm.lib;mfplat.lib;mf.lib;mfreadwrite.lib;mfuuid.lib;shlwapi.lib;setupapi.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>D:\Programs\Steam\steamapps\common\SteamVR\drivers\customhmd\bin\createLinks.bat</Command>
@@ -111,7 +115,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>ws2_32.lib;D3D11.lib;Dxgi.lib;Winmm.lib;mfplat.lib;mf.lib;mfreadwrite.lib;mfuuid.lib;shlwapi.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(MSBuildProjectDirectory)\libjpeg-turbo\Win64\Debug\turbojpeg-static.lib;$(MSBuildProjectDirectory)\DirectXTK\bin\Desktop_2015\x64\Debug\DirectXTK.lib;$(MSBuildProjectDirectory)\DirectXTex\bin\Desktop_2015\x64\Debug\DirectXTex.lib;ws2_32.lib;D3D11.lib;Dxgi.lib;Winmm.lib;mfplat.lib;mf.lib;mfreadwrite.lib;mfuuid.lib;shlwapi.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>D:\Programs\Steam\steamapps\common\SteamVR\drivers\customhmd\bin\createLinks.bat</Command>
@@ -133,7 +137,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>ws2_32.lib;D3D11.lib;Dxgi.lib;Winmm.lib;mfplat.lib;mf.lib;mfreadwrite.lib;mfuuid.lib;shlwapi.lib;setupapi.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(MSBuildProjectDirectory)\libjpeg-turbo\Win32\Release\turbojpeg-static.lib;$(MSBuildProjectDirectory)\DirectXTK\bin\Desktop_2015\Win32\Release\DirectXTK.lib;$(MSBuildProjectDirectory)\DirectXTex\bin\Desktop_2015\Win32\Release\DirectXTex.lib;ws2_32.lib;D3D11.lib;Dxgi.lib;Winmm.lib;mfplat.lib;mf.lib;mfreadwrite.lib;mfuuid.lib;shlwapi.lib;setupapi.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>D:\Programs\Steam\steamapps\common\SteamVR\drivers\customhmd\bin\createLinks.bat</Command>
@@ -155,7 +159,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>ws2_32.lib;D3D11.lib;Dxgi.lib;Winmm.lib;mfplat.lib;mf.lib;mfreadwrite.lib;mfuuid.lib;shlwapi.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(MSBuildProjectDirectory)\libjpeg-turbo\Win64\Release\turbojpeg-static.lib;$(MSBuildProjectDirectory)\DirectXTK\bin\Desktop_2015\x64\Release\DirectXTK.lib;$(MSBuildProjectDirectory)\DirectXTex\bin\Desktop_2015\x64\Release\DirectXTex.lib;ws2_32.lib;D3D11.lib;Dxgi.lib;Winmm.lib;mfplat.lib;mf.lib;mfreadwrite.lib;mfuuid.lib;shlwapi.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>D:\Programs\Steam\steamapps\common\SteamVR\drivers\customhmd\bin\createLinks.bat</Command>

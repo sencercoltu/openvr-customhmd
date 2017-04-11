@@ -16,9 +16,9 @@ class EyeProcessorThread implements Runnable {
     Bitmap _bitmap;
 
 
-    EyeProcessorThread(int eye, ScreenInfo info) {
+    EyeProcessorThread(int eye) {
         Eye = eye;
-        compressed = new byte[info.Stride * info.Height];
+        compressed = new byte[3840 * 2160 * 2]; //2K rgba
     }
 
     byte[] compressed;
@@ -45,7 +45,8 @@ class EyeProcessorThread implements Runnable {
             synchronized (_lock) {
                 if (_newImage && _size > 0) {
                     long start = System.currentTimeMillis();
-                    _bitmap = BitmapFactory.decodeByteArray(compressed, 0, _size);
+                    _bitmap = BitmapFactory.decodeStream(new ByteArrayInputStream(compressed));
+                    DisplayActivity.EyeProcessors[Eye]._activity.TriggerEye(Eye, this);
                     _newImage = false;
                     _size = 0;
                     if (_bitmap != null && _bitmap.getWidth() > 0)

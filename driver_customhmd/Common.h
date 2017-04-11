@@ -202,11 +202,15 @@ struct HMDData : TrackerData
 	int PosY;
 	int ScreenWidth;
 	int ScreenHeight;
+	int EyeWidth;		
 	float Frequency;
 	float AspectRatio;	
 	float SuperSample;		
 	USBDataCache LastState;
 	bool IsRemoteDisplay;
+	unsigned long EyeDiffBufferSize;
+	unsigned char *pLeftDiffBuffer;
+	unsigned char *pRightDiffBuffer;
 };
 
 struct ControllerData : TrackerData

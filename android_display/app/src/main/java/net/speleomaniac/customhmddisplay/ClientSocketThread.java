@@ -30,23 +30,19 @@ class ClientSocketThread implements Runnable {
         DisplayActivity.outputStream = this.output;
 
         try {
-            int size = input.read(screenInfo);
-            if (size != 16)
-                throw new IOException();
-            ScreenInfo si = new ScreenInfo(screenInfo);
-            byte[] trash = new byte[si.Stride * si.Height];
+            byte[] trash = new byte[3840 * 2160 * 4]; //4k rgba çüş
 
-            DisplayActivity.EyeProcessors[0]._processor = new EyeProcessorThread(0, si);
+            DisplayActivity.EyeProcessors[0]._processor = new EyeProcessorThread(0);
             DisplayActivity.EyeProcessors[0]._thread = new Thread(DisplayActivity.EyeProcessors[0]._processor);
             DisplayActivity.EyeProcessors[0]._thread.start();
 
-            DisplayActivity.EyeProcessors[1]._processor = new EyeProcessorThread(1, si);
+            DisplayActivity.EyeProcessors[1]._processor = new EyeProcessorThread(1);
             DisplayActivity.EyeProcessors[1]._thread = new Thread(DisplayActivity.EyeProcessors[1]._processor);
             DisplayActivity.EyeProcessors[1]._thread.start();
 
             while (!Thread.currentThread().isInterrupted()) {
 
-                size = input.read(screenPartInfo);
+                int size = input.read(screenPartInfo);
                 if (size != 8)
                     throw new IOException();
 

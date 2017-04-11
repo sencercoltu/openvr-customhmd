@@ -34,6 +34,7 @@
             this.lblSequence = new System.Windows.Forms.ToolStripStatusLabel();
             this.tabSources = new System.Windows.Forms.TabControl();
             this.tabDefault = new System.Windows.Forms.TabPage();
+            this.btnResetRotation = new System.Windows.Forms.Button();
             this.chkDiff = new System.Windows.Forms.CheckBox();
             this.chkPreview = new System.Windows.Forms.CheckBox();
             this.pbRight = new System.Windows.Forms.PictureBox();
@@ -42,7 +43,6 @@
             this.trayMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.mnuDebug = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuExit = new System.Windows.Forms.ToolStripMenuItem();
-            this.btnResetRotation = new System.Windows.Forms.Button();
             this.tabSources.SuspendLayout();
             this.tabDefault.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pbRight)).BeginInit();
@@ -96,6 +96,16 @@
             this.tabDefault.Text = "General";
             this.tabDefault.UseVisualStyleBackColor = true;
             // 
+            // btnResetRotation
+            // 
+            this.btnResetRotation.Location = new System.Drawing.Point(140, 6);
+            this.btnResetRotation.Name = "btnResetRotation";
+            this.btnResetRotation.Size = new System.Drawing.Size(75, 40);
+            this.btnResetRotation.TabIndex = 6;
+            this.btnResetRotation.Text = "Reset Rotation";
+            this.btnResetRotation.UseVisualStyleBackColor = true;
+            this.btnResetRotation.Click += new System.EventHandler(this.btnResetRotation_Click);
+            // 
             // chkDiff
             // 
             this.chkDiff.AutoSize = true;
@@ -124,7 +134,6 @@
             this.pbRight.Size = new System.Drawing.Size(174, 193);
             this.pbRight.TabIndex = 3;
             this.pbRight.TabStop = false;
-            this.pbRight.Paint += new System.Windows.Forms.PaintEventHandler(this.eyePaint);
             // 
             // pbLeft
             // 
@@ -134,7 +143,6 @@
             this.pbLeft.Size = new System.Drawing.Size(174, 193);
             this.pbLeft.TabIndex = 2;
             this.pbLeft.TabStop = false;
-            this.pbLeft.Paint += new System.Windows.Forms.PaintEventHandler(this.eyePaint);
             // 
             // chkWatchDog
             // 
@@ -168,16 +176,6 @@
             this.mnuExit.Size = new System.Drawing.Size(136, 22);
             this.mnuExit.Text = "Exit";
             this.mnuExit.Click += new System.EventHandler(this.mnuExit_Click);
-            // 
-            // btnResetRotation
-            // 
-            this.btnResetRotation.Location = new System.Drawing.Point(140, 6);
-            this.btnResetRotation.Name = "btnResetRotation";
-            this.btnResetRotation.Size = new System.Drawing.Size(75, 40);
-            this.btnResetRotation.TabIndex = 6;
-            this.btnResetRotation.Text = "Reset Rotation";
-            this.btnResetRotation.UseVisualStyleBackColor = true;
-            this.btnResetRotation.Click += new System.EventHandler(this.btnResetRotation_Click);
             // 
             // MonitorForm
             // 

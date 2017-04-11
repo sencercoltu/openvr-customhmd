@@ -107,9 +107,9 @@ void CServerDriver::SendDriverCommand(USBPacket *command)
 	m_CommandQueue.push_back(command);
 }
 
-void CServerDriver::SendScreen(EVREye eye, int stride, int width, int height, char *screenData)
+void CServerDriver::SendScreen(EVREye eye, char *screenData, int size)
 {
-	pSharedMem->WriteScreen(eye, stride, width, height, screenData);
+	pSharedMem->WriteScreen(eye, screenData, size);
 }
 
 void CServerDriver::ScanSyncReceived(uint64_t syncTime)

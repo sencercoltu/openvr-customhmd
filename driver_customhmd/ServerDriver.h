@@ -30,7 +30,7 @@ public:
 	bool IsMonitorConnected();
 	void AlignHMD(HmdVector3d_t *pAlign);
 	void SendDriverCommand(USBPacket *command);
-	void SendScreen(EVREye eye, int stride, int width, int height, char *screenData);
+	void SendScreen(EVREye eye, char *screenData, int size);
 	void RemoveTrackedDevice(CTrackedDevice *pDevice);
 private:	
 	//std::string m_UserDriverConfigDir;

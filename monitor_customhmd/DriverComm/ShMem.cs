@@ -21,11 +21,7 @@ namespace monitor_customhmd.DriverComm
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
     public struct ScreenInfo
     {
-        public int Updated;
-        public int Stride;
-        public int Width;
-        public int Height;
-        public int Size() { return Stride * Height; }
+        public int Size;
     };
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
@@ -66,11 +62,12 @@ namespace monitor_customhmd.DriverComm
 
 
         private Mutex _commAccessLock;
-        private Mutex _screenAccessLock;
         private MemoryMappedFile _commSharedMem;
-        private MemoryMappedFile _screenSharedMem;
         private MemoryMappedViewAccessor _commAccessor;
-        private MemoryMappedViewAccessor _screenAccessor;
+
+        private Mutex[] _screenAccessLock = new Mutex[2];        
+        private MemoryMappedFile[] _screenSharedMem = new MemoryMappedFile[2];         
+        private MemoryMappedViewAccessor[] _screenAccessor = new MemoryMappedViewAccessor[2];
 
         public ShMem()
         {
@@ -82,9 +79,14 @@ namespace monitor_customhmd.DriverComm
             _commSharedMem = MemoryMappedFile.CreateOrOpen("CustomHMDComm", _commBufferSize, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, memSecurity, System.IO.HandleInheritability.Inheritable);
             _commAccessor = _commSharedMem.CreateViewAccessor();
 
-            _screenAccessLock = new Mutex(false, "Global\\CustomHMDDispLock", out newMutex, mutexSecurity);
-            _screenSharedMem = MemoryMappedFile.CreateOrOpen("CustomHMDDisp", _screenBufferSize, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, memSecurity, System.IO.HandleInheritability.Inheritable);
-            _screenAccessor = _screenSharedMem.CreateViewAccessor();
+            _screenAccessLock[0] = new Mutex(false, "Global\\CustomHMDLeftLock", out newMutex, mutexSecurity);
+            _screenSharedMem[0] = MemoryMappedFile.CreateOrOpen("CustomHMDLeft", _screenBufferSize, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, memSecurity, System.IO.HandleInheritability.Inheritable);
+            _screenAccessor[0] = _screenSharedMem[0].CreateViewAccessor();
+
+            _screenAccessLock[1] = new Mutex(false, "Global\\CustomHMDRightLock", out newMutex, mutexSecurity);
+            _screenSharedMem[1] = MemoryMappedFile.CreateOrOpen("CustomHMDRight", _screenBufferSize, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, memSecurity, System.IO.HandleInheritability.Inheritable);
+            _screenAccessor[1] = _screenSharedMem[1].CreateViewAccessor();
+
         }
 
         public void Dispose()
@@ -95,18 +97,24 @@ namespace monitor_customhmd.DriverComm
             _commAccessor = null;
             _commSharedMem.Dispose();
             _commSharedMem = null;
-
-            _screenAccessor.Dispose();
-            _screenAccessor = null;
-            _screenSharedMem.Dispose();
-            _screenSharedMem = null;
-
             _commAccessLock.Dispose();
             _commAccessLock = null;
 
-            _screenAccessLock.Dispose();
-            _screenAccessLock = null;
+            _screenAccessor[0].Dispose();
+            _screenAccessor[0] = null;
+            _screenSharedMem[0].Dispose();
+            _screenSharedMem[0] = null;
+            _screenAccessLock[0].Dispose();
+            _screenAccessLock[0] = null;
+
+            _screenAccessor[1].Dispose();
+            _screenAccessor[1] = null;
+            _screenSharedMem[1].Dispose();
+            _screenSharedMem[1] = null;
+            _screenAccessLock[1].Dispose();
+            _screenAccessLock[1] = null;
         }
+
 
 
 
@@ -202,39 +210,38 @@ namespace monitor_customhmd.DriverComm
             return result;
         }
 
-        public int GetScreenInfo(ref ScreenInfo info)
+        public int GetEyeImageSize(int eye)
         {
             if (!IsDriverActive)
                 return 0;
+            ScreenInfo info;
             int res = 0;
-            if (_screenAccessLock.WaitOne(10))
+            if (_screenAccessLock[eye].WaitOne(10))
             {
-                _screenAccessor.Read(0, out info);
-                res = info.Updated;                                     
-                info.Updated = 0;
-                _screenAccessor.Write(0, ref info);
-                _screenAccessLock.ReleaseMutex();
+                _screenAccessor[eye].Read(0, out info);
+                res = info.Size;                                     
+                info.Size = 0;
+                _screenAccessor[eye].Write(0, ref info);
+                _screenAccessLock[eye].ReleaseMutex();
             }            
             return res;
         }
 
-        public void GetScreenBitmap(ref ScreenInfo info, out byte[] bmpLeft, out byte[] bmpRight)
+        public void GetEyeImage(int eye, int size, out byte[] bitmap)
         {
-            bmpLeft = null;
-            bmpRight = null;
-            var size = info.Stride * info.Height;
+            bitmap = null;            
             var infoSize = Marshal.SizeOf(typeof(ScreenInfo));
-            if (_screenAccessLock.WaitOne(10))
+            if (_screenAccessLock[eye].WaitOne(10))
             {
-                using (var stream = _screenSharedMem.CreateViewStream(infoSize, infoSize + (size * 2)))
+                using (var stream = _screenSharedMem[eye].CreateViewStream(infoSize, size))
                 {
                     using (BinaryReader binReader = new BinaryReader(stream))
                     {
-                        bmpLeft = binReader.ReadBytes(size);
-                        bmpRight = binReader.ReadBytes(size);
+                        bitmap = binReader.ReadBytes(size);
+                        
                     }
                 }
-                _screenAccessLock.ReleaseMutex();
+                _screenAccessLock[eye].ReleaseMutex();
             }
         }
     }

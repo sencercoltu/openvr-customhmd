@@ -2,8 +2,13 @@
 #define TrackedHMD_H
 
 #include "TrackedDevice.h" 
+//#include <ScreenGrab.h>
+//#include <DirectXTex.h>
 #include <DXGI1_2.h>
-#include <D3D11_2.h>
+#include <turbojpeg.h>
+
+
+//#include <D3D11_1.h>
 #include <map>
 
 using namespace vr;
@@ -96,6 +101,8 @@ public: //IVRCameraComponent
 
 
 private:
+	SharedTextureHandle_t m_SyncTexture;
+	ID3D11Texture2D *m_pSyncTexture;
 	ID3D11DeviceContext *m_pContext;
 	ID3D11Device *m_pDevice;
 	D3D_FEATURE_LEVEL m_FeatureLevel;
@@ -104,10 +111,12 @@ private:
 	ID3D11Texture2D *m_pRightTexture;
 	ID3D11Resource *m_pRightResource;
 	std::vector<TextureSet*> m_TextureSets;
-	std::map<SharedTextureHandle_t, TextureLink> m_TextureMap;
-	SharedTextureHandle_t m_SyncTexture;
+	std::map<SharedTextureHandle_t, TextureLink> m_TextureMap;	
+	void ProcessFrame();
 	HANDLE m_hBufferLock;
+	HANDLE m_hTextureMapLock;
 	bool m_HasDirectFrame;
+	tjhandle m_hTJ;
 
 
 public: //IVRDriverDirectModeComponent
