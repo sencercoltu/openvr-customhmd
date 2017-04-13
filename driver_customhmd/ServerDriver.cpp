@@ -107,9 +107,9 @@ void CServerDriver::SendDriverCommand(USBPacket *command)
 	m_CommandQueue.push_back(command);
 }
 
-void CServerDriver::SendScreen(EVREye eye, char *screenData, int size)
+void CServerDriver::SendScreen(char *screenData, int size)
 {
-	pSharedMem->WriteScreen(eye, screenData, size);
+	pSharedMem->WriteScreen(screenData, size);
 }
 
 void CServerDriver::ScanSyncReceived(uint64_t syncTime)
@@ -190,42 +190,47 @@ void CServerDriver::Run()
 		for (auto i = 0; i < total; i++)
 		{
 			USBPacket *pUSBPacket = (USBPacket *)&packets[i * 32];
-			if (CheckPacketCrc(pUSBPacket))
-			{
-				switch (pUSBPacket->Header.Type & 0x0F)
-				{
-				case HMD_SOURCE:
-					if (!m_HMDAdded)
-					{
-						m_HMDAdded = true;
-						m_TrackedDevices.push_back(new CTrackedHMD("HMD", this)); //only add hmd
-					}
-					break;
-				case BASESTATION_SOURCE:
-					if ((pUSBPacket->Header.Type & 0xF0) == COMMAND_DATA && pUSBPacket->Command.Command == CMD_SYNC)
-						ScanSyncReceived(pUSBPacket->Command.Data.Sync.SyncTime);
-					break;
-				case LEFTCTL_SOURCE:
-					if (!m_LeftCtlAdded)
-					{
-						m_LeftCtlAdded = true;
-						m_TrackedDevices.push_back(new CTrackedController(TrackedControllerRole_LeftHand, "LEFT CONTROLLER", this));
-					}
-					break;
-				case RIGHTCTL_SOURCE:
-					if (!m_RightCtlAdded)
-					{
-						m_RightCtlAdded = true;
-						m_TrackedDevices.push_back(new CTrackedController(TrackedControllerRole_RightHand, "RIGHT CONTROLLER", this));
-					}
-					break;
-				}
-				for (auto iter = m_TrackedDevices.begin(); iter != m_TrackedDevices.end(); iter++)
-					(*iter)->PacketReceived(pUSBPacket, &m_Align, &m_Relative);
-			}
+			ProcessUSBPacket(pUSBPacket);
 		}
 
 		delete packets;
+	}
+}
+
+void CServerDriver::ProcessUSBPacket(USBPacket *pUSBPacket)
+{
+	if (CheckPacketCrc(pUSBPacket))
+	{
+		switch (pUSBPacket->Header.Type & 0x0F)
+		{
+		case HMD_SOURCE:
+			if (!m_HMDAdded)
+			{
+				m_HMDAdded = true;
+				m_TrackedDevices.push_back(new CTrackedHMD("HMD", this)); //only add hmd
+			}
+			break;
+		case BASESTATION_SOURCE:
+			if ((pUSBPacket->Header.Type & 0xF0) == COMMAND_DATA && pUSBPacket->Command.Command == CMD_SYNC)
+				ScanSyncReceived(pUSBPacket->Command.Data.Sync.SyncTime);
+			break;
+		case LEFTCTL_SOURCE:
+			if (!m_LeftCtlAdded)
+			{
+				m_LeftCtlAdded = true;
+				m_TrackedDevices.push_back(new CTrackedController(TrackedControllerRole_LeftHand, "LEFT CONTROLLER", this));
+			}
+			break;
+		case RIGHTCTL_SOURCE:
+			if (!m_RightCtlAdded)
+			{
+				m_RightCtlAdded = true;
+				m_TrackedDevices.push_back(new CTrackedController(TrackedControllerRole_RightHand, "RIGHT CONTROLLER", this));
+			}
+			break;
+		}
+		for (auto iter = m_TrackedDevices.begin(); iter != m_TrackedDevices.end(); iter++)
+			(*iter)->PacketReceived(pUSBPacket, &m_Align, &m_Relative);
 	}
 }
 

@@ -95,7 +95,7 @@ void CTrackedDevice::SetDefaultProperties()
 	error = SET_PROP(Bool, ViveSystemButtonFixRequired,);
 
 	error = SET_PROP(Float, DeviceBatteryPercentage,);
-	error = m_pProperties->SetProperty(m_ulPropertyContainer, Prop_StatusDisplayTransform_Matrix34, &StatusDisplayTransform, sizeof(StatusDisplayTransform), kPropertyTypeBuffer);
+	error = m_pProperties->SetProperty(m_ulPropertyContainer, Prop_StatusDisplayTransform_Matrix34, &StatusDisplayTransform, sizeof(StatusDisplayTransform), k_unHmdMatrix34PropertyTag);
 	error = SET_PROP(Int32, DeviceClass,);
 	
 	error = SET_PROP(Uint64, HardwareRevision,);

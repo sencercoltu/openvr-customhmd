@@ -2,30 +2,70 @@
 #define TrackedHMD_H
 
 #include "TrackedDevice.h" 
-//#include <ScreenGrab.h>
-//#include <DirectXTex.h>
+#include <D3D11_1.h>
 #include <DXGI1_2.h>
-#include <turbojpeg.h>
 
-
-//#include <D3D11_1.h>
 #include <map>
 
 using namespace vr;
 
+#pragma pack(push)
+#pragma pack(1)
+
+enum RemotePacketype
+{
+	RPT_Start = 1,
+	RPT_Payload = 2,
+	RPT_End = 3
+};
+
+struct RemotePacketInfo
+{
+	RemotePacketype Type;
+};
+
+struct RemoteFrameStart : RemotePacketInfo
+{	
+	int Eye;
+	int Width;
+	int Height;
+	int Stride;	
+};
+
+struct RemoteFramePayload : RemotePacketInfo
+{
+	int PartSize;
+};
+
+
+struct RemoteFrameEnd : RemotePacketInfo
+{
+	int Size;
+};
+
+#pragma pack(pop)
+
+
 struct TextureData
 {
 	uint32_t Index;
-	ID3D11Texture2D *pTexture;
-	IDXGIResource1 *pResource1;
-	ID3D11Resource *pResource;
+	EVREye Eye;
+
+	ID3D11Texture2D *pGPUTexture;	
+	ID3D11Resource *pGPUResource;
+
+	ID3D11Texture2D *pCPUTexture;
+	ID3D11Resource *pCPUResource;
+
 	HANDLE hSharedHandle;
+
+	//DirectX::ScratchImage *pScratchImage;
+	//const DirectX::Image *pImage;
 };
 
 struct TextureSet
 {
 	uint32_t Pid;
-	//D3D11_TEXTURE2D_DESC Desc;	
 	TextureData Data[3];
 	bool HasHandle(HANDLE handle)
 	{
@@ -53,6 +93,11 @@ class CTrackedHMD :
 private:	
 	HMDData m_HMDData;		
 	CameraData m_Camera;
+
+	HANDLE m_hThread;
+	bool m_IsRunning;
+	unsigned int static WINAPI RemoteDisplayThread(void *p);
+	void RunRemoteDisplay();
 
 public:
 	CTrackedHMD(std::string displayName, CServerDriver *pServer);
@@ -106,17 +151,24 @@ private:
 	ID3D11DeviceContext *m_pContext;
 	ID3D11Device *m_pDevice;
 	D3D_FEATURE_LEVEL m_FeatureLevel;
-	ID3D11Texture2D *m_pLeftTexture;
-	ID3D11Resource *m_pLeftResource;
-	ID3D11Texture2D *m_pRightTexture;
-	ID3D11Resource *m_pRightResource;
+	unsigned short RemoteSequence;
+	void ProcessRemoteData(uint8_t type, USBData *pData);
+
+	//DirectX::ScratchImage *m_pScreenImage;
+	//const DirectX::Image *m_pImage;	
+	//const DirectX::Image *m_pPrevImage;
+	//const DirectX::Image *m_pDiffImage;
+	//DirectX::ScratchImage m_ResizeScratch;
+	int m_FrameCount;
+
 	std::vector<TextureSet*> m_TextureSets;
 	std::map<SharedTextureHandle_t, TextureLink> m_TextureMap;	
-	void ProcessFrame();
+	//bool ProcessFrame();
+	void UpdateBuffer(TextureLink *pLink);
 	HANDLE m_hBufferLock;
 	HANDLE m_hTextureMapLock;
 	bool m_HasDirectFrame;
-	tjhandle m_hTJ;
+	//tjhandle m_hTJ;
 
 
 public: //IVRDriverDirectModeComponent

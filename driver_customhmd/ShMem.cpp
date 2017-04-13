@@ -13,43 +13,38 @@ CShMem::CShMem()
 		_commAccessor = (char *)MapViewOfFile(_commSharedMem, FILE_MAP_ALL_ACCESS, 0, 0, _commBufferSize);
 	}
 
-	_screenAccessLock[0] = CreateMutex(nullptr, false, L"Global\\CustomHMDLeftLock");
-	_screenAccessor[0] = nullptr;
-	_screenSharedMem[0] = CreateFileMapping(INVALID_HANDLE_VALUE, nullptr, PAGE_READWRITE, 0, _screenBufferSize, L"CustomHMDLeft");
-	if (_screenSharedMem[0])
+	_screenAccessLock = CreateMutex(nullptr, false, L"Global\\CustomHMDScreenLock");
+	_screenAccessor = nullptr;
+	_screenSharedMem = CreateFileMapping(INVALID_HANDLE_VALUE, nullptr, PAGE_READWRITE, 0, _screenBufferSize, L"CustomHMDLeft");
+	if (_screenSharedMem)
 	{
-		SetSecurityInfo(_screenSharedMem[0], SE_KERNEL_OBJECT, DACL_SECURITY_INFORMATION, 0, 0, (PACL)nullptr, nullptr);
-		_screenAccessor[0] = (char *)MapViewOfFile(_screenSharedMem[0], FILE_MAP_ALL_ACCESS, 0, 0, _screenBufferSize);
-	}
-
-	_screenAccessLock[1] = CreateMutex(nullptr, false, L"Global\\CustomHMDRightLock");
-	_screenAccessor[1] = nullptr;
-	_screenSharedMem[1] = CreateFileMapping(INVALID_HANDLE_VALUE, nullptr, PAGE_READWRITE, 0, _screenBufferSize, L"CustomHMDRight");
-	if (_screenSharedMem[1])
-	{
-		SetSecurityInfo(_screenSharedMem[1], SE_KERNEL_OBJECT, DACL_SECURITY_INFORMATION, 0, 0, (PACL)nullptr, nullptr);
-		_screenAccessor[1] = (char *)MapViewOfFile(_screenSharedMem[1], FILE_MAP_ALL_ACCESS, 0, 0, _screenBufferSize);
+		SetSecurityInfo(_screenSharedMem, SE_KERNEL_OBJECT, DACL_SECURITY_INFORMATION, 0, 0, (PACL)nullptr, nullptr);
+		_screenAccessor = (char *)MapViewOfFile(_screenSharedMem, FILE_MAP_ALL_ACCESS, 0, 0, _screenBufferSize);
 	}
 }
 
 
 CShMem::~CShMem()
 {
-	if (_commAccessor) UnmapViewOfFile(_commAccessor);
+	if (_commAccessor) 
+		UnmapViewOfFile(_commAccessor);
 	_commAccessor = nullptr;
-	if (_commSharedMem) CloseHandle(_commSharedMem);
+	if (_commSharedMem) 
+		CloseHandle(_commSharedMem);
 	_commSharedMem = nullptr;
-	CloseHandle(_commAccessLock);
+	if (_commAccessLock)
+		CloseHandle(_commAccessLock);
 	_commAccessLock = nullptr;
 
-	if (_screenAccessor[0]) UnmapViewOfFile(_screenAccessor[0]);
-	if (_screenAccessor[1]) UnmapViewOfFile(_screenAccessor[1]);
-	_screenAccessor[0] = nullptr; _screenAccessor[1] = nullptr;
-	if (_screenSharedMem[0]) CloseHandle(_screenSharedMem[0]);
-	if (_screenSharedMem[1]) CloseHandle(_screenSharedMem[1]);
-	_screenSharedMem[0] = nullptr; _screenSharedMem[1] = nullptr;
-	CloseHandle(_screenAccessLock[0]); CloseHandle(_screenAccessLock[1]);
-	_screenAccessLock[0] = nullptr; _screenAccessLock[1] = nullptr;
+	if (_screenAccessor) 
+		UnmapViewOfFile(_screenAccessor);
+	_screenAccessor = nullptr; 
+	if (_screenSharedMem) 
+		CloseHandle(_screenSharedMem);
+	_screenSharedMem = nullptr; 
+	if (_screenAccessLock)
+		CloseHandle(_screenAccessLock);
+	_screenAccessLock = nullptr; 
 
 }
 
@@ -116,14 +111,14 @@ char *CShMem::ReadIncomingPackets(int *count)
 	return result;
 }
 
-void CShMem::WriteScreen(int eye, char *screenData, int size)
+void CShMem::WriteScreen(char *screenData, int size)
 {
-	auto si = (ScreenInfo*)_screenAccessor[eye];	
-	auto dd = _screenAccessor[eye] + sizeof(ScreenInfo);
-	if (WaitForSingleObject(_screenAccessLock[eye], 100) == WAIT_OBJECT_0)
+	auto si = (ScreenInfo*)_screenAccessor;	
+	auto dd = _screenAccessor + sizeof(ScreenInfo);
+	if (WaitForSingleObject(_screenAccessLock, 100) == WAIT_OBJECT_0)
 	{
 		si->Size = size;		
 		memcpy(dd, screenData, size);
-		ReleaseMutex(_screenAccessLock[eye]);
+		ReleaseMutex(_screenAccessLock);
 	}
 }

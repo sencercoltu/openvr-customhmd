@@ -30,8 +30,9 @@ public:
 	bool IsMonitorConnected();
 	void AlignHMD(HmdVector3d_t *pAlign);
 	void SendDriverCommand(USBPacket *command);
-	void SendScreen(EVREye eye, char *screenData, int size);
+	void SendScreen(char *screenData, int size);
 	void RemoveTrackedDevice(CTrackedDevice *pDevice);
+	void ProcessUSBPacket(USBPacket *pUSBPacket);
 private:	
 	//std::string m_UserDriverConfigDir;
 	//std::string m_DriverInstallDir;
@@ -48,7 +49,7 @@ private:
 	bool m_HMDAdded, m_RightCtlAdded, m_LeftCtlAdded;
 	std::deque<USBPacket*> m_CommandQueue;
 	void ScanSyncReceived(uint64_t syncTime);
-	uint64_t m_LastTypeSequence;
+	uint64_t m_LastTypeSequence;	
 };
 
 #endif // ServerDriver_H

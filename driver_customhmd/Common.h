@@ -1,9 +1,13 @@
 #pragma once
 
+#define WIN32_LEAN_AND_MEAN
+
 #ifndef Common_H
 #define Common_H
 
 #include <Windows.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
 #include <openvr_driver.h>
 #include <vector>
 #include <memory>
@@ -15,6 +19,10 @@
 #include "..\stm32\Common\usb.h"
 #include "ShMem.h"
 #include "LiquidVR.h"
+
+#define SAFE_RELEASE(a) if(a) a->Release(); a = nullptr; 
+#define SAFE_CLOSE(a) if(a) CloseHandle((HANDLE)a); a = nullptr; 
+#define SAFE_FREE(a) if(a) free((void *)a); a = nullptr; 
 
 extern bool IsD2DConnected(uint16_t edid);
 
@@ -189,6 +197,19 @@ struct CameraData
 
 class CTrackedHMD;
 
+struct DirectModeData
+{
+	unsigned char *pPixelBuffer;
+	unsigned char *pCompBuffer;
+	unsigned char *pLastBuffer;
+	unsigned char *pDiffBuffer;
+	
+	DXGI_FORMAT Format;
+	int Width;
+	int Height;
+	int Stride;
+};
+
 struct HMDData : TrackerData
 {
 	CTrackedHMD *pHMDDriver;
@@ -202,15 +223,18 @@ struct HMDData : TrackerData
 	int PosY;
 	int ScreenWidth;
 	int ScreenHeight;
-	int EyeWidth;		
+	int EyeWidth;	
+	int EyeTexWidth;
+	int EyeTexHeight;
 	float Frequency;
 	float AspectRatio;	
 	float SuperSample;		
-	USBDataCache LastState;
-	bool IsRemoteDisplay;
-	unsigned long EyeDiffBufferSize;
-	unsigned char *pLeftDiffBuffer;
-	unsigned char *pRightDiffBuffer;
+	USBDataCache LastState;	
+	int RemoteDisplayPort;
+	char RemoteDisplayHost[128];
+	unsigned long EyeBufferSize;
+	DirectModeData EyeLeft;
+	DirectModeData EyeRight;
 };
 
 struct ControllerData : TrackerData

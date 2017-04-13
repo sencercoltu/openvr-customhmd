@@ -36,7 +36,7 @@ public:
 	CShMem();
 	~CShMem();
 	CommStatus _status;
-	void WriteScreen(int eye, char *screenData, int size);
+	void WriteScreen(char *screenData, int size);
 	void WriteOutgoingPacket(char *packet);
 	char* ReadIncomingPackets(int *count);
 	CommState GetState();
@@ -55,9 +55,9 @@ private:
 	char *_commAccessor;
 
 	const int _screenBufferSize = sizeof(ScreenInfo) + (3840 * 2160 * 4); //ScreenInfo + 4K display uncompressed
-	HANDLE _screenAccessLock[2];
-	HANDLE _screenSharedMem[2];
-	char *_screenAccessor[2];
+	HANDLE _screenAccessLock;
+	HANDLE _screenSharedMem;
+	char *_screenAccessor;
 
 };
 

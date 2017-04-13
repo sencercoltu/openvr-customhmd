@@ -37,15 +37,15 @@ public class DisplayActivity extends AppCompatActivity implements SensorEventLis
     private LinearLayout mContentView;
     private boolean mVisible;
 
-    public static int EyeWidth;
-    public static int EyeHeight;
+    public static int ScreenWidth;
+    public static int ScreenHeight;
 
-    static EyeProcessor[] EyeProcessors;
+    static ScreenProcessor _screenProcessor;
 
     byte[] rotationBytes = new byte[16];
     ByteBuffer bb;
 
-    private ImageView[] Eyes = new ImageView[2];
+    private ImageView ScreenView;
 
     private final Runnable mHidePart2Runnable = new Runnable() {
         @SuppressLint("InlinedApi")
@@ -99,10 +99,7 @@ public class DisplayActivity extends AppCompatActivity implements SensorEventLis
         bb = ByteBuffer.wrap(rotationBytes);
         bb.order(ByteOrder.LITTLE_ENDIAN);
 
-        EyeProcessors = new EyeProcessor[] {
-                new EyeProcessor(this),
-                new EyeProcessor(this)
-        };
+        _screenProcessor = new ScreenProcessor(this);
 
         UIHandler = new Handler();
 
@@ -112,14 +109,14 @@ public class DisplayActivity extends AppCompatActivity implements SensorEventLis
         mVisible = true;
         mContentView = (LinearLayout) findViewById(R.id.fullscreen_content);
 
-        Eyes[0] = (ImageView) findViewById(R.id.leftEye);
-        Eyes[1] = (ImageView) findViewById(R.id.rightEye);
+        ScreenView = (ImageView) findViewById(R.id.screenView);
+
 
         Display display = getWindowManager().getDefaultDisplay();
         Point size = new Point();
         display.getSize(size);
-        EyeWidth = size.x;
-        EyeHeight = size.y;
+        ScreenWidth = size.x;
+        ScreenHeight = size.y;
 
         // Set up the user interaction to manually show or hide the system UI.
         mContentView.setOnClickListener(new View.OnClickListener() {
@@ -220,11 +217,9 @@ public class DisplayActivity extends AppCompatActivity implements SensorEventLis
 
     private class ImagePainter implements Runnable {
 
-        private int Eye;
-        private EyeProcessorThread Processor;
+        private ScreenProcessorThread Processor;
 
-        private ImagePainter(int eye, EyeProcessorThread processor) {
-            Eye = eye;
+        private ImagePainter(ScreenProcessorThread processor) {
             Processor = processor;
         }
 
@@ -232,7 +227,7 @@ public class DisplayActivity extends AppCompatActivity implements SensorEventLis
         public void run() {
             synchronized (Processor._lock) {
                 try {
-                    Eyes[Eye].setImageBitmap(Processor._bitmap);
+                    ScreenView.setImageBitmap(Processor._bitmap);
                 }
                 catch (Exception e){
                     e.printStackTrace();
@@ -242,8 +237,8 @@ public class DisplayActivity extends AppCompatActivity implements SensorEventLis
         }
     }
 
-    public void TriggerEye(int eye, EyeProcessorThread eyeProcessorThread) {
-        UIHandler.post(new ImagePainter(eye, eyeProcessorThread));
+    public void TriggerEye(ScreenProcessorThread eyeProcessorThread) {
+        UIHandler.post(new ImagePainter(eyeProcessorThread));
         //Eyes[eye].setImageBitmap(eyeProcessorThread._bitmap);
     }
 }

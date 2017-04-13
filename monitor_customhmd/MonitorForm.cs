@@ -24,13 +24,19 @@ namespace monitor_customhmd
 
     public partial class MonitorForm : Form
     {
+        private int FPS;     
+        private int _frameCount;
+        private SolidBrush _frameBrush = new SolidBrush(Color.Yellow);
+        private Font _frameFont = new Font(FontFamily.GenericSansSerif, 12);
+        private Pen _framePen = new Pen(Color.Yellow);
+
         private NotifyIcon _trayIcon;
         //private CVRSystem _vrSystem;        
         private Thread _commThread;
-        private Thread _dispThread;
+        //private Thread _dispThread;
         private bool _running;
 
-        private string DisplayAddress = "127.0.0.1";
+        //private string DisplayAddress = "127.0.0.1";
         //private string DisplayAddress = "192.168.0.27";
 
         private CommState State = CommState.Disconnected;
@@ -43,20 +49,20 @@ namespace monitor_customhmd
 
         private ShMem _sharedMem = null;
 
-        private object _socketLock = new object();
-        private TcpClient _tcpClient;
-        private Socket _socket;
-        private bool _isConnecting;
-        private ScreenPartInfo _headerCache;
+        //private object _socketLock = new object();
+        //private TcpClient _tcpClient;
+        //private Socket _socket;
+        //private bool _isConnecting;
+        //private PacketInfo _headerCache;
         //private IPAddress _serverAddr;
         //private IPEndPoint _endPoint;
 
         //private ScreenInfo _screenInfo;
         //private int _colorThreshold = 16;
 
-        private byte[][] EyeBitmap = new[] { new byte[3840 * 2160 * 4], new byte[3840 * 2160 * 4] };
+        //private byte[] ScreenData = new byte[3840 * 2160 * 4];
 
-        private Image[] EyeImage = new Image[2];
+        //private Image ScreenImage;
 
         public MonitorForm()
         {
@@ -120,124 +126,123 @@ namespace monitor_customhmd
             _sharedMem.EnableWatchDog(false);
             IsVisible = true;
             _commThread = new Thread(USBProcessor);
-            _dispThread = new Thread(DisplayProcessor);
+            //_dispThread = new Thread(RemoteDisplayProcessor);
             _running = true;
             _commThread.Start();
-            _dispThread.Start();
+            //_dispThread.Start();
         }
 
         private ushort dispPacketCounter = 0;
+        
 
-        private void DisplayProcessor()
-        {
-            var receiveThread = new Thread(() =>
-            {
-                byte[] incoming = new byte[100 * 16];
+        //private void RemoteDisplayProcessor()
+        //{
+        //    var receiveThread = new Thread(() =>
+        //    {
+        //        byte[] incoming = new byte[100 * 16];
+        //        while (_running)
+        //        {
+        //            lock (_socketLock)
+        //            {
 
-                while (_running)
-                {
-                    lock (_socketLock)
-                    {
+        //                if (_tcpClient != null)
+        //                {
+        //                    try
+        //                    {
+        //                        var rotations = Math.Min(_tcpClient.Available / 16, 100);
 
-                        if (_tcpClient != null)
-                        {
-                            try
-                            {
-                                var rotations = Math.Min(_tcpClient.Available / 16, 100);
+        //                        if (rotations > 0)
+        //                        {
+        //                            if (State < CommState.ActiveNoDriver)
+        //                                State = _sharedMem.IsDriverActive ? CommState.Active : CommState.ActiveNoDriver;
 
-                                if (rotations > 0)
-                                {
-                                    if (State < CommState.ActiveNoDriver)
-                                        State = _sharedMem.IsDriverActive ? CommState.Active : CommState.ActiveNoDriver;
+        //                            _tcpClient.Client.Receive(incoming, 0, 16 * rotations, SocketFlags.None);
+        //                            var rotData = StructFromBytes<USBRotationData>(incoming, 16 * (rotations - 1));
+        //                            //Debug.WriteLine("r:" + rotations + " w: " + rotData.w.ToString("F6") + " x: " + rotData.x.ToString("F6") + "y: " + rotData.y.ToString("F6") + "z:" + rotData.z.ToString("F6"));
+        //                            var packet = USBPacket.Create((byte)(ROTATION_DATA | HMD_SOURCE), dispPacketCounter++, rotData);
+        //                            var d = StructToBytes(packet);
+        //                            SetPacketCrc(ref d);
+        //                            _sharedMem.WriteIncomingPacket(d);
+        //                        }
+        //                    }
+        //                    catch
+        //                    {
 
-                                    _tcpClient.Client.Receive(incoming, 0, 16 * rotations, SocketFlags.None);
-                                    var rotData = StructFromBytes<USBRotationData>(incoming, 16 * (rotations - 1));
-                                    //Debug.WriteLine("r:" + rotations + " w: " + rotData.w.ToString("F6") + " x: " + rotData.x.ToString("F6") + "y: " + rotData.y.ToString("F6") + "z:" + rotData.z.ToString("F6"));
-                                    var packet = USBPacket.Create((byte)(ROTATION_DATA | HMD_SOURCE), dispPacketCounter++, rotData);
-                                    var d = StructToBytes(packet);
-                                    SetPacketCrc(ref d);
-                                    _sharedMem.WriteIncomingPacket(d);
-                                }
-                            }
-                            catch
-                            {
+        //                    }
+        //                }
+        //            }
+        //        }
 
-                            }
-                        }
-                    }
-                }
+        //    });
 
-            });
+        //    receiveThread.Start();
 
-            receiveThread.Start();
+        //    while (_running)
+        //    {
+        //        var result = ProcessScreen();                
+        //        if (!result)
+        //            Thread.Sleep(10);
+        //    }
 
-            while (_running)
-            {
-                var result = (ProcessEye(0, pbLeft) || ProcessEye(1, pbRight));
-                //Debug.WriteLine("Updates: " + updates);
-                if (!result)
-                    Thread.Sleep(10);
-            }
+        //    receiveThread.Join();
+        //    receiveThread = null;
 
-            receiveThread.Join();
-            receiveThread = null;
+        //}
 
-        }
+        //private bool ProcessScreen()
+        //{
+        //    var size = _sharedMem.GetScreenImage(out ScreenData);
+        //    if (size <= 0) return false;
 
-        private bool ProcessEye(int eye, PictureBox pbx)
-        {
-            var size = _sharedMem.GetEyeImageSize(eye);
-            if (size <= 0) return false;
+        //    _frameCount++;
 
-            lock (_socketLock)
-            {
-                if (_tcpClient == null)
-                {
-                    _isConnecting = false;
-                    _tcpClient = new TcpClient();
-                }
-            }
+        //    lock (_socketLock)
+        //    {
+        //        if (_tcpClient == null)
+        //        {
+        //            _isConnecting = false;
+        //            _tcpClient = new TcpClient();
+        //        }
+        //    }            
 
-            _sharedMem.GetEyeImage(0, size, out EyeBitmap[eye]);
+        //    using (var ms = new MemoryStream(ScreenData))
+        //    {
+        //        ScreenImage = Image.FromStream(ms);
+        //    }
 
-            using (var ms = new MemoryStream(EyeBitmap[eye]))
-            {
-                EyeImage[eye] = Image.FromStream(ms);
-            }
+        //    SendFrame(ScreenData, size);
 
-            SendFrame(eye, EyeBitmap[eye], size);
+        //    if (chkPreview.Checked)
+        //        pbScreen.Invalidate();
+        //    return true;
+        //}
 
-            if (pbx != null && chkPreview.Checked)
-                pbx.Image = EyeImage[eye];
-            return true;
-        }
-
-        private void OnRemoteConnect(IAsyncResult ar)
-        {
-            lock (_socketLock)
-            {
-                _isConnecting = false;
-                try
-                {
-                    _tcpClient.EndConnect(ar);
-                    _socket = _tcpClient.Client;
-                    State = _sharedMem.IsDriverActive ? CommState.Active : CommState.ActiveNoDriver;
-                    ResetRotation();
-                }
-                catch
-                {
-                    _socket = null;
-                }
-            }
-        }
+        //private void OnRemoteConnect(IAsyncResult ar)
+        //{
+        //    lock (_socketLock)
+        //    {
+        //        _isConnecting = false;
+        //        try
+        //        {
+        //            _tcpClient.EndConnect(ar);
+        //            _socket = _tcpClient.Client;
+        //            State = _sharedMem.IsDriverActive ? CommState.Active : CommState.ActiveNoDriver;
+        //            ResetRotation();
+        //        }
+        //        catch
+        //        {
+        //            _socket = null;
+        //        }
+        //    }
+        //}
 
         private void MonitorForm_FormClosing(object sender, FormClosingEventArgs e)
         {
             _running = false;
             _commThread.Join();
             _commThread = null;
-            _dispThread.Join();
-            _dispThread = null;
+            //_dispThread.Join();
+            //_dispThread = null;
             _trayIcon.Dispose();
             _trayIcon = null;
             _sharedMem.Dispose();
@@ -245,17 +250,17 @@ namespace monitor_customhmd
             //if (ulMainHandle != 0)
             //    OpenVR.Overlay.DestroyOverlay(ulMainHandle);
             //OpenVR.Shutdown();
-            if (_socket != null && _socket.Connected)
-            {
-                _socket.Shutdown(SocketShutdown.Both);
-                _socket.Close();
-            }
-            lock (_socketLock)
-            {
-                if (_tcpClient != null)
-                    _tcpClient.Dispose();
-                _tcpClient = null;
-            }
+            //if (_socket != null && _socket.Connected)
+            //{
+            //    _socket.Shutdown(SocketShutdown.Both);
+            //    _socket.Close();
+            //}
+            //lock (_socketLock)
+            //{
+            //    if (_tcpClient != null)
+            //        _tcpClient.Dispose();
+            //    _tcpClient = null;
+            //}
         }
 
         private void USBProcessor()
@@ -475,61 +480,60 @@ namespace monitor_customhmd
         //    }
         //}
 
-        private void SendFrame(int eye, byte[] bytes, int size)
-        {
-            if (bytes == null) return;
+        //private void SendFrame(byte[] bytes, int size)
+        //{
+        //    if (bytes == null) return;
 
-            lock (_socketLock)
-            {
-                if (_socket == null)
-                {
-                    if (!_isConnecting)
-                    {
-                        if (_tcpClient == null)
-                            return;
-                        _isConnecting = true;
-                        _tcpClient.BeginConnect(DisplayAddress, 1974, OnRemoteConnect, null); //adb forward tcp:1974 tcp:1974                        
-                    }
-                    return;
-                }
-            }
+        //    lock (_socketLock)
+        //    {
+        //        if (_socket == null)
+        //        {
+        //            if (!_isConnecting)
+        //            {
+        //                if (_tcpClient == null)
+        //                    return;
+        //                _isConnecting = true;
+        //                _tcpClient.BeginConnect(DisplayAddress, 1974, OnRemoteConnect, null); //adb forward tcp:1974 tcp:1974                        
+        //            }
+        //            return;
+        //        }
+        //    }
+            
+        //    _headerCache.Size = size;
+        //    var headerBytes = StructToBytes(_headerCache);
+        //    if (!SendToRemoteDisplay(headerBytes)) return;
+        //    if (!SendToRemoteDisplay(bytes)) return;
 
-            _headerCache.Eye = (int)eye;
-            _headerCache.Size = size;
-            var headerBytes = StructToBytes(_headerCache);
-            if (!SendToRemoteDisplay(headerBytes)) return;
-            if (!SendToRemoteDisplay(bytes)) return;
 
+        //}
 
-        }
+        //private bool SendToRemoteDisplay(byte[] data)
+        //{
+        //    lock (_socketLock)
+        //    {
+        //        if (_socket != null)
+        //        {
+        //            try
+        //            {
+        //                _socket.Send(data);
+        //                return true;
+        //            }
+        //            catch
+        //            {
+        //                _tcpClient.Close();
+        //                _tcpClient = null;
+        //                _socket = null;
+        //                return false;
+        //            }
+        //        }
+        //        return false;
+        //    }
+        //}
 
-        private bool SendToRemoteDisplay(byte[] data)
-        {
-            lock (_socketLock)
-            {
-                if (_socket != null)
-                {
-                    try
-                    {
-                        _socket.Send(data);
-                        return true;
-                    }
-                    catch
-                    {
-                        _tcpClient.Close();
-                        _tcpClient = null;
-                        _socket = null;
-                        return false;
-                    }
-                }
-                return false;
-            }
-        }
-
-        private void OnSend(object state)
-        {
-            //_udpPackets--;
-        }
+        //private void OnSend(object state)
+        //{
+        //    //_udpPackets--;
+        //}
 
         private readonly Dictionary<int, string> TabNames = new Dictionary<int, string>
         {
@@ -613,6 +617,21 @@ namespace monitor_customhmd
             var d = StructToBytes(packet);
             SetPacketCrc(ref d);
             _sharedMem.WriteIncomingPacket(d);
+        }
+
+        private void pbScreen_Paint(object sender, PaintEventArgs e)
+        {
+            //if (ScreenImage == null) return;
+            //if (!chkPreview.Checked) return;
+
+            //e.Graphics.DrawImage(ScreenImage, 0, 0, pbScreen.Width, pbScreen.Height);
+            //e.Graphics.DrawString("FPS: " + FPS, _frameFont, _frameBrush, 0, 0);
+        }
+
+        private void frameTimer_Tick(object sender, EventArgs e)
+        {
+            FPS = _frameCount;
+            _frameCount = 0;
         }
 
         //public static HmdQuaternion_t CreateFromYawPitchRoll(float yaw, float pitch, float roll)
