@@ -8,6 +8,7 @@
 #include <Windows.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include "resource.h"
 #include <openvr_driver.h>
 #include <vector>
 #include <memory>
@@ -197,19 +198,6 @@ struct CameraData
 
 class CTrackedHMD;
 
-struct DirectModeData
-{
-	unsigned char *pPixelBuffer;
-	unsigned char *pCompBuffer;
-	unsigned char *pLastBuffer;
-	unsigned char *pDiffBuffer;
-	
-	DXGI_FORMAT Format;
-	int Width;
-	int Height;
-	int Stride;
-};
-
 struct HMDData : TrackerData
 {
 	CTrackedHMD *pHMDDriver;
@@ -232,9 +220,6 @@ struct HMDData : TrackerData
 	USBDataCache LastState;	
 	int RemoteDisplayPort;
 	char RemoteDisplayHost[128];
-	unsigned long EyeBufferSize;
-	DirectModeData EyeLeft;
-	DirectModeData EyeRight;
 };
 
 struct ControllerData : TrackerData
@@ -245,6 +230,5 @@ struct ControllerData : TrackerData
 	HmdVector3d_t Euler;
 	USBDataCache LastState;
 };
-
 
 #endif // Common_H

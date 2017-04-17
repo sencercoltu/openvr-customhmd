@@ -7,12 +7,33 @@ void CreateDefaultSettings(HINSTANCE hm);
 CServerDriver g_ServerDriver;
 CWatchDogDriver g_WatchDogDriver;
 
+HMODULE g_hModule = nullptr;
+
 BOOL WINAPI DllMain(_In_ HINSTANCE hinstDLL, _In_ DWORD fdwReason, _In_ LPVOID lpvReserved)
 {
 	switch (fdwReason)
 	{
 		case DLL_PROCESS_ATTACH:
+		{
+			g_hModule = hinstDLL;
 			CreateDefaultSettings(hinstDLL);
+
+			char DllPath[MAX_PATH] = { 0 };
+			GetModuleFileNameA(g_hModule, DllPath, _countof(DllPath));
+			//remove file
+			while (DllPath[strlen(DllPath) - 1] != '\\')
+				DllPath[strlen(DllPath) - 1] = 0;
+
+			char *platform =
+#ifdef _WIN64
+				"win64";
+#else
+				"win32";
+#endif
+			char buff[1024];
+			_snprintf_s(buff, sizeof(buff), "%s..\\..\\resources\\%s", DllPath, platform);
+			SetDllDirectoryA(buff);
+		}
 			break;
 		case DLL_THREAD_ATTACH:
 			break;
@@ -29,7 +50,7 @@ HMD_DLL_EXPORT void* HmdDriverFactory(const char* interface_name, int* return_co
 	if (return_code) {
 		*return_code = vr::VRInitError_None;
 	}
-
+	
 	if (0 == std::strcmp(vr::IServerTrackedDeviceProvider_Version, interface_name)) {
 		return (IServerTrackedDeviceProvider *) &g_ServerDriver;
 	}

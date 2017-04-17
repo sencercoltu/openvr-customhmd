@@ -132,7 +132,7 @@ namespace monitor_customhmd
             //_dispThread.Start();
         }
 
-        private ushort dispPacketCounter = 0;
+        //private ushort dispPacketCounter = 0;
         
 
         //private void RemoteDisplayProcessor()

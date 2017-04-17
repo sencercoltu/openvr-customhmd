@@ -1,30 +1,17 @@
 #include <process.h>
 #include "TrackedHMD.h"
 #include <mfapi.h>
-#include <libavcodec\avcodec.h>
-#include <libavutil/opt.h>
-
-/*
-#include <math.h>
-#include <libavutil/channel_layout.h>
-#include <libavutil/common.h>
-#include <libavutil/imgutils.h>
-#include <libavutil/mathematics.h>
-#include <libavutil/samplefmt.h>
-#define INBUF_SIZE 4096
-#define AUDIO_INBUF_SIZE 20480
-#define AUDIO_REFILL_THRESH 4096
-*/
 
 
-#define SAFE_TJFREE(a) if (a) tjFree(a); a = nullptr;
 
 CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTrackedDevice(displayName, pServer)
 {
 	HRESULT hr = CoInitializeEx(nullptr, COINITBASE_MULTITHREADED);
 
 	vr::EVRSettingsError error;
-//	m_hTJ = tjInitCompress();
+	//	m_hTJ = tjInitCompress();
+
+	ZeroMemory(&m_DirectScreen, sizeof(m_DirectScreen));
 
 	m_FrameCount = 0;
 	//m_pScreenImage = nullptr;
@@ -36,9 +23,8 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 	m_pSyncTexture = nullptr;
 
 
+	m_hBufferLock = CreateMutex(nullptr, FALSE, L"JpegBufferLock");
 	m_hTextureMapLock = CreateMutex(nullptr, FALSE, L"TextureMapLock");
-	m_hBufferLock = CreateMutex(nullptr, FALSE, L"DirectBufferLock");
-	m_HasDirectFrame = false;
 	//m_CompressedBufferSize = 0;
 	m_SyncTexture = 0;
 	//	m_PixelBufferSize = 0;
@@ -167,10 +153,10 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 			int port = 0;
 			auto posHeight = strchr(value, 'x');
 			if (posHeight)
-			{				
+			{
 				*posHeight = 0;
 				posHeight++;
-				auto posHost= strchr(posHeight, '@');
+				auto posHost = strchr(posHeight, '@');
 				if (posHost)
 				{
 					*posHost = 0;
@@ -183,7 +169,7 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 						width = atoi(value);
 						height = atoi(posHeight);
 						port = atoi(posPort);
-						if (port && width && height && posHost[0] )
+						if (port && width && height && posHost[0])
 						{
 							m_HMDData.RemoteDisplayPort = port;
 							strcpy_s(m_HMDData.RemoteDisplayHost, posHost);
@@ -298,43 +284,11 @@ CTrackedHMD::~CTrackedHMD()
 	}
 
 	SAFE_CLOSE(m_HMDData.hPoseLock);
-
-	//if (m_pScreenResource)
-	//	m_pScreenResource->Release();
-	//m_pScreenResource = nullptr;
-
-	//if (m_pScreenTexture)
-	//	m_pScreenTexture->Release();
-	//m_pScreenTexture = nullptr;
-
 	SAFE_RELEASE(m_pSyncTexture);
-	//SAFE_RELEASE(m_pScreenImage);
-	//m_pImage = nullptr;
-	//m_pPrevImage = nullptr;
-	//m_pDiffImage = nullptr;
-
 	SAFE_RELEASE(m_pContext);
 	SAFE_RELEASE(m_pDevice);
-
-
-	//	if (m_pPixelBuffer)
-	//		free(m_pPixelBuffer);
-	//	m_pPixelBuffer = nullptr;
-
-	SAFE_CLOSE(m_hBufferLock);
 	SAFE_CLOSE(m_hTextureMapLock);
-
-	SAFE_FREE(m_HMDData.EyeLeft.pPixelBuffer);
-	m_HMDData.EyeLeft.pCompBuffer = m_HMDData.EyeLeft.pDiffBuffer = m_HMDData.EyeLeft.pLastBuffer = nullptr;
-	
-	SAFE_FREE(m_HMDData.EyeRight.pPixelBuffer); 
-	m_HMDData.EyeRight.pCompBuffer = m_HMDData.EyeRight.pDiffBuffer = m_HMDData.EyeRight.pLastBuffer = nullptr;
-
-	//if (m_hTJ)
-	//	tjDestroy(m_hTJ);
-	//m_hTJ = nullptr;
-
-
+	SAFE_CLOSE(m_hBufferLock);
 	CoUninitialize();
 }
 
@@ -349,292 +303,143 @@ unsigned int WINAPI CTrackedHMD::RemoteDisplayThread(void *p)
 
 void CTrackedHMD::RunRemoteDisplay()
 {
-	AVCodec *codec;
-	AVCodecContext *c = NULL;
-	int i, ret, x, y, got_output;
-	FILE *f;
-	AVFrame *frame;
-	AVPacket pkt;
-	uint8_t endcode[] = { 0, 0, 1, 0xb7 };
-
-	codec = avcodec_find_encoder(AV_CODEC_ID_H264);
-	if (!codec) return;
-	c = avcodec_alloc_context3(codec);
-	c->bit_rate = 400000;
-	/* resolution must be a multiple of two */
-	c->width = 1280;
-	c->height = 720;
-	/* frames per second */
-	c->time_base = AVRational { 1, 25 };
-
-	c->gop_size = 10; /* emit one intra frame every ten frames */
-	c->max_b_frames = 1;
-	c->pix_fmt = AV_PIX_FMT_ABGR;
-
-	av_opt_set(c->priv_data, "preset", "slow", 0);
-
-	if (avcodec_open2(c, codec, NULL) < 0) return;
-
-	frame = av_frame_alloc();
-	if (!frame) return;
-
-	frame->format = c->pix_fmt;
-	frame->width = c->width;
-	frame->height = c->height;
-
-	av_init_packet(&pkt);
-	pkt.data = NULL;    // packet data will be allocated by the encoder
-	pkt.size = 0;
-
-
-	RemoteSequence = 0;
-	//adb forward tcp:port tcp:port
-	//auto lz4 = LZ4_createStream();
-
 	WSADATA wsaData;
 	WSAStartup(MAKEWORD(2, 2), &wsaData);
-	SOCKADDR_IN ServerAddr;
+	m_DirectScreen.ConnectStatus = 1;
+	m_DirectScreen.LastDataReceive = GetTickCount();
+	m_DirectScreen.ClientSocket = INVALID_SOCKET;
+	m_DirectScreen.pCompressor = tjInitCompress();
+	m_DirectScreen.PixelWidth = m_HMDData.ScreenWidth / 2;
+	m_DirectScreen.PixelHeight = m_HMDData.ScreenHeight;
+	m_DirectScreen.PixelFormat = TJPF_RGBA;
+	m_DirectScreen.PixelStride = m_DirectScreen.PixelWidth * 4;
 
-	ServerAddr.sin_family = AF_INET;
-	ServerAddr.sin_port = htons(m_HMDData.RemoteDisplayPort);		
-	inet_pton(AF_INET, m_HMDData.RemoteDisplayHost, &ServerAddr.sin_addr);
-	SOCKET clientSocket = INVALID_SOCKET;
+	m_DirectScreen.Left.Init(EVREye::Eye_Left);
+	m_DirectScreen.Right.Init(EVREye::Eye_Right);
 
-	int connectStatus = 1;
-	int bytesSent = 0;
-	u_long bytesAvailable;
-	USBRotationData rotData = {};
-
-	//char RemoteFrameBytes[8192];
-	//const char *blockMagic = "LZ4Block";
+	m_DirectScreen.ServerAddr.sin_family = AF_INET;
+	m_DirectScreen.ServerAddr.sin_port = htons(m_HMDData.RemoteDisplayPort);
+	inet_pton(AF_INET, m_HMDData.RemoteDisplayHost, &m_DirectScreen.ServerAddr.sin_addr);
 
 	while (m_IsRunning)
 	{
-		if (clientSocket == INVALID_SOCKET)
-			clientSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+		if (GetTickCount() - m_DirectScreen.LastDataReceive > 5000)
+			m_DirectScreen.CloseSocket(); //close on 5sec recv timeout
 
-		if (clientSocket != INVALID_SOCKET && connectStatus)
+		auto res = m_DirectScreen.ConnectSocket();
+		if (res < 0)
 		{
-			connectStatus = connect(clientSocket, (SOCKADDR *)&ServerAddr, sizeof(ServerAddr));
-			if (!connectStatus)
-			{
-				//LZ4_resetStream(lz4);
-				//send(clientSocket, blockMagic, (int) strlen(blockMagic), 0);
-			}
-		}
-		
-		if (!connectStatus)
-		{
-			if (!ioctlsocket(clientSocket, FIONREAD, &bytesAvailable))
-			{
-				while (m_IsRunning && bytesAvailable > sizeof(rotData))
-				{
-					bytesSent = recv(clientSocket, (char *)&rotData, sizeof(rotData), 0);
-					if (bytesSent <= 0)
-					{
-						if (clientSocket != INVALID_SOCKET)
-						{
-							closesocket(clientSocket);
-							clientSocket = INVALID_SOCKET;
-						}
-						connectStatus = 1;
-						break;
-					}
-					bytesAvailable -= bytesSent;
-				}
-				//process last packet
-				ProcessRemoteData(HMD_SOURCE | ROTATION_DATA, (USBData *)&rotData);
-			}
-
-			if (m_HasDirectFrame)
-			{
-				//unsigned long leftSize = 0;
-				//unsigned long rightSize = 0;
-				m_FrameCount++;
-				//if (WAIT_OBJECT_0 == WaitForSingleObject(m_hBufferLock, 100))
-				//{
-				//	m_HasDirectFrame = false;					
-				//	memcpy(m_HMDData.EyeLeft.pNewBuffer, m_HMDData.EyeLeft.pPixelBuffer, m_HMDData.EyeLeft.Stride * m_HMDData.EyeLeft.Height);
-				//	memcpy(m_HMDData.EyeRight.pNewBuffer, m_HMDData.EyeRight.pPixelBuffer, m_HMDData.EyeRight.Stride * m_HMDData.EyeRight.Height);
-				//	//leftSize = m_HMDData.EyeBufferSize;
-				//	//if (tjCompress2(m_hTJ, (const unsigned char *)m_HMDData.EyeLeft.pRawBuffer, m_HMDData.EyeLeft.Width, m_HMDData.EyeLeft.Stride, m_HMDData.EyeLeft.Height, TJPF_RGBA, &m_HMDData.EyeLeft.pJpgBuffer, &leftSize, TJSAMP_422, 50, 0 /*TJFLAG_BOTTOMUP*/))
-				//	//	leftSize = 0;
-				//	//rightSize = m_HMDData.EyeBufferSize;
-				//	//if (tjCompress2(m_hTJ, (const unsigned char *)m_HMDData.EyeRight.pRawBuffer, m_HMDData.EyeRight.Width, m_HMDData.EyeRight.Stride, m_HMDData.EyeRight.Height, TJPF_RGBA, &m_HMDData.EyeRight.pJpgBuffer, &rightSize, TJSAMP_422, 50, 0 /*TJFLAG_BOTTOMUP*/))
-				//	//	rightSize = 0;
-				//	ReleaseMutex(m_hBufferLock);
-				//}	
-				
-				//leftSize = LZ4_compress_fast_continue(lz4, (const char *)m_HMDData.EyeLeft.pNewBuffer, (char *)m_HMDData.EyeLeft.pCompBuffer, m_HMDData.EyeLeft.Stride * m_HMDData.EyeLeft.Height, m_HMDData.EyeBufferSize, 4);
-				//rightSize = LZ4_compress_fast_continue(lz4, (const char *)m_HMDData.EyeRight.pNewBuffer, (char *)m_HMDData.EyeRight.pCompBuffer, m_HMDData.EyeRight.Stride * m_HMDData.EyeRight.Height, m_HMDData.EyeBufferSize, 4);
-				
-				//send left, send right
-				//if (leftSize)
-				{
-					RemoteFrameStart rfs;
-					rfs.Type = RPT_Start;
-					rfs.Eye = EVREye::Eye_Left;															
-					rfs.Width = m_HMDData.EyeLeft.Width;
-					rfs.Height = m_HMDData.EyeLeft.Height;
-					rfs.Stride = m_HMDData.EyeLeft.Stride;
-
-					//auto hdrCompSize = LZ4_compress_fast((const char *)&rfs, (char *)RemoteFrameBytes, sizeof(rfs), 8192, 1);
-					//int sent = send(clientSocket, (const char *)RemoteFrameBytes, hdrCompSize, 0);
-					int sent = send(clientSocket, (const char *)&rfs, sizeof(rfs), 0);
-
-					auto pixelPos = 0;
-					int size = rfs.Stride * rfs.Height;
-					int packedSize = 0;
-
-					while (size > 0)
-					{
-						auto currSize = min(size, size);
-						size_t compSize = 0;
-						//auto compSize = LZ4_compress_fast((const char *)&m_HMDData.EyeLeft.pDiffBuffer[pixelPos], (char *)m_HMDData.EyeLeft.pCompBuffer, currSize, m_HMDData.EyeBufferSize, 1);
-						//snappy::RawCompress((const char *)&m_HMDData.EyeLeft.pDiffBuffer[pixelPos], currSize, (char *)m_HMDData.EyeLeft.pCompBuffer, &compSize);
-						memcpy(frame->data, m_HMDData.EyeLeft.pPixelBuffer, rfs.Stride * rfs.Height);
-
-						RemoteFramePayload rfp;
-						rfp.PartSize = (int) compSize;
-						rfp.Type = RPT_Payload;
-						sent = send(clientSocket, (const char *)&rfp, sizeof(rfp), 0);
-
-						size -= currSize;
-						pixelPos += currSize;
-
-						auto remain = compSize;
-						auto pos = 0;
-						while (m_IsRunning && remain)
-						{
-							if (connectStatus)
-								break;
-
-							int partSize = (int)min(8192, remain);
-
-							packedSize += partSize;
-
-							//hdrCompSize = LZ4_compress_fast_continue(lz4, (const char *)&rfp, (char *)RemoteFrameBytes, sizeof(rfp), 8192, 1);
-							//sent = send(clientSocket, (const char *)RemoteFrameBytes, hdrCompSize, 0);
-							
-
-							sent = send(clientSocket, (const char *)&m_HMDData.EyeLeft.pCompBuffer[pos], partSize, 0);
-							if (sent <= 0)
-							{
-								if (clientSocket != INVALID_SOCKET)
-								{
-									closesocket(clientSocket);
-									clientSocket = INVALID_SOCKET;
-								}
-								connectStatus = 1;
-								break;
-							}
-							remain -= sent;
-							pos += sent;
-						}
-					}
-
-					RemoteFrameEnd rfe;
-					rfe.Type = RPT_End;
-					rfe.Size = packedSize;
-
-					//hdrCompSize = LZ4_compress_fast_continue(lz4, (const char *)&rfe, (char *)RemoteFrameBytes, sizeof(rfe), 8192, 1);
-					//sent = send(clientSocket, (const char *)RemoteFrameBytes, hdrCompSize, 0);
-					sent = send(clientSocket, (const char *)&rfe, sizeof(rfe), 0);
-
-					if (!ioctlsocket(clientSocket, FIONREAD, &bytesAvailable))
-					{
-						while (m_IsRunning && bytesAvailable > sizeof(rotData))
-						{
-							bytesSent = recv(clientSocket, (char *)&rotData, sizeof(rotData), 0);
-							if (bytesSent <= 0)
-							{
-								if (clientSocket != INVALID_SOCKET)
-								{
-									closesocket(clientSocket);
-									clientSocket = INVALID_SOCKET;
-								}
-								connectStatus = 1;
-								break;
-							}
-							bytesAvailable -= bytesSent;
-						}
-						//process last packet
-						ProcessRemoteData(HMD_SOURCE | ROTATION_DATA, (USBData *)&rotData);
-					}
-				}
-				//if (rightSize)
-				//{
-				//	FrameInfo pi;
-				//	pi.Eye = EVREye::Eye_Right;
-				//	pi.Size = rightSize;
-				//	pi.Format = m_HMDData.EyeRight.Format;
-				//	pi.Width = m_HMDData.EyeRight.Width;
-				//	pi.Height = m_HMDData.EyeRight.Height;
-				//	pi.Stride = m_HMDData.EyeRight.Stride;
-				//	auto remain = rightSize;
-				//	auto pos = 0;
-				//	int sent = send(clientSocket, (const char *)&pi, sizeof(pi), 0);
-				//	while (m_IsRunning && remain)
-				//	{
-				//		if (!ioctlsocket(clientSocket, FIONREAD, &bytesAvailable))
-				//		{
-				//			while (m_IsRunning && bytesAvailable > sizeof(rotData))
-				//			{
-				//				bytesSent = recv(clientSocket, (char *)&rotData, sizeof(rotData), 0);
-				//				if (bytesSent <= 0)
-				//				{
-				//					if (clientSocket != INVALID_SOCKET)
-				//					{
-				//						closesocket(clientSocket);
-				//						clientSocket = INVALID_SOCKET;
-				//					}
-				//					connectStatus = 1;
-				//					break;
-				//				}
-				//				bytesAvailable -= bytesSent;
-				//			}
-				//			//process last packet
-				//			ProcessRemoteData(HMD_SOURCE | ROTATION_DATA, (USBData *)&rotData);
-				//		}
-				//		if (connectStatus)
-				//			break;
-				//		sent = send(clientSocket, (const char *)&m_HMDData.EyeRight.pCompBuffer[pos], min(8192, remain), 0);
-				//		if (sent <= 0)
-				//		{
-				//			if (clientSocket != INVALID_SOCKET)
-				//			{
-				//				closesocket(clientSocket);
-				//				clientSocket = INVALID_SOCKET;
-				//			}
-				//			connectStatus = 1;
-				//			break;
-				//		}
-				//		remain -= sent;
-				//		pos += sent;
-				//	}
-				//}
-
-			}
+			Sleep(100);
+			m_DirectScreen.CloseSocket();
+			continue;
 		}
 
+		if (!m_DirectScreen.ConnectStatus)
+		{
+			if (m_DirectScreen.ReadRemoteData(&m_IsRunning) == 1)
+				ProcessRemoteData(HMD_SOURCE | ROTATION_DATA, (USBData *)&m_DirectScreen.RotData);
 
-		Sleep(1);
+			
+
+			UpdateBuffer(&m_DirectScreen.Left);
+			UpdateBuffer(&m_DirectScreen.Right);
+
+			if (!m_DirectScreen.Left.Info.JpegSize && !m_DirectScreen.Right.Info.JpegSize)
+			{
+				Sleep(10);
+				continue;
+			}
+
+			if (m_DirectScreen.Left.Info.JpegSize) SendBuffer(&m_DirectScreen.Left);
+			if (m_DirectScreen.Right.Info.JpegSize) SendBuffer(&m_DirectScreen.Right);
+		}
 	}
-	if (clientSocket != INVALID_SOCKET)
-	{
-		closesocket(clientSocket);
-		clientSocket = INVALID_SOCKET;
-	}
+
+	m_DirectScreen.CloseSocket();
+
+	if (m_DirectScreen.pCompressor)
+		tjDestroy(m_DirectScreen.pCompressor);
+	m_DirectScreen.pCompressor = nullptr;
+
+	m_DirectScreen.Left.Destroy();
+	m_DirectScreen.Right.Destroy();
+
+
 	WSACleanup();
 
-	avcodec_close(c);
-	av_free(c);
-	av_freep(&frame->data[0]);
-	av_frame_free(&frame);
-
-	//LZ4_resetStream(lz4);
-	//lz4 = nullptr;
 }
+
+void CTrackedHMD::SendBuffer(DirectEyeData *pEyeData)
+{
+	int sent = 0;
+	auto remain = pEyeData->Info.JpegSize;
+
+	sent = send(m_DirectScreen.ClientSocket, (const char *)&pEyeData->Info, sizeof(pEyeData->Info), 0);
+	if (sent > 0)
+	{
+		auto pos = 0;
+		//if (WAIT_OBJECT_0 == WaitForSingleObject(m_hBufferLock, 100))
+		//{
+
+			while (!m_DirectScreen.ConnectStatus && m_IsRunning && remain)
+			{
+				int partSize = (int)min(32768, remain);
+				sent = send(m_DirectScreen.ClientSocket, (const char *)&pEyeData->pJpegBuffer[pos], partSize, 0);
+				if (sent <= 0)
+				{
+					m_DirectScreen.CloseSocket();
+					break;
+				}
+				remain -= sent;
+				pos += sent;
+			}
+		//	ReleaseMutex(m_hBufferLock);
+		//}
+	}
+	else
+		m_DirectScreen.CloseSocket();
+
+	pEyeData->Info.JpegSize = 0;
+}
+
+void CTrackedHMD::UpdateBuffer(DirectEyeData *pEyeData)
+{
+	if (!pEyeData) return;
+	if (!pEyeData->pData) return;
+
+	D3D11_MAPPED_SUBRESOURCE mappedResource;
+
+	int width = 0, height = 0, stride = 0;
+
+	if (WAIT_OBJECT_0 == WaitForSingleObject(m_hTextureMapLock, 100))
+	{
+		if (SUCCEEDED(m_pContext->Map(pEyeData->pData->pCPUResource, 0, D3D11_MAP_READ, 0, &mappedResource)))
+		{
+			D3D11_TEXTURE2D_DESC desc = {};
+			pEyeData->pData->pCPUTexture->GetDesc(&desc);
+			width = desc.Width;
+			height = desc.Height;
+			stride = mappedResource.RowPitch;
+			pEyeData->pData->pCPUTexture->GetDesc(&desc);
+			memcpy(pEyeData->pPixelBuffer, mappedResource.pData, mappedResource.RowPitch * desc.Height);
+			m_pContext->Unmap(pEyeData->pData->pCPUResource, 0);
+		}
+		ReleaseMutex(m_hTextureMapLock);
+	}
+
+	pEyeData->pData = nullptr;
+
+	if (stride)
+	{
+		int fmt = TJPF_RGBA;
+		unsigned long size = 0;
+		//compress
+		tjCompress2(m_DirectScreen.pCompressor, (const unsigned char *)pEyeData->pPixelBuffer, width, stride, height, fmt,
+			&pEyeData->pJpegBuffer, &size, TJSAMP_420, 50, TJFLAG_NOREALLOC | TJFLAG_BOTTOMUP);			
+		pEyeData->Info.JpegSize = size;
+	}	
+}
+
 
 void CTrackedHMD::ProcessRemoteData(uint8_t type, USBData *pData)
 {
@@ -882,14 +687,13 @@ DriverPose_t CTrackedHMD::GetPose()
 	return pose;
 }
 
-
 void CTrackedHMD::CreateSwapTextureSet(uint32_t unPid, uint32_t unFormat, uint32_t unWidth, uint32_t unHeight, vr::SharedTextureHandle_t(*pSharedTextureHandles)[3])
 {
 	DriverLog(__FUNCTION__" Create TexSwapSet %u: fmt(%u) size(%ux%u)", unPid, unFormat, unWidth, unHeight);
 
 	if (!m_pDevice)
 	{
-		D3D_FEATURE_LEVEL levels[] = 
+		D3D_FEATURE_LEVEL levels[] =
 		{
 			D3D_FEATURE_LEVEL_11_1,
 			D3D_FEATURE_LEVEL_11_0,
@@ -924,31 +728,6 @@ void CTrackedHMD::CreateSwapTextureSet(uint32_t unPid, uint32_t unFormat, uint32
 		m_HMDData.EyeTexWidth = unWidth;
 		m_HMDData.EyeTexHeight = unHeight;
 
-		if (m_pDevice)
-		{
-			//m_pScreenImage = new DirectX::ScratchImage();
-			//m_pScreenImage->Initialize2D(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, m_HMDData.EyeTexWidth * 2, m_HMDData.EyeTexHeight, 3, 1);			
-			//m_pImage = m_pScreenImage->GetImage(0, 0, 0);
-			//m_pPrevImage = m_pScreenImage->GetImage(0, 1, 0);
-			//m_pDiffImage = m_pScreenImage->GetImage(0, 2, 0);
-			//hr = m_pDevice->CreateTexture2D(&Desc, nullptr, &m_pScreenTexture);
-			//if (hr == S_OK)
-			//	m_pScreenTexture->QueryInterface(__uuidof(ID3D11Resource), (void**)&m_pScreenResource);
-
-			m_HMDData.EyeBufferSize = m_HMDData.EyeTexWidth * m_HMDData.EyeTexHeight * 4; //2x rgba			
-
-			m_HMDData.EyeLeft.pPixelBuffer = (unsigned char *)malloc(m_HMDData.EyeBufferSize * 4); //rgba			
-			m_HMDData.EyeLeft.pCompBuffer = m_HMDData.EyeLeft.pPixelBuffer + m_HMDData.EyeBufferSize;
-			m_HMDData.EyeLeft.pLastBuffer = m_HMDData.EyeLeft.pCompBuffer + m_HMDData.EyeBufferSize;
-			m_HMDData.EyeLeft.pDiffBuffer = m_HMDData.EyeLeft.pLastBuffer + m_HMDData.EyeBufferSize;			
-
-			m_HMDData.EyeRight.pPixelBuffer = (unsigned char *)malloc(m_HMDData.EyeBufferSize * 4); //rgba			
-			m_HMDData.EyeRight.pCompBuffer = m_HMDData.EyeRight.pPixelBuffer + m_HMDData.EyeBufferSize;
-			m_HMDData.EyeRight.pLastBuffer = m_HMDData.EyeRight.pCompBuffer + m_HMDData.EyeBufferSize;
-			m_HMDData.EyeRight.pDiffBuffer = m_HMDData.EyeRight.pLastBuffer + m_HMDData.EyeBufferSize;
-			
-
-		}
 	}
 
 	if (!m_pDevice)
@@ -968,7 +747,7 @@ void CTrackedHMD::CreateSwapTextureSet(uint32_t unPid, uint32_t unFormat, uint32
 	desc.Format = (DXGI_FORMAT)unFormat;
 
 	if (WAIT_OBJECT_0 == WaitForSingleObject(m_hTextureMapLock, 10000))
-	{		
+	{
 		for (auto i = 0; i < 3; i++)
 		{
 			//create GPU texture
@@ -1112,145 +891,27 @@ void CTrackedHMD::GetNextSwapTextureSetIndex(vr::SharedTextureHandle_t sharedTex
 void CTrackedHMD::SubmitLayer(vr::SharedTextureHandle_t sharedTextureHandles[2], const vr::VRTextureBounds_t(&bounds)[2], const vr::HmdMatrix34_t *pPose)
 {
 	//DriverLog(__FUNCTION__" hTex1: %lu, hTex2: %lu", sharedTextureHandles[0], sharedTextureHandles[1]);
-
-	TextureLink* tlLeft = nullptr;
-	TextureLink* tlRight = nullptr;
-
-	if (WAIT_OBJECT_0 == WaitForSingleObject(m_hTextureMapLock, 100))
+	if (WAIT_OBJECT_0 == WaitForSingleObject(m_hTextureMapLock, 10))
 	{
 		auto iterLeft = m_TextureMap.find(sharedTextureHandles[0]);
 		auto iterRight = m_TextureMap.find(sharedTextureHandles[1]);
-		if (iterLeft != m_TextureMap.end())
+		/*if (iterLeft != m_TextureMap.end())
 		{
-			tlLeft = &iterLeft->second;
+			auto tlLeft = &iterLeft->second;
 			tlLeft->pData->Eye = EVREye::Eye_Left;
 			m_pContext->CopyResource(tlLeft->pData->pCPUResource, tlLeft->pData->pGPUResource);
+			m_DirectScreen.Left.pData = tlLeft->pData;
 		}
 		if (iterRight != m_TextureMap.end())
 		{
-			tlRight = &iterRight->second;
-			tlLeft->pData->Eye = EVREye::Eye_Right;
+			auto tlRight = &iterRight->second;
+			tlRight->pData->Eye = EVREye::Eye_Right;
 			m_pContext->CopyResource(tlRight->pData->pCPUResource, tlRight->pData->pGPUResource);
-		}
-		m_HasDirectFrame = tlLeft || tlRight;
+			m_DirectScreen.Right.pData = tlRight->pData;
+		}*/
 		ReleaseMutex(m_hTextureMapLock);
 	}
-
-	if (!m_HasDirectFrame) return;
-
-	UpdateBuffer(tlLeft);
-	UpdateBuffer(tlRight);
-
-	//DirectX::Rect r(0, 0, m_HMDData.EyeTexWidth, m_HMDData.EyeTexHeight);
-
-	//if (tlLeft)
-	//{
-	//	UpdateImage(tlLeft);
-	//	DirectX::CopyRectangle(*tlLeft->pData->pImage, r, *m_pImage, DirectX::TEX_FILTER_LINEAR, 0, 0);
-	//}
-	//if (tlRight)
-	//{
-	//	UpdateImage(tlRight);
-	//	DirectX::CopyRectangle(*tlRight->pData->pImage, r, *m_pImage, DirectX::TEX_FILTER_LINEAR, m_HMDData.EyeTexWidth, 0);
-	//}
-
 }
-
-void CTrackedHMD::UpdateBuffer(TextureLink *pLink)
-{
-	if (!pLink) return;
-
-	unsigned char *pBuffer;
-	DXGI_FORMAT *pFormat;
-	int *pStride, *pWidth, *pHeight;
-	switch (pLink->pData->Eye)
-	{
-	case EVREye::Eye_Left:
-		pBuffer = m_HMDData.EyeLeft.pPixelBuffer;
-		pFormat = &m_HMDData.EyeLeft.Format;
-		pStride = &m_HMDData.EyeLeft.Stride;
-		pWidth = &m_HMDData.EyeLeft.Width;
-		pHeight = &m_HMDData.EyeLeft.Height;
-		break;
-	case EVREye::Eye_Right:
-		pBuffer = m_HMDData.EyeRight.pPixelBuffer;
-		pFormat = &m_HMDData.EyeRight.Format;
-		pStride = &m_HMDData.EyeRight.Stride;
-		pWidth = &m_HMDData.EyeRight.Width;
-		pHeight = &m_HMDData.EyeRight.Height;
-		break;
-	default:
-		return;
-	}
-
-	D3D11_MAPPED_SUBRESOURCE mappedResource;
-	if (SUCCEEDED(m_pContext->Map(pLink->pData->pCPUResource, 0, D3D11_MAP_READ, 0, &mappedResource)))
-	{
-		D3D11_TEXTURE2D_DESC desc = {};		
-		pLink->pData->pCPUTexture->GetDesc(&desc);
-		size_t size = mappedResource.RowPitch * desc.Height;
-		if (WAIT_OBJECT_0 == WaitForSingleObject(m_hBufferLock, 10))
-		{
-			memcpy(pBuffer, mappedResource.pData, size);		
-			ReleaseMutex(m_hBufferLock);
-		}
-		m_pContext->Unmap(pLink->pData->pCPUResource, 0);
-		*pFormat = desc.Format;
-		*pWidth = desc.Width;
-		*pHeight = desc.Height;
-		*pStride = mappedResource.RowPitch;
-	}
-}
-
-//bool CTrackedHMD::ProcessFrame()
-//{
-	//if (!m_HasDirectFrame) return false;
-
-	//m_FrameCount++;
-	//bool isKeyFrame = (m_FrameCount % 30) == 0;
-
-	//if (WAIT_OBJECT_0 == WaitForSingleObject(m_hBufferLock, 10))
-	//{
-	//	m_HasDirectFrame = false;
-
-	//	//const int diffThreshold = 10;
-	//	////get frame differences
-	//	//int8_t *pCurr = (int8_t *) m_pImage->pixels;
-	//	//int8_t *pPrev = (int8_t *) m_pPrevImage->pixels;
-	//	//int8_t *pDiff = (int8_t *) m_pDiffImage->pixels;
-	//	//for (int y = 0; y < m_pImage->height; y++)
-	//	//{
-	//	//	for (int x = 0; x < m_pImage->rowPitch; x++)
-	//	//	{
-	//	//		auto pos = (y * m_pImage->rowPitch) + x;
-	//	//		if (pCurr[pos] == 0) pCurr[pos] = 1;
-	//	//		if (isKeyFrame || (abs(pPrev[pos] - pCurr[pos]) > diffThreshold))
-	//	//			pPrev[pos] = pDiff[pos] = pCurr[pos];
-	//	//		else
-	//	//			pDiff[pos] = 0;
-	//	//	}
-	//	//}
-
-
-	//	unsigned long jpegSize = 0;
-	//	jpegSize = m_HMDData.EyeBufferSize;
-	//	if (tjCompress2(m_hTJ, (const unsigned char *)m_pImage->pixels, (int)m_pImage->width, (int)m_pImage->rowPitch, (int)m_pImage->height, TJPF_RGBA, &m_HMDData.EyeBufferSize, &jpegSize, TJSAMP_422, 50, 0 /*TJFLAG_BOTTOMUP*/))
-	//		jpegSize = 0;
-	//	ReleaseMutex(m_hBufferLock);
-
-	//	//if (jpegSize)
-	//	//{
-	//	//	//FILE *fp = fopen("D:\\screen.jpg", "wb");
-	//	//	//if (fp != nullptr)
-	//	//	//{
-	//	//	//	fwrite(m_HMDData.pScreenBuffer, 1, jpegSize, fp);
-	//	//	//	fclose(fp);
-	//	//	//}
-	//	//	m_pServer->SendScreen((char *)m_HMDData.pScreenBuffer, jpegSize);
-	//	//}
-	//}
-//	return true;
-//}
 
 void CTrackedHMD::Present(vr::SharedTextureHandle_t syncTexture)
 {
@@ -1403,7 +1064,7 @@ void CTrackedHMD::RunFrame(DWORD currTick)
 	//	m_KeyDown = false;
 	//	m_Delay = 500;
 	//}
-	
+
 	DriverPose_t pose;
 	pose.poseIsValid = false;
 	if (WAIT_OBJECT_0 == WaitForSingleObject(m_HMDData.hPoseLock, INFINITE))

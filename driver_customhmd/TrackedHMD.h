@@ -7,60 +7,29 @@
 
 #include <map>
 
+
+
+
+extern "C" {
+#include <turbojpeg.h>
+}
+
 using namespace vr;
 
-#pragma pack(push)
-#pragma pack(1)
-
-enum RemotePacketype
-{
-	RPT_Start = 1,
-	RPT_Payload = 2,
-	RPT_End = 3
-};
-
-struct RemotePacketInfo
-{
-	RemotePacketype Type;
-};
-
-struct RemoteFrameStart : RemotePacketInfo
-{	
-	int Eye;
-	int Width;
-	int Height;
-	int Stride;	
-};
-
-struct RemoteFramePayload : RemotePacketInfo
-{
-	int PartSize;
-};
-
-
-struct RemoteFrameEnd : RemotePacketInfo
-{
-	int Size;
-};
-
-#pragma pack(pop)
-
+#define SAFE_TJFREE(a) if (a) tjFree(a); a = nullptr;
 
 struct TextureData
 {
 	uint32_t Index;
 	EVREye Eye;
 
-	ID3D11Texture2D *pGPUTexture;	
+	ID3D11Texture2D *pGPUTexture;
 	ID3D11Resource *pGPUResource;
 
 	ID3D11Texture2D *pCPUTexture;
 	ID3D11Resource *pCPUResource;
 
 	HANDLE hSharedHandle;
-
-	//DirectX::ScratchImage *pScratchImage;
-	//const DirectX::Image *pImage;
 };
 
 struct TextureSet
@@ -83,6 +52,110 @@ struct TextureLink
 	TextureData *pData;
 	TextureSet *pSet;
 };
+
+
+struct DirectEyeInfo
+{
+	EVREye Eye;
+	unsigned long JpegSize;
+};
+
+struct DirectEyeData
+{
+	TextureData *pData;
+	DirectEyeInfo Info;
+	void Init(EVREye eye)
+	{
+		pData = nullptr;
+		Info.Eye = eye;
+		Info.JpegSize = 0;
+		BufferSize = 3840 * 2160 * 4; //rgba	4k
+		pPixelBuffer = tjAlloc(BufferSize);		
+		pJpegBuffer = tjAlloc(BufferSize);
+	}
+
+	void Destroy()
+	{
+		SAFE_TJFREE(pPixelBuffer);
+		SAFE_TJFREE(pJpegBuffer);
+	}
+
+	unsigned long BufferSize;
+	unsigned char *pPixelBuffer;
+	unsigned char *pJpegBuffer;
+};
+
+struct DirectModeData
+{
+	int PixelFormat;
+	int PixelWidth;
+	int PixelHeight;
+	int PixelStride;
+
+	DirectEyeData Left;
+	DirectEyeData Right;
+
+	USBRotationData RotData = {};
+	SOCKADDR_IN ServerAddr;
+	SOCKET ClientSocket;
+	int ConnectStatus;
+	tjhandle pCompressor;	
+	DWORD LastDataReceive;
+
+	int ReadRemoteData(bool *pRunning)
+	{
+		u_long bytesAvailable;
+		int bytesReceived;
+
+		if (!ConnectStatus && !ioctlsocket(ClientSocket, FIONREAD, &bytesAvailable))
+		{			
+			while (*pRunning && (bytesAvailable > sizeof(RotData)))
+			{
+				LastDataReceive = GetTickCount();
+				bytesReceived = recv(ClientSocket, (char *)&RotData, sizeof(RotData), 0);
+				if (bytesReceived <= 0)
+				{
+					CloseSocket();
+					Sleep(100);
+					return 0;
+				}
+				bytesAvailable -= bytesReceived;
+			}
+			return 1;
+		}
+		return -1;
+	}
+
+	void CloseSocket()
+	{
+		if (ClientSocket != INVALID_SOCKET)
+		{
+			closesocket(ClientSocket);
+			ClientSocket = INVALID_SOCKET;
+		}
+		ConnectStatus = 1;
+	}
+
+	int ConnectSocket()
+	{
+		if (ClientSocket == INVALID_SOCKET)
+		{
+			ClientSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+			ConnectStatus = 1;
+		}
+
+		if (ClientSocket != INVALID_SOCKET && ConnectStatus)
+		{
+			ConnectStatus = connect(ClientSocket, (SOCKADDR *)&ServerAddr, sizeof(ServerAddr));
+			if (!ConnectStatus)
+				return 1;
+			else
+				return -1;
+		}
+		return 0;
+	}
+};
+
 
 class CTrackedHMD : 
 	public IVRDisplayComponent,
@@ -153,6 +226,7 @@ private:
 	D3D_FEATURE_LEVEL m_FeatureLevel;
 	unsigned short RemoteSequence;
 	void ProcessRemoteData(uint8_t type, USBData *pData);
+	DirectModeData m_DirectScreen;
 
 	//DirectX::ScratchImage *m_pScreenImage;
 	//const DirectX::Image *m_pImage;	
@@ -164,10 +238,10 @@ private:
 	std::vector<TextureSet*> m_TextureSets;
 	std::map<SharedTextureHandle_t, TextureLink> m_TextureMap;	
 	//bool ProcessFrame();
-	void UpdateBuffer(TextureLink *pLink);
+	void UpdateBuffer(DirectEyeData *pEyeData);
+	void SendBuffer(DirectEyeData *pEyeData);
+	HANDLE m_hTextureMapLock;	
 	HANDLE m_hBufferLock;
-	HANDLE m_hTextureMapLock;
-	bool m_HasDirectFrame;
 	//tjhandle m_hTJ;
 
 
