@@ -70,19 +70,25 @@ struct DirectEyeData
 		Info.Eye = eye;
 		Info.JpegSize = 0;
 		BufferSize = 3840 * 2160 * 4; //rgba	4k
-		pPixelBuffer = tjAlloc(BufferSize);		
-		pJpegBuffer = tjAlloc(BufferSize);
+		pPixelBuffer = tjAlloc(BufferSize);	ZeroMemory(pPixelBuffer, BufferSize);		
+		pRemoteBuffer = tjAlloc(BufferSize); ZeroMemory(pRemoteBuffer, BufferSize);
+		pDiffBuffer = tjAlloc(BufferSize); ZeroMemory(pDiffBuffer, BufferSize);
+		pJpegBuffer = tjAlloc(BufferSize); ZeroMemory(pJpegBuffer, BufferSize);
 	}
 
 	void Destroy()
 	{
 		SAFE_TJFREE(pPixelBuffer);
+		SAFE_TJFREE(pRemoteBuffer);
+		SAFE_TJFREE(pDiffBuffer);
 		SAFE_TJFREE(pJpegBuffer);
 	}
 
 	unsigned long BufferSize;
 	unsigned char *pPixelBuffer;
 	unsigned char *pJpegBuffer;
+	unsigned char *pRemoteBuffer;
+	unsigned char *pDiffBuffer;
 };
 
 struct DirectModeData

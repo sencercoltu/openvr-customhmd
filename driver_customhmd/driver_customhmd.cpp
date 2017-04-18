@@ -18,21 +18,21 @@ BOOL WINAPI DllMain(_In_ HINSTANCE hinstDLL, _In_ DWORD fdwReason, _In_ LPVOID l
 			g_hModule = hinstDLL;
 			CreateDefaultSettings(hinstDLL);
 
-			char DllPath[MAX_PATH] = { 0 };
-			GetModuleFileNameA(g_hModule, DllPath, _countof(DllPath));
-			//remove file
-			while (DllPath[strlen(DllPath) - 1] != '\\')
-				DllPath[strlen(DllPath) - 1] = 0;
-
-			char *platform =
-#ifdef _WIN64
-				"win64";
-#else
-				"win32";
-#endif
-			char buff[1024];
-			_snprintf_s(buff, sizeof(buff), "%s..\\..\\resources\\%s", DllPath, platform);
-			SetDllDirectoryA(buff);
+//			char DllPath[MAX_PATH] = { 0 };
+//			GetModuleFileNameA(g_hModule, DllPath, _countof(DllPath));
+//			//remove file
+//			while (DllPath[strlen(DllPath) - 1] != '\\')
+//				DllPath[strlen(DllPath) - 1] = 0;
+//
+//			char *platform =
+//#ifdef _WIN64
+//				"win64";
+//#else
+//				"win32";
+//#endif
+//			char buff[1024];
+//			_snprintf_s(buff, sizeof(buff), "%s..\\..\\resources\\%s", DllPath, platform);
+//			SetDllDirectoryA(buff);
 		}
 			break;
 		case DLL_THREAD_ATTACH:

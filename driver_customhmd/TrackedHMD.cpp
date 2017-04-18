@@ -323,6 +323,7 @@ void CTrackedHMD::RunRemoteDisplay()
 
 	while (m_IsRunning)
 	{
+		Sleep(1);
 		if (GetTickCount() - m_DirectScreen.LastDataReceive > 5000)
 			m_DirectScreen.CloseSocket(); //close on 5sec recv timeout
 
@@ -345,14 +346,13 @@ void CTrackedHMD::RunRemoteDisplay()
 
 
 			if (!m_DirectScreen.Left.Info.JpegSize && !m_DirectScreen.Right.Info.JpegSize)
-			{
-				if (!hasRotation) Sleep(10);
 				continue;
-			}
 
 			if (m_DirectScreen.Left.Info.JpegSize) SendBuffer(&m_DirectScreen.Left);
 			if (m_DirectScreen.Right.Info.JpegSize) SendBuffer(&m_DirectScreen.Right);
 		}
+		else
+			Sleep(100);
 	}
 
 	m_DirectScreen.CloseSocket();
@@ -400,6 +400,8 @@ void CTrackedHMD::SendBuffer(DirectEyeData *pEyeData)
 	}
 }
 
+
+
 void CTrackedHMD::UpdateBuffer(DirectEyeData *pEyeData)
 {
 	if (!pEyeData) return;
@@ -408,6 +410,7 @@ void CTrackedHMD::UpdateBuffer(DirectEyeData *pEyeData)
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
 
 	int width = 0, height = 0, stride = 0;
+	int fmt = 0;
 
 	if (WAIT_OBJECT_0 == WaitForSingleObject(m_hTextureMapLock, 100))
 	{
@@ -421,21 +424,43 @@ void CTrackedHMD::UpdateBuffer(DirectEyeData *pEyeData)
 			pEyeData->pData->pCPUTexture->GetDesc(&desc);
 			memcpy(pEyeData->pPixelBuffer, mappedResource.pData, mappedResource.RowPitch * desc.Height);
 			m_pContext->Unmap(pEyeData->pData->pCPUResource, 0);
+
+			if (desc.Format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB) fmt = TJPF_RGBA;
+			else if (desc.Format == DXGI_FORMAT_B8G8R8A8_UNORM_SRGB) fmt = TJPF_BGRA;
+			else if (desc.Format == DXGI_FORMAT_B8G8R8A8_UNORM_SRGB) fmt = TJPF_BGRA;
 		}
 		ReleaseMutex(m_hTextureMapLock);
 	}
 
 	pEyeData->pData = nullptr;
 
-	if (stride)
-	{
-		int fmt = TJPF_RGBA;
+	if (stride && fmt)
+	{		
 		unsigned long size = 0;
 		//compress
 		if (WAIT_OBJECT_0 == WaitForSingleObject(m_hBufferLock, 100))
-		{
-			tjCompress2(m_DirectScreen.pCompressor, (const unsigned char *)pEyeData->pPixelBuffer, width, stride, height, fmt,
-				&pEyeData->pJpegBuffer, &size, TJSAMP_420, 50, TJFLAG_NOREALLOC | TJFLAG_BOTTOMUP);
+		{			
+			//char *pSrc = (char *)pEyeData->pPixelBuffer;
+			//char *pRem = (char *)pEyeData->pRemoteBuffer;
+			//char *pDiff = (char *)pEyeData->pDiffBuffer;
+			////convert all zeroes to ones
+			//for (auto y = 0; y < height; y++)
+			//{
+			//	for (auto x = 0; x < width * 4; x+=4)
+			//	{
+			//		auto pos = (y * stride) + x;
+
+			//		if (pSrc[pos] == 0) pSrc[pos] = 1;
+			//		if (pSrc[pos+1] == 0) pSrc[pos+1] = 1;
+			//		if (pSrc[pos+2] == 0) pSrc[pos+2] = 1;					
+
+			//		if (abs(pRem[pos] - pSrc[pos]) < 8) pDiff[pos] = 0;  else pRem[pos] = pDiff[pos] = pSrc[pos]; pos++;
+			//		if (abs(pRem[pos] - pSrc[pos]) < 8) pDiff[pos] = 0;  else pRem[pos] = pDiff[pos] = pSrc[pos]; pos++;
+			//		if (abs(pRem[pos] - pSrc[pos]) < 8) pDiff[pos] = 0;  else pRem[pos] = pDiff[pos] = pSrc[pos]; pos++;
+			//		pDiff[pos] = 255;
+			//	}
+			//}
+			tjCompress2(m_DirectScreen.pCompressor, (const unsigned char *)pEyeData->pPixelBuffer, width, stride, height, fmt, &pEyeData->pJpegBuffer, &size, TJSAMP_420, 50, TJFLAG_NOREALLOC /* | TJFLAG_BOTTOMUP*/);
 			pEyeData->Info.JpegSize = size;
 			ReleaseMutex(m_hBufferLock);
 		}
@@ -727,8 +752,8 @@ void CTrackedHMD::CreateSwapTextureSet(uint32_t unPid, uint32_t unFormat, uint32
 		//Desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE | D3D11_CPU_ACCESS_READ;
 		//Desc.MiscFlags = 0;
 
-		m_HMDData.EyeTexWidth = unWidth;
-		m_HMDData.EyeTexHeight = unHeight;
+		//m_HMDData.EyeTexWidth = unWidth;
+		//m_HMDData.EyeTexHeight = unHeight;
 
 	}
 

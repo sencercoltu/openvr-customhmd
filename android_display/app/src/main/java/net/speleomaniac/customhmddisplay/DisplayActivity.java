@@ -3,8 +3,6 @@ package net.speleomaniac.customhmddisplay;
 import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
-import android.graphics.SurfaceTexture;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -16,10 +14,6 @@ import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.MotionEvent;
-import android.view.Surface;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
-import android.view.TextureView;
 import android.view.View;
 import android.view.Window;
 
@@ -32,9 +26,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 public class DisplayActivity extends AppCompatActivity
-        implements SensorEventListener,
-                   SurfaceHolder.Callback,
-                   TextureView.SurfaceTextureListener {
+        implements SensorEventListener {
 
     private static final int SERVERPORT = 1974;
     private ServerSocket serverSocket;
@@ -50,8 +42,7 @@ public class DisplayActivity extends AppCompatActivity
     private final Handler mHideHandler = new Handler();
     private boolean mVisible;
 
-    private TextureView surface;
-    private VideoTextureRenderer renderer;
+    private DisplaySurface surface;
 
     private int surfaceWidth;
     private int surfaceHeight;
@@ -107,9 +98,16 @@ public class DisplayActivity extends AppCompatActivity
 
         this.requestWindowFeature(Window.FEATURE_NO_TITLE);
 
-        surface = new TextureView(this);
+        surface = new DisplaySurface(this);
+        // Set the Renderer for drawing on the GLSurfaceView
+        surface.mRenderer = new DisplayRenderer(this);
+        surface.setRenderer(surface.mRenderer);
+
+        // Render the view only when there is a change in the drawing data
+        surface.setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
+
+
         setContentView(surface);
-        surface.setSurfaceTextureListener(this);
 
         rotationByteBuffer = ByteBuffer.wrap(rotationBytes);
         rotationByteBuffer.order(ByteOrder.LITTLE_ENDIAN);
@@ -121,18 +119,18 @@ public class DisplayActivity extends AppCompatActivity
                     serverSocket = new ServerSocket(SERVERPORT);
                     serverSocket.setReuseAddress(true);
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    //e.printStackTrace();
                     try {
                         Thread.sleep(100);
                     } catch (InterruptedException e1) {
-                        e1.printStackTrace();
+                        //e1.printStackTrace();
                     }
                 }
                 while (!Thread.currentThread().isInterrupted()) {
                     try {
                         clientSocket = serverSocket.accept();
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        //e.printStackTrace();
                     }
                     new Thread() {
                         public void run() {
@@ -148,24 +146,24 @@ public class DisplayActivity extends AppCompatActivity
                                 clientOutputStream = clientSocket.getOutputStream();
                             }
                             catch (IOException e) {
-                                e.printStackTrace();
+                                //e.printStackTrace();
                                 try {
                                     Thread.sleep(100);
                                 } catch (InterruptedException e1) {
-                                    e1.printStackTrace();
+                                    //e1.printStackTrace();
                                 }
                                 clientInputStream = null;
                                 clientOutputStream = null;
                                 try {
                                     clientSocket.close();
                                 } catch (IOException e1) {
-                                    e1.printStackTrace();
+                                    //e1.printStackTrace();
                                 }
                                 clientSocket = null;
                                 return;
                             }
 
-                            Surface surf = new Surface(renderer.getVideoTexture());
+                            //Surface surf = new Surface(renderer.getVideoTexture());
 
                             try {
                                 while (!Thread.currentThread().isInterrupted()) {
@@ -187,39 +185,42 @@ public class DisplayActivity extends AppCompatActivity
                                         pos += read;
                                         remain -= read;
                                     }
-                                    Log.d("HMD", "Got picture:" + eye + " of " + size);
+                                    //Log.d("HMD", "Got picture:" + eye + " of " + size);
                                     Bitmap image = BitmapFactory.decodeByteArray(inputBuffer, 0, size);
-                                    Canvas c = surf.lockCanvas(null);
-                                    c.drawBitmap(image, 0, 0, null);
-                                    surf.unlockCanvasAndPost(c);
-                                    image.recycle();
-
-
-//                                    synchronized (renderer.ImageLock) {
-//                                        if (eye == 0)
-//                                            renderer.LeftImage = image;
-//                                        else if (eye == 1)
-//                                            renderer.RightImage = image;
-//                                    }
+                                    Bitmap oldBmp = null;
+                                    if (eye == 0) {
+                                        synchronized (surface.mRenderer.imageLock) {
+                                            oldBmp =surface.mRenderer.left_Image;
+                                            surface.mRenderer.left_Image = image;
+                                        }
+                                    }
+                                    else if (eye == 1) {
+                                        synchronized (surface.mRenderer.imageLock) {
+                                            oldBmp = surface.mRenderer.right_Image;
+                                            surface.mRenderer.right_Image = image;
+                                        }
+                                    }
+                                    if (oldBmp != null)
+                                        oldBmp.recycle();
                                 }
                             }
                             catch (IOException e) {
-                                e.printStackTrace();
+                                //e.printStackTrace();
                                 try {
                                     clientSocket.close();
                                     clientInputStream = null;
                                     clientOutputStream = null;
 
                                 } catch (IOException e1) {
-                                    e1.printStackTrace();
+                                    //e1.printStackTrace();
                                 }
                                 try {
                                     Thread.sleep(100);
                                 } catch (InterruptedException e1) {
-                                    e1.printStackTrace();
+                                    //e1.printStackTrace();
                                 }
                             }
-                            surf.release();
+                            //surf.release();
                         }
                     }.start();
                 }
@@ -229,7 +230,7 @@ public class DisplayActivity extends AppCompatActivity
                         serverSocket.close();
 
                 } catch (IOException e1) {
-                    e1.printStackTrace();
+                    //e1.printStackTrace();
                 }
             }
         }.start();
@@ -265,7 +266,7 @@ public class DisplayActivity extends AppCompatActivity
                     clientOutputStream.write(rotationBytes);
                 } catch (IOException e) {
                     //clientOutputStream = null;
-                    e.printStackTrace();
+                    //e.printStackTrace();
                 }
             }
 
@@ -279,14 +280,15 @@ public class DisplayActivity extends AppCompatActivity
 
     @Override
     protected void onPause() {
-        super.onPause();
-        renderer.onPause();
         sensorManager.unregisterListener(this);
+        surface.onPause();
+        super.onPause();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        surface.onResume();
         sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR), SensorManager.SENSOR_DELAY_FASTEST);
     }
 
@@ -335,42 +337,5 @@ public class DisplayActivity extends AppCompatActivity
     private void delayedHide(int delayMillis) {
         mHideHandler.removeCallbacks(mHideRunnable);
         mHideHandler.postDelayed(mHideRunnable, delayMillis);
-    }
-
-    @Override
-    public void surfaceCreated(SurfaceHolder holder) {
-
-    }
-
-    @Override
-    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-
-    }
-
-    @Override
-    public void surfaceDestroyed(SurfaceHolder holder) {
-
-    }
-
-    @Override
-    public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
-        surfaceWidth = width;
-        surfaceHeight = height;
-        renderer = new VideoTextureRenderer(this, this.surface.getSurfaceTexture(), surfaceWidth, surfaceHeight);
-    }
-
-    @Override
-    public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
-
-    }
-
-    @Override
-    public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
-        return false;
-    }
-
-    @Override
-    public void onSurfaceTextureUpdated(SurfaceTexture surface) {
-
     }
 }
