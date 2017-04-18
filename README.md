@@ -1,5 +1,4 @@
 # openvr-customhmd
----
 DIY attempt for building OpenVR compatible HMD and controllers. 
 
 I started my VR experience with a custom built HMD (by using internal parts of a Sony HMZ-T2 and Arduino based HT), but only few games were supporting FreeTrack-like protocols. So I decided to write a complete OpenVR driver which hopefully will support newer games.
