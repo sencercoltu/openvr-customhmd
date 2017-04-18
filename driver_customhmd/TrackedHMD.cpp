@@ -293,7 +293,7 @@ CTrackedHMD::~CTrackedHMD()
 }
 
 unsigned int WINAPI CTrackedHMD::RemoteDisplayThread(void *p)
-{
+{	
 	auto trackedHMD = static_cast<CTrackedHMD *>(p);
 	if (trackedHMD)
 		trackedHMD->RunRemoteDisplay();
@@ -305,7 +305,7 @@ void CTrackedHMD::RunRemoteDisplay()
 {
 	WSADATA wsaData;
 	WSAStartup(MAKEWORD(2, 2), &wsaData);
-	m_DirectScreen.ConnectStatus = 1;
+	m_DirectScreen.ConnectStatus = 1; 
 	m_DirectScreen.LastDataReceive = GetTickCount();
 	m_DirectScreen.ClientSocket = INVALID_SOCKET;
 	m_DirectScreen.pCompressor = tjInitCompress();
@@ -336,17 +336,17 @@ void CTrackedHMD::RunRemoteDisplay()
 
 		if (!m_DirectScreen.ConnectStatus)
 		{
-			if (m_DirectScreen.ReadRemoteData(&m_IsRunning) == 1)
+			bool hasRotation = m_DirectScreen.ReadRemoteData(&m_IsRunning) == 1;
+			if (hasRotation)
 				ProcessRemoteData(HMD_SOURCE | ROTATION_DATA, (USBData *)&m_DirectScreen.RotData);
-
-			
 
 			UpdateBuffer(&m_DirectScreen.Left);
 			UpdateBuffer(&m_DirectScreen.Right);
 
+
 			if (!m_DirectScreen.Left.Info.JpegSize && !m_DirectScreen.Right.Info.JpegSize)
 			{
-				Sleep(10);
+				if (!hasRotation) Sleep(10);
 				continue;
 			}
 
@@ -374,13 +374,12 @@ void CTrackedHMD::SendBuffer(DirectEyeData *pEyeData)
 	int sent = 0;
 	auto remain = pEyeData->Info.JpegSize;
 
-	sent = send(m_DirectScreen.ClientSocket, (const char *)&pEyeData->Info, sizeof(pEyeData->Info), 0);
-	if (sent > 0)
+	if (WAIT_OBJECT_0 == WaitForSingleObject(m_hBufferLock, 100))
 	{
-		auto pos = 0;
-		//if (WAIT_OBJECT_0 == WaitForSingleObject(m_hBufferLock, 100))
-		//{
-
+		sent = send(m_DirectScreen.ClientSocket, (const char *)&pEyeData->Info, sizeof(pEyeData->Info), 0);
+		if (sent > 0)
+		{
+			auto pos = 0;
 			while (!m_DirectScreen.ConnectStatus && m_IsRunning && remain)
 			{
 				int partSize = (int)min(32768, remain);
@@ -393,13 +392,12 @@ void CTrackedHMD::SendBuffer(DirectEyeData *pEyeData)
 				remain -= sent;
 				pos += sent;
 			}
-		//	ReleaseMutex(m_hBufferLock);
-		//}
+		}
+		else
+			m_DirectScreen.CloseSocket();
+		pEyeData->Info.JpegSize = 0;
+		ReleaseMutex(m_hBufferLock);
 	}
-	else
-		m_DirectScreen.CloseSocket();
-
-	pEyeData->Info.JpegSize = 0;
 }
 
 void CTrackedHMD::UpdateBuffer(DirectEyeData *pEyeData)
@@ -434,10 +432,14 @@ void CTrackedHMD::UpdateBuffer(DirectEyeData *pEyeData)
 		int fmt = TJPF_RGBA;
 		unsigned long size = 0;
 		//compress
-		tjCompress2(m_DirectScreen.pCompressor, (const unsigned char *)pEyeData->pPixelBuffer, width, stride, height, fmt,
-			&pEyeData->pJpegBuffer, &size, TJSAMP_420, 50, TJFLAG_NOREALLOC | TJFLAG_BOTTOMUP);			
-		pEyeData->Info.JpegSize = size;
-	}	
+		if (WAIT_OBJECT_0 == WaitForSingleObject(m_hBufferLock, 100))
+		{
+			tjCompress2(m_DirectScreen.pCompressor, (const unsigned char *)pEyeData->pPixelBuffer, width, stride, height, fmt,
+				&pEyeData->pJpegBuffer, &size, TJSAMP_420, 50, TJFLAG_NOREALLOC | TJFLAG_BOTTOMUP);
+			pEyeData->Info.JpegSize = size;
+			ReleaseMutex(m_hBufferLock);
+		}
+	}
 }
 
 
@@ -872,7 +874,7 @@ void CTrackedHMD::DestroyAllSwapTextureSets(uint32_t unPid)
 }
 
 void CTrackedHMD::GetNextSwapTextureSetIndex(vr::SharedTextureHandle_t sharedTextureHandles[2], uint32_t(*pIndices)[2])
-{
+{	
 	//DriverLog(__FUNCTION__" hTex1: %lu, hTex2: %lu, pIndices: %p", sharedTextureHandles[0], sharedTextureHandles[1], pIndices);
 	if (WAIT_OBJECT_0 == WaitForSingleObject(m_hTextureMapLock, 10000))
 	{
@@ -889,13 +891,13 @@ void CTrackedHMD::GetNextSwapTextureSetIndex(vr::SharedTextureHandle_t sharedTex
 }
 
 void CTrackedHMD::SubmitLayer(vr::SharedTextureHandle_t sharedTextureHandles[2], const vr::VRTextureBounds_t(&bounds)[2], const vr::HmdMatrix34_t *pPose)
-{
+{	
 	//DriverLog(__FUNCTION__" hTex1: %lu, hTex2: %lu", sharedTextureHandles[0], sharedTextureHandles[1]);
 	if (WAIT_OBJECT_0 == WaitForSingleObject(m_hTextureMapLock, 10))
 	{
 		auto iterLeft = m_TextureMap.find(sharedTextureHandles[0]);
 		auto iterRight = m_TextureMap.find(sharedTextureHandles[1]);
-		/*if (iterLeft != m_TextureMap.end())
+		if (iterLeft != m_TextureMap.end())
 		{
 			auto tlLeft = &iterLeft->second;
 			tlLeft->pData->Eye = EVREye::Eye_Left;
@@ -908,13 +910,13 @@ void CTrackedHMD::SubmitLayer(vr::SharedTextureHandle_t sharedTextureHandles[2],
 			tlRight->pData->Eye = EVREye::Eye_Right;
 			m_pContext->CopyResource(tlRight->pData->pCPUResource, tlRight->pData->pGPUResource);
 			m_DirectScreen.Right.pData = tlRight->pData;
-		}*/
+		}
 		ReleaseMutex(m_hTextureMapLock);
 	}
 }
 
 void CTrackedHMD::Present(vr::SharedTextureHandle_t syncTexture)
-{
+{	
 	//DriverLog(__FUNCTION__" syncTexture: %lu", syncTexture);
 
 	if (m_SyncTexture != syncTexture)
@@ -945,12 +947,9 @@ void CTrackedHMD::Present(vr::SharedTextureHandle_t syncTexture)
 	}
 }
 
-
-
 void CTrackedHMD::RunFrame(DWORD currTick)
 {
 	//const float step = 0.0001f;
-
 	//if (m_KeyDown && currTick - m_LastDown > m_Delay)
 	//{
 	//	m_KeyDown = false;

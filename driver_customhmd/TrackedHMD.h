@@ -108,20 +108,23 @@ struct DirectModeData
 		int bytesReceived;
 
 		if (!ConnectStatus && !ioctlsocket(ClientSocket, FIONREAD, &bytesAvailable))
-		{			
-			while (*pRunning && (bytesAvailable > sizeof(RotData)))
+		{	
+			if (bytesAvailable)
 			{
 				LastDataReceive = GetTickCount();
-				bytesReceived = recv(ClientSocket, (char *)&RotData, sizeof(RotData), 0);
-				if (bytesReceived <= 0)
-				{
-					CloseSocket();
-					Sleep(100);
-					return 0;
+				while (*pRunning && (bytesAvailable > sizeof(RotData)))
+				{					
+					bytesReceived = recv(ClientSocket, (char *)&RotData, sizeof(RotData), 0);
+					if (bytesReceived <= 0)
+					{
+						CloseSocket();
+						Sleep(100);
+						return 0;
+					}
+					bytesAvailable -= bytesReceived;
 				}
-				bytesAvailable -= bytesReceived;
-			}
-			return 1;
+				return 1;
+			}			
 		}
 		return -1;
 	}
