@@ -10,6 +10,7 @@ import android.hardware.SensorManager;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.StrictMode;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -94,17 +95,18 @@ public class DisplayActivity extends AppCompatActivity
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+        StrictMode.setThreadPolicy(policy);
+
         super.onCreate(savedInstanceState);
 
         this.requestWindowFeature(Window.FEATURE_NO_TITLE);
 
-        surface = new DisplaySurface(this);
-        // Set the Renderer for drawing on the GLSurfaceView
-        surface.mRenderer = new DisplayRenderer(this);
-        surface.setRenderer(surface.mRenderer);
+        DisplayRenderer renderer = new DisplayRenderer(this);
 
-        // Render the view only when there is a change in the drawing data
-        surface.setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
+        surface = new DisplaySurface(this, renderer);
+        // Set the Renderer for drawing on the GLSurfaceView
+
 
 
         setContentView(surface);
@@ -200,6 +202,7 @@ public class DisplayActivity extends AppCompatActivity
                                             surface.mRenderer.right_Image = image;
                                         }
                                     }
+                                    surface.requestRender();
                                     if (oldBmp != null)
                                         oldBmp.recycle();
                                 }

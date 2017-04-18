@@ -248,7 +248,7 @@ private:
 	std::map<SharedTextureHandle_t, TextureLink> m_TextureMap;	
 	//bool ProcessFrame();
 	void UpdateBuffer(DirectEyeData *pEyeData);
-	void SendBuffer(DirectEyeData *pEyeData);
+	bool SendBuffer(DirectEyeData *pEyeData);
 	HANDLE m_hTextureMapLock;	
 	HANDLE m_hBufferLock;
 	//tjhandle m_hTJ;

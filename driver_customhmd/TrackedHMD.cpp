@@ -343,13 +343,11 @@ void CTrackedHMD::RunRemoteDisplay()
 
 			UpdateBuffer(&m_DirectScreen.Left);
 			UpdateBuffer(&m_DirectScreen.Right);
-
-
-			if (!m_DirectScreen.Left.Info.JpegSize && !m_DirectScreen.Right.Info.JpegSize)
-				continue;
-
-			if (m_DirectScreen.Left.Info.JpegSize) SendBuffer(&m_DirectScreen.Left);
-			if (m_DirectScreen.Right.Info.JpegSize) SendBuffer(&m_DirectScreen.Right);
+			
+			bool hasFrame = SendBuffer(&m_DirectScreen.Left);
+			hasFrame |= SendBuffer(&m_DirectScreen.Right);
+			if (!hasFrame)
+				Sleep(10);
 		}
 		else
 			Sleep(100);
@@ -369,8 +367,11 @@ void CTrackedHMD::RunRemoteDisplay()
 
 }
 
-void CTrackedHMD::SendBuffer(DirectEyeData *pEyeData)
+bool CTrackedHMD::SendBuffer(DirectEyeData *pEyeData)
 {
+	if (!pEyeData->Info.JpegSize)
+		return false;
+
 	int sent = 0;
 	auto remain = pEyeData->Info.JpegSize;
 
@@ -398,9 +399,8 @@ void CTrackedHMD::SendBuffer(DirectEyeData *pEyeData)
 		pEyeData->Info.JpegSize = 0;
 		ReleaseMutex(m_hBufferLock);
 	}
+	return true;
 }
-
-
 
 void CTrackedHMD::UpdateBuffer(DirectEyeData *pEyeData)
 {
@@ -412,7 +412,7 @@ void CTrackedHMD::UpdateBuffer(DirectEyeData *pEyeData)
 	int width = 0, height = 0, stride = 0;
 	int fmt = 0;
 
-	if (WAIT_OBJECT_0 == WaitForSingleObject(m_hTextureMapLock, 100))
+	if (WAIT_OBJECT_0 == WaitForSingleObject(m_hTextureMapLock, 10))
 	{
 		if (SUCCEEDED(m_pContext->Map(pEyeData->pData->pCPUResource, 0, D3D11_MAP_READ, 0, &mappedResource)))
 		{
@@ -426,19 +426,19 @@ void CTrackedHMD::UpdateBuffer(DirectEyeData *pEyeData)
 			m_pContext->Unmap(pEyeData->pData->pCPUResource, 0);
 
 			if (desc.Format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB) fmt = TJPF_RGBA;
-			else if (desc.Format == DXGI_FORMAT_B8G8R8A8_UNORM_SRGB) fmt = TJPF_BGRA;
-			else if (desc.Format == DXGI_FORMAT_B8G8R8A8_UNORM_SRGB) fmt = TJPF_BGRA;
+			else if (desc.Format == DXGI_FORMAT_B8G8R8A8_UNORM_SRGB) fmt = TJPF_BGRA;			
 		}
+		pEyeData->pData = nullptr;
 		ReleaseMutex(m_hTextureMapLock);
 	}
 
-	pEyeData->pData = nullptr;
+	
 
 	if (stride && fmt)
 	{		
 		unsigned long size = 0;
 		//compress
-		if (WAIT_OBJECT_0 == WaitForSingleObject(m_hBufferLock, 100))
+		if (WAIT_OBJECT_0 == WaitForSingleObject(m_hBufferLock, 10))
 		{			
 			//char *pSrc = (char *)pEyeData->pPixelBuffer;
 			//char *pRem = (char *)pEyeData->pRemoteBuffer;
@@ -460,7 +460,7 @@ void CTrackedHMD::UpdateBuffer(DirectEyeData *pEyeData)
 			//		pDiff[pos] = 255;
 			//	}
 			//}
-			tjCompress2(m_DirectScreen.pCompressor, (const unsigned char *)pEyeData->pPixelBuffer, width, stride, height, fmt, &pEyeData->pJpegBuffer, &size, TJSAMP_420, 50, TJFLAG_NOREALLOC /* | TJFLAG_BOTTOMUP*/);
+			tjCompress2(m_DirectScreen.pCompressor, (const unsigned char *)pEyeData->pPixelBuffer, width, stride, height, fmt, &pEyeData->pJpegBuffer, &size, TJSAMP_420, 20, TJFLAG_NOREALLOC /* | TJFLAG_BOTTOMUP*/);
 			pEyeData->Info.JpegSize = size;
 			ReleaseMutex(m_hBufferLock);
 		}
@@ -921,7 +921,6 @@ void CTrackedHMD::SubmitLayer(vr::SharedTextureHandle_t sharedTextureHandles[2],
 	if (WAIT_OBJECT_0 == WaitForSingleObject(m_hTextureMapLock, 10))
 	{
 		auto iterLeft = m_TextureMap.find(sharedTextureHandles[0]);
-		auto iterRight = m_TextureMap.find(sharedTextureHandles[1]);
 		if (iterLeft != m_TextureMap.end())
 		{
 			auto tlLeft = &iterLeft->second;
@@ -929,6 +928,7 @@ void CTrackedHMD::SubmitLayer(vr::SharedTextureHandle_t sharedTextureHandles[2],
 			m_pContext->CopyResource(tlLeft->pData->pCPUResource, tlLeft->pData->pGPUResource);
 			m_DirectScreen.Left.pData = tlLeft->pData;
 		}
+		auto iterRight = m_TextureMap.find(sharedTextureHandles[1]);
 		if (iterRight != m_TextureMap.end())
 		{
 			auto tlRight = &iterRight->second;

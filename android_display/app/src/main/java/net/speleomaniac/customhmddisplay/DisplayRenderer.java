@@ -47,12 +47,14 @@ public class DisplayRenderer implements GLSurfaceView.Renderer {
 
     // Misc
     Context mContext;
-    long mLastTime;
+    //long mLastTime;
     int mProgram;
 
     public DisplayRenderer(Context c) {
         mContext = c;
-        mLastTime = System.currentTimeMillis() + 100;
+        //mLastTime = System.currentTimeMillis() + 100;
+
+
     }
 
     public void onPause() {
@@ -61,29 +63,12 @@ public class DisplayRenderer implements GLSurfaceView.Renderer {
 
     public void onResume() {
         /* Do stuff to resume the renderer */
-        mLastTime = System.currentTimeMillis();
+        //mLastTime = System.currentTimeMillis();
     }
 
     @Override
     public void onDrawFrame(GL10 unused) {
-
-        // Get the current time
-        long now = System.currentTimeMillis();
-
-        // We should make sure we are valid and sane
-        if (mLastTime > now) return;
-
-        // Get the amount of time the last frame took.
-        long elapsed = now - mLastTime;
-
-        // Update our example
-
-        // Render our example
         Render(mtrxProjectionAndView);
-
-        // Save the current time to see how long it took <img src="http://androidblog.reindustries.com/wp-includes/images/smilies/icon_smile.gif" alt=":)" class="wp-smiley"> .
-        mLastTime = now;
-
     }
 
     int[] texturenames = new int[2];
