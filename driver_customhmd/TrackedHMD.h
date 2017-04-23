@@ -1,170 +1,15 @@
+#pragma once
+
 #ifndef TrackedHMD_H
 #define TrackedHMD_H
 
 #include "TrackedDevice.h" 
+#include "DirectStreamer.h"
 #include <D3D11_1.h>
 #include <DXGI1_2.h>
-
 #include <map>
 
-
-
-
-extern "C" {
-#include <turbojpeg.h>
-}
-
 using namespace vr;
-
-#define SAFE_TJFREE(a) if (a) tjFree(a); a = nullptr;
-
-struct TextureData
-{
-	uint32_t Index;
-	EVREye Eye;
-
-	ID3D11Texture2D *pGPUTexture;
-	ID3D11Resource *pGPUResource;
-
-	ID3D11Texture2D *pCPUTexture;
-	ID3D11Resource *pCPUResource;
-
-	HANDLE hSharedHandle;
-};
-
-struct TextureSet
-{
-	uint32_t Pid;
-	TextureData Data[3];
-	bool HasHandle(HANDLE handle)
-	{
-		for (auto i = 0; i < 3; i++)
-		{
-			if (Data[i].hSharedHandle == handle)
-				return true;
-		}
-		return false;
-	}
-};
-
-struct TextureLink
-{
-	TextureData *pData;
-	TextureSet *pSet;
-};
-
-
-struct DirectEyeInfo
-{
-	EVREye Eye;
-	unsigned long JpegSize;
-};
-
-struct DirectEyeData
-{
-	TextureData *pData;
-	DirectEyeInfo Info;
-	void Init(EVREye eye)
-	{
-		pData = nullptr;
-		Info.Eye = eye;
-		Info.JpegSize = 0;
-		BufferSize = 3840 * 2160 * 4; //rgba	4k
-		pPixelBuffer = tjAlloc(BufferSize);	ZeroMemory(pPixelBuffer, BufferSize);		
-		pRemoteBuffer = tjAlloc(BufferSize); ZeroMemory(pRemoteBuffer, BufferSize);
-		pDiffBuffer = tjAlloc(BufferSize); ZeroMemory(pDiffBuffer, BufferSize);
-		pJpegBuffer = tjAlloc(BufferSize); ZeroMemory(pJpegBuffer, BufferSize);
-	}
-
-	void Destroy()
-	{
-		SAFE_TJFREE(pPixelBuffer);
-		SAFE_TJFREE(pRemoteBuffer);
-		SAFE_TJFREE(pDiffBuffer);
-		SAFE_TJFREE(pJpegBuffer);
-	}
-
-	unsigned long BufferSize;
-	unsigned char *pPixelBuffer;
-	unsigned char *pJpegBuffer;
-	unsigned char *pRemoteBuffer;
-	unsigned char *pDiffBuffer;
-};
-
-struct DirectModeData
-{
-	int PixelFormat;
-	int PixelWidth;
-	int PixelHeight;
-	int PixelStride;
-
-	DirectEyeData Left;
-	DirectEyeData Right;
-
-	USBRotationData RotData = {};
-	SOCKADDR_IN ServerAddr;
-	SOCKET ClientSocket;
-	int ConnectStatus;
-	tjhandle pCompressor;	
-	DWORD LastDataReceive;
-
-	int ReadRemoteData(bool *pRunning)
-	{
-		u_long bytesAvailable;
-		int bytesReceived;
-
-		if (!ConnectStatus && !ioctlsocket(ClientSocket, FIONREAD, &bytesAvailable))
-		{	
-			if (bytesAvailable)
-			{
-				LastDataReceive = GetTickCount();
-				while (*pRunning && (bytesAvailable > sizeof(RotData)))
-				{					
-					bytesReceived = recv(ClientSocket, (char *)&RotData, sizeof(RotData), 0);
-					if (bytesReceived <= 0)
-					{
-						CloseSocket();
-						Sleep(100);
-						return 0;
-					}
-					bytesAvailable -= bytesReceived;
-				}
-				return 1;
-			}			
-		}
-		return -1;
-	}
-
-	void CloseSocket()
-	{
-		if (ClientSocket != INVALID_SOCKET)
-		{
-			closesocket(ClientSocket);
-			ClientSocket = INVALID_SOCKET;
-		}
-		ConnectStatus = 1;
-	}
-
-	int ConnectSocket()
-	{
-		if (ClientSocket == INVALID_SOCKET)
-		{
-			ClientSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-			ConnectStatus = 1;
-		}
-
-		if (ClientSocket != INVALID_SOCKET && ConnectStatus)
-		{
-			ConnectStatus = connect(ClientSocket, (SOCKADDR *)&ServerAddr, sizeof(ServerAddr));
-			if (!ConnectStatus)
-				return 1;
-			else
-				return -1;
-		}
-		return 0;
-	}
-};
-
 
 class CTrackedHMD : 
 	public IVRDisplayComponent,
@@ -176,10 +21,13 @@ private:
 	HMDData m_HMDData;		
 	CameraData m_Camera;
 
-	HANDLE m_hThread;
+	HANDLE m_hDisplayThread;
+	HANDLE m_hControlThread;
 	bool m_IsRunning;
 	unsigned int static WINAPI RemoteDisplayThread(void *p);
 	void RunRemoteDisplay();
+	unsigned int static WINAPI RemoteControlThread(void *p);
+	void RunRemoteControl();
 
 public:
 	CTrackedHMD(std::string displayName, CServerDriver *pServer);
@@ -234,24 +82,16 @@ private:
 	ID3D11Device *m_pDevice;
 	D3D_FEATURE_LEVEL m_FeatureLevel;
 	unsigned short RemoteSequence;
-	void ProcessRemoteData(uint8_t type, USBData *pData);
-	DirectModeData m_DirectScreen;
+	void ProcessRemotePacket(USBPacket *pPacket);
+	DirectStreamer m_DirectScreen;
 
-	//DirectX::ScratchImage *m_pScreenImage;
-	//const DirectX::Image *m_pImage;	
-	//const DirectX::Image *m_pPrevImage;
-	//const DirectX::Image *m_pDiffImage;
-	//DirectX::ScratchImage m_ResizeScratch;
 	int m_FrameCount;
 
 	std::vector<TextureSet*> m_TextureSets;
 	std::map<SharedTextureHandle_t, TextureLink> m_TextureMap;	
-	//bool ProcessFrame();
-	void UpdateBuffer(DirectEyeData *pEyeData);
-	bool SendBuffer(DirectEyeData *pEyeData);
+	int UpdateBuffer(DirectEyeData *pEyeData);
 	HANDLE m_hTextureMapLock;	
 	HANDLE m_hBufferLock;
-	//tjhandle m_hTJ;
 
 
 public: //IVRDriverDirectModeComponent

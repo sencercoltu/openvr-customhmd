@@ -12,7 +12,6 @@
         android:roundIcon="@mipmap/ic_launcher_round">
         <activity
             android:name=".DisplayActivity"
-            android:screenOrientation="reverseLandscape"
             android:configChanges="orientation|keyboardHidden|screenSize"
             android:label="@string/title_activity_display"
             android:theme="@style/FullscreenTheme">

@@ -63,12 +63,8 @@ void CServerDriver::Cleanup()
 {
 	DriverLog(__FUNCTION__);
 	m_IsRunning = false;
-	if (m_hThread)
-	{
-		WaitForSingleObject(m_hThread, INFINITE);
-		CloseHandle(m_hThread);
-		m_hThread = nullptr;
-	}
+	
+	SAFE_THREADCLOSE(m_hThread);
 
 	for (auto iter = m_TrackedDevices.begin(); iter != m_TrackedDevices.end(); iter++)
 		delete (*iter);

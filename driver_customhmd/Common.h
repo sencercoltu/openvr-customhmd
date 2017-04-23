@@ -20,10 +20,14 @@
 #include "..\stm32\Common\usb.h"
 #include "ShMem.h"
 #include "LiquidVR.h"
+#include "memmem.h"
 
 #define SAFE_RELEASE(a) if(a) a->Release(); a = nullptr; 
 #define SAFE_CLOSE(a) if(a) CloseHandle((HANDLE)a); a = nullptr; 
 #define SAFE_FREE(a) if(a) free((void *)a); a = nullptr; 
+
+#define SAFE_THREADCLOSE(a) if (a) 	{ WaitForSingleObject(a, INFINITE); CloseHandle(a); a = nullptr; }
+
 
 extern bool IsD2DConnected(uint16_t edid);
 
@@ -218,8 +222,7 @@ struct HMDData : TrackerData
 	float AspectRatio;	
 	float SuperSample;		
 	USBDataCache LastState;	
-	int RemoteDisplayPort;
-	char RemoteDisplayHost[128];
+	char DirectStreamURL[256];
 };
 
 struct ControllerData : TrackerData
@@ -230,5 +233,7 @@ struct ControllerData : TrackerData
 	HmdVector3d_t Euler;
 	USBDataCache LastState;
 };
+
+
 
 #endif // Common_H
