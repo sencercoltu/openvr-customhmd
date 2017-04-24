@@ -11,7 +11,10 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 	vr::EVRSettingsError error;
 	//	m_hTJ = tjInitCompress();
 
+
 	ZeroMemory(&m_DirectScreen, sizeof(m_DirectScreen));
+	m_hDisplayThread = nullptr;
+	m_hControlThread = nullptr;
 
 	m_FrameCount = 0;
 	//m_pScreenImage = nullptr;
@@ -454,7 +457,7 @@ int CTrackedHMD::UpdateBuffer(DirectEyeData *pEyeData)
 
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
 
-	int width = 0, height = 0, stride = 0;
+	int width = 0, height = 0, srcStride = 0, dstStride = 0;
 	int fmt = 0;
 
 	if (SUCCEEDED(m_pContext->Map(pEyeData->pData->pCPUResource, 0, D3D11_MAP_READ, 0, &mappedResource)))
@@ -462,23 +465,24 @@ int CTrackedHMD::UpdateBuffer(DirectEyeData *pEyeData)
 		pEyeData->pData->pCPUTexture->GetDesc(&pEyeData->Desc);
 		width = pEyeData->Desc.Width;
 		height = pEyeData->Desc.Height;
-		stride = mappedResource.RowPitch;		
+		srcStride = mappedResource.RowPitch;
+		dstStride = srcStride * 2;
 
 		//copy eye to pixel buffer. always assume 32 bit pixel				
 		auto srcPos = (unsigned char *) mappedResource.pData;
-		auto dstPos = m_DirectScreen.pPixelBuffer[0] + (pEyeData->Eye == EVREye::Eye_Right ? stride : 0);
+		auto dstPos = m_DirectScreen.pPixelBuffer[0] + (pEyeData->Eye == EVREye::Eye_Right ? srcStride : 0);
 
 		//copy left eye to left, right eye to right
 		for (unsigned int y = 0; y < pEyeData->Desc.Height; y++)
 		{
-			memcpy(dstPos, srcPos, stride);
-			dstPos += stride;
-			srcPos += stride;
+			memcpy(dstPos, srcPos, srcStride);
+			dstPos += dstStride;
+			srcPos += srcStride;
 		}
 		m_pContext->Unmap(pEyeData->pData->pCPUResource, 0);
 	}
 	pEyeData->pData = nullptr;
-	return stride;
+	return srcStride;
 }
 
 
@@ -917,8 +921,9 @@ void CTrackedHMD::GetNextSwapTextureSetIndex(vr::SharedTextureHandle_t sharedTex
 			auto iter = m_TextureMap.find(sharedTextureHandles[i]);
 			if (iter == m_TextureMap.end())
 				continue;
-			auto tl = iter->second;
-			(*pIndices)[i] = tl.pData->Index;
+			auto tl = iter->second;			
+			//(*pIndices)[i] = tl.pData->Index;
+			(*pIndices)[i] = (tl.pData->Index + 1) % 3; //@LoSealL
 		}
 		ReleaseMutex(m_hTextureMapLock);
 	}
@@ -1535,7 +1540,7 @@ BOOL CALLBACK CTrackedHMD::MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LP
 			pMonData->pHMDDriver->DriverLog("Checking %S...", ddMon.DeviceID);
 			if (ddMon.StateFlags & DISPLAY_DEVICE_ACTIVE && !(ddMon.StateFlags & DISPLAY_DEVICE_MIRRORING_DRIVER))
 			{
-				wsprintf(DeviceID, L"%S", ddMon.DeviceID);
+				wsprintf(DeviceID, L"%s", ddMon.DeviceID);
 				wchar_t *pStart = wcschr(DeviceID, L'\\');
 				if (pStart)
 				{
