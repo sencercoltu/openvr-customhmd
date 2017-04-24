@@ -87,6 +87,26 @@ public class DisplayActivity
         byte[] frameData = packet.getData();
         int len = packet.getLength();
 
+        if (!Initialized) {
+            try {
+                InetAddress driverAddr = packet.getAddress();
+                udpSocket.setDriverAddress(driverAddr);
+                codec = MediaCodec.createDecoderByType("video/avc");
+                MediaFormat format = MediaFormat.createVideoFormat("video/avc", 1920, 1080);
+                format.setInteger(MediaFormat.KEY_MAX_WIDTH, 1920);
+                format.setInteger(MediaFormat.KEY_MAX_HEIGHT, 1080);
+
+                codec.configure(format, surface, null, 0);
+                codec.start();
+            } catch (IOException e) {
+                throw new RuntimeException(e.getMessage());
+            }
+
+            Initialized = true;
+        }
+
+
+
         if (len == 12 && frameData[0] == 'H' && frameData[1] == 'M' && frameData[2] == 'D' && frameData[3] == 'D') {
             Initialized = false;
 
@@ -107,7 +127,9 @@ public class DisplayActivity
                     InetAddress driverAddr = packet.getAddress();
                     udpSocket.setDriverAddress(driverAddr);
                     codec = MediaCodec.createDecoderByType("video/avc");
-                    MediaFormat format = MediaFormat.createVideoFormat("video/avc", 0, 0);
+                    MediaFormat format = MediaFormat.createVideoFormat("video/avc", width, height);
+                    format.setInteger(MediaFormat.KEY_MAX_WIDTH, width);
+                    format.setInteger(MediaFormat.KEY_MAX_HEIGHT, height);
 
                     codec.configure(format, surface, null, 0);
                     codec.start();

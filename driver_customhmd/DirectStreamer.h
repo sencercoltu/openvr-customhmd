@@ -116,7 +116,8 @@ private:
 	int in_linesize[3];
 	SwsContext *pSwsContext = nullptr;
 
-	void DirectStreamer::SaveFrame(AVFrame *pFrame, int frameno);
+	void SaveFrameYUV(AVFrame *pFrame, int frameno);
+	void SaveFrameRGB(uint8_t *pixels, int size, int frameno);
 public:
 	int ProcessFrame(int pitch);
 	

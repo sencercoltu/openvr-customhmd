@@ -16,15 +16,17 @@ int DirectStreamer::ProcessFrame(int pitch)
 		return -1;
 	}
 
+	SaveFrameRGB(pPixelBuffer[0], pitch * Left.Desc.Height, FrameCount);
+
 	in_linesize[0] = pitch;
-	pSwsContext = sws_getCachedContext(pSwsContext, pitch / 4, Left.Desc.Height, fmt, Width, Height, STREAM_PIX_FMT, 0, 0, 0, 0);
+	pSwsContext = sws_getCachedContext(pSwsContext, Left.Desc.Width * 2, Left.Desc.Height, fmt, Width, Height, STREAM_PIX_FMT, 0, 0, 0, 0);
 	int h = sws_scale(pSwsContext, (const uint8_t * const *)&pPixelBuffer, in_linesize, 0, Height, pFrame->data, pFrame->linesize);
 
-	SaveFrame(pFrame, FrameCount);
+	SaveFrameYUV(pFrame, FrameCount);
 
 	pFrame->pts = FrameCount;
-	pFrame->pkt_duration = (int64_t) FrameTime;
-
+	pFrame->pkt_duration = (int64_t)FrameTime;
+		
 	return avcodec_send_frame(pCodecContext, pFrame);
 }
 
@@ -37,7 +39,7 @@ AVPacket *DirectStreamer::GetPacket()
 bool DirectStreamer::Init(int width, int height, float fps, char *url)
 {
 	ZeroMemory(in_linesize, sizeof(in_linesize));
-	in_linesize[0] = { 4 * width};
+	in_linesize[0] = { 4 * width };
 
 	if (fps > 0)
 		FrameTime = 1000.0f / fps;
@@ -93,9 +95,12 @@ bool DirectStreamer::Init(int width, int height, float fps, char *url)
 	pCodecContext->time_base.den = FPS;
 	pCodecContext->time_base.num = 1;
 	pCodecContext->max_b_frames = 0;
-	pCodecContext->thread_count = 1;
-	pCodecContext->thread_type = FF_THREAD_FRAME; // FF_THREAD_SLICE;
+	//pCodecContext->thread_count = 1;
+	//pCodecContext->thread_type = FF_THREAD_FRAME; // FF_THREAD_SLICE;
 	pCodecContext->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+
+
+	//tcp
 
 	//av_opt_set(&pCodecContext, "preset", "ultrafast", 0);
 	//av_opt_set(&pCodecContext, "tune", "zerolatency", 0);
@@ -167,64 +172,32 @@ void DirectStreamer::Destroy()
 	SAFE_FREE(pPixelBuffer[0]);
 }
 
-void DirectStreamer::SaveFrame(AVFrame *pFrame, int frameno)
+void DirectStreamer::SaveFrameYUV(AVFrame *pFrame, int frameno)
 {
 	return;
-	FILE *pFile = nullptr;
+	FILE *yuvFile = nullptr;
 	char szFilename[MAX_PATH];
-
-	// Open file
-	sprintf_s(szFilename, "D:\\OUT\\xx-%d.bmp", frameno);
-	int paddedsize = pFrame->linesize[0] * pFrame->height;
-
-	BITMAPFILEHEADER bmfh;
-	BITMAPINFOHEADER info;
-	memset(&bmfh, 0, sizeof(BITMAPFILEHEADER));
-	memset(&info, 0, sizeof(BITMAPINFOHEADER));
-
-	bmfh.bfType = 0x4d42;       // 0x4d42 = 'BM'
-	bmfh.bfReserved1 = 0;
-	bmfh.bfReserved2 = 0;
-	bmfh.bfSize = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + paddedsize;
-	bmfh.bfOffBits = 0x36;	
-
-	info.biSize = sizeof(BITMAPINFOHEADER);
-	info.biWidth = pFrame->width;
-	info.biHeight = pFrame->height;
-	info.biPlanes = 1;
-	info.biBitCount = 32;
-	info.biCompression = BI_RGB;
-	info.biSizeImage = 0;
-	info.biXPelsPerMeter = 0x0ec4;
-	info.biYPelsPerMeter = 0x0ec4;
-	info.biClrUsed = 0;
-	info.biClrImportant = 0;
-	HANDLE file = CreateFileA(szFilename, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-	if (NULL == file)
+	sprintf_s(szFilename, "D:\\OUT\\xx-%d.yuv", frameno);
+	fopen_s(&yuvFile, szFilename, "wb");
+	if (yuvFile)
 	{
-		CloseHandle(file);
-		return;
+		fwrite(pFrame->data[0], 1, pCodecContext->width * pCodecContext->height, yuvFile);
+		fwrite(pFrame->data[1], 1, pCodecContext->width * pCodecContext->height / 4, yuvFile);
+		fwrite(pFrame->data[2], 1, pCodecContext->width * pCodecContext->height / 4, yuvFile);
+		fclose(yuvFile);
 	}
-	
-	unsigned long bwritten;
-	if (WriteFile(file, &bmfh, sizeof(BITMAPFILEHEADER), &bwritten, NULL) == false)
-	{
-		CloseHandle(file);
-		return;
-	}
+}
 
-	if (WriteFile(file, &info, sizeof(BITMAPINFOHEADER), &bwritten, NULL) == false)
+void DirectStreamer::SaveFrameRGB(uint8_t *pixels, int size, int frameno)
+{
+	return;		
+	FILE *yuvFile = nullptr;
+	char szFilename[MAX_PATH];
+	sprintf_s(szFilename, "D:\\OUT\\xx-%d.rgb", frameno);
+	fopen_s(&yuvFile, szFilename, "wb");
+	if (yuvFile)
 	{
-		CloseHandle(file);
-		return;
+		fwrite(pixels, 1, size, yuvFile);
+		fclose(yuvFile);
 	}
-	
-	if (WriteFile(file, pFrame->data[0], paddedsize, &bwritten, NULL) == false)
-	{
-		CloseHandle(file);
-		return;
-	}
-	
-	CloseHandle(file);
-
 }
