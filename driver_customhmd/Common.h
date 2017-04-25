@@ -16,7 +16,7 @@
 #include <locale>
 #include <codecvt>
 #include <HighLevelMonitorConfigurationAPI.h>
-#include "escapi/capturedevice.h"
+#include "capturedevice.h"
 #include "..\stm32\Common\usb.h"
 #include "ShMem.h"
 #include "LiquidVR.h"

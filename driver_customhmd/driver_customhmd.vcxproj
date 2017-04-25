@@ -179,32 +179,32 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\stm32\Common\usb.cpp" />
+    <ClCompile Include="capturedevice.cpp" />
     <ClCompile Include="memmem.c" />
     <ClCompile Include="DirectStreamer.cpp" />
     <ClCompile Include="driver_customhmd.cpp" />
-    <ClCompile Include="escapi\capturedevice.cpp" />
-    <ClCompile Include="escapi\videobufferlock.cpp" />
     <ClCompile Include="liquidvr_hack.cpp" />
     <ClCompile Include="Quaternion.cpp" />
     <ClCompile Include="ServerDriver.cpp" />
     <ClCompile Include="ShMem.cpp" />
+    <ClCompile Include="TCPServer.cpp" />
     <ClCompile Include="TrackedController.cpp" />
     <ClCompile Include="TrackedDevice.cpp" />
     <ClCompile Include="TrackedHMD.cpp" />
-    <ClCompile Include="UdpClientServer.cpp" />
+    <ClCompile Include="videobufferlock.cpp" />
     <ClCompile Include="WatchDogDriver.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\OpenVR\headers\openvr_driver.h" />
     <ClInclude Include="..\stm32\Common\usb.h" />
+    <ClInclude Include="capturedevice.h" />
     <ClInclude Include="DirectStreamer.h" />
     <ClInclude Include="memmem.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="UdpClientServer.h" />
+    <ClInclude Include="TCPServer.h" />
+    <ClInclude Include="videobufferlock.h" />
     <ClInclude Include="WatchDogDriver.h" />
     <ClInclude Include="Common.h" />
-    <ClInclude Include="escapi\capturedevice.h" />
-    <ClInclude Include="escapi\videobufferlock.h" />
     <ClInclude Include="Quaternion.h" />
     <ClInclude Include="ShMem.h" />
     <ClInclude Include="TrackedController.h" />

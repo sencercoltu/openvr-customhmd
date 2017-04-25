@@ -8,6 +8,7 @@
 #include <D3D11_1.h>
 #include <DXGI1_2.h>
 #include <map>
+#include "TCPServer.h"
 
 using namespace vr;
 
@@ -15,14 +16,16 @@ class CTrackedHMD :
 	public IVRDisplayComponent,
 	public IVRCameraComponent,
 	public IVRDriverDirectModeComponent,
-	public CTrackedDevice
+	public CTrackedDevice,
+	public ITcpPacketReceiveCallback
 {
 private:	
 	HMDData m_HMDData;		
 	CameraData m_Camera;
 
 	HANDLE m_hDisplayThread;
-	HANDLE m_hControlThread;
+	int m_DisplayState;
+	//HANDLE m_hControlThread;
 	bool m_IsRunning;
 	unsigned int static WINAPI RemoteDisplayThread(void *p);
 	void RunRemoteDisplay();
@@ -84,7 +87,7 @@ private:
 	unsigned short RemoteSequence;
 	void ProcessRemotePacket(USBPacket *pPacket);
 	DirectStreamer m_DirectScreen;
-
+	void TcpPacketReceive(const char *pData, int len) override;
 	int m_FrameCount;
 
 	std::vector<TextureSet*> m_TextureSets;

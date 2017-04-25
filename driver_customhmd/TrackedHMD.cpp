@@ -1,8 +1,7 @@
 #include <process.h>
 #include "TrackedHMD.h"
 #include <mfapi.h>
-#include "UdpClientServer.h"
-
+//#include "UdpClientServer.h"
 
 CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTrackedDevice(displayName, pServer)
 {
@@ -14,7 +13,8 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 
 	ZeroMemory(&m_DirectScreen, sizeof(m_DirectScreen));
 	m_hDisplayThread = nullptr;
-	m_hControlThread = nullptr;
+	m_DisplayState = 0;
+	//m_hControlThread = nullptr;
 
 	m_FrameCount = 0;
 	//m_pScreenImage = nullptr;
@@ -163,7 +163,7 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 			if (value[0])
 			{
 				auto pos = strchr(value, 'x');
-				if (pos) 
+				if (pos)
 				{
 					*pos = 0;
 					float fps;
@@ -175,7 +175,7 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 					{
 						pos[0] = 0;
 						pos++;
-						fps = (float) atof(pos);
+						fps = (float)atof(pos);
 						if (fps)
 							m_HMDData.Frequency = fps;
 					}
@@ -189,7 +189,7 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 			}
 		}
 		else
-		{			
+		{
 			bool steamVrDirectMode = m_pSettings->GetBool("steamvr", "directMode", &error);
 			if (error != VRSettingsError_None) steamVrDirectMode = false;
 			//we cannot put monitor into directmode (no API for mortals like us :( )
@@ -266,12 +266,12 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 				m_IsRunning = true;
 				ResumeThread(m_hDisplayThread);
 			}
-			m_hControlThread = reinterpret_cast<HANDLE>(_beginthreadex(nullptr, 0, RemoteControlThread, this, CREATE_SUSPENDED, nullptr));
-			if (m_hControlThread)
-			{
-				m_IsRunning = true;
-				ResumeThread(m_hControlThread);
-			}
+			//m_hControlThread = reinterpret_cast<HANDLE>(_beginthreadex(nullptr, 0, RemoteControlThread, this, CREATE_SUSPENDED, nullptr));
+			//if (m_hControlThread)
+			//{
+			//	m_IsRunning = true;
+			//	ResumeThread(m_hControlThread);
+			//}
 		}
 	}
 }
@@ -288,7 +288,7 @@ CTrackedHMD::~CTrackedHMD()
 {
 	m_IsRunning = false;
 
-	SAFE_THREADCLOSE(m_hControlThread);
+	//	SAFE_THREADCLOSE(m_hControlThread);
 	SAFE_THREADCLOSE(m_hDisplayThread);
 
 	SAFE_CLOSE(m_HMDData.hPoseLock);
@@ -301,7 +301,7 @@ CTrackedHMD::~CTrackedHMD()
 }
 
 unsigned int WINAPI CTrackedHMD::RemoteDisplayThread(void *p)
-{	
+{
 	auto trackedHMD = static_cast<CTrackedHMD *>(p);
 	if (trackedHMD)
 		trackedHMD->RunRemoteDisplay();
@@ -309,111 +309,101 @@ unsigned int WINAPI CTrackedHMD::RemoteDisplayThread(void *p)
 	return 0;
 }
 
-const uint8_t nalu1[] = { 0, 0, 0, 1};
+const uint8_t nalu1[] = { 0, 0, 0, 1 };
 const uint8_t nalu2[] = { 0, 0, 1 };
 
 void CTrackedHMD::RunRemoteDisplay()
-{	
+{
 	WSADATA wsaData;
 	WSAStartup(MAKEWORD(2, 2), &wsaData);
 
-	UdpClientServer::CUdpClient *pUdpClient = new UdpClientServer::CUdpClient(m_HMDData.DirectStreamURL, 1974);
+	CTCPServer *pServer = new CTCPServer(1974, this);
+	//UdpClientServer::CUdpClient *pUdpClient = new UdpClientServer::CUdpClient(m_HMDData.DirectStreamURL, 1974);
 
 	m_DirectScreen.Init(m_HMDData.ScreenWidth, m_HMDData.ScreenHeight, m_HMDData.Frequency, m_HMDData.DirectStreamURL);
 
 	InfoPacket infoPacket = {};
-	infoPacket.H = 'H'; 
+	infoPacket.H = 'H';
 	infoPacket.M = 'M';
 	infoPacket.D1 = 'D';
 	infoPacket.D2 = 'D';
 	infoPacket.Width = m_HMDData.ScreenWidth;
 	infoPacket.Height = m_HMDData.ScreenHeight;
 
-	FILE *fp = nullptr;
-	//fopen_s(&fp, "D:\\test.h264", "wb");
-
+	FILE *fp = nullptr;	
+	//fopen_s(&fp, "D:\\test.h264", "wb");	
 	while (m_IsRunning)
 	{
-		if (m_DirectScreen.pPixelBuffer[0])
+		Sleep(1);
+		if (m_DirectScreen.pPixelBuffer[0] && pServer->IsReady())
 		{
-			if (GetTickCount() - m_DirectScreen.LastPacketReceive > 1000)
+			switch (m_DisplayState)
 			{
-				//send reset
-				pUdpClient->send((const char*)&infoPacket, sizeof(infoPacket));
+			case 0:	//no connection
+				m_DirectScreen.LastPacketReceive = 0;
+				m_DisplayState = pServer->IsConnected() ? m_DisplayState + 1 : 0;
+				continue;
+			case 1: //new connected
+				pServer->SendBuffer((const char*)&infoPacket, sizeof(infoPacket));
 				Sleep(100);
-
-
-				pUdpClient->send((const char*)m_DirectScreen.pCodecContext->extradata, m_DirectScreen.pCodecContext->extradata_size);
+				m_DisplayState = pServer->IsConnected() ? m_DisplayState + 1 : 0;
+				continue;
+			case 2:
+				pServer->SendBuffer((const char*)m_DirectScreen.pCodecContext->extradata, m_DirectScreen.pCodecContext->extradata_size);
 				if (fp) fwrite((const char*)m_DirectScreen.pCodecContext->extradata, 1, m_DirectScreen.pCodecContext->extradata_size, fp);
+				m_DisplayState = pServer->IsConnected() ? m_DisplayState + 1 : 0;
 				continue;
-			}			
-
-			auto pitch = 0;
-			if (WAIT_OBJECT_0 == WaitForSingleObject(m_hTextureMapLock, 10))
-			{
-				pitch += UpdateBuffer(&m_DirectScreen.Left);
-				pitch += UpdateBuffer(&m_DirectScreen.Right);
-				ReleaseMutex(m_hTextureMapLock);
-			}
-
-			if (!pitch ||
-				m_DirectScreen.Left.Desc.Width != m_DirectScreen.Right.Desc.Width || //left and right res should be same
-				m_DirectScreen.Left.Desc.Height != m_DirectScreen.Right.Desc.Height || 
-				m_DirectScreen.Left.Desc.Format != m_DirectScreen.Right.Desc.Format)
-			{
-				Sleep(1); 
-				continue;
-			}			
-			
-			if (!m_DirectScreen.ProcessFrame(pitch))
-			{
-				while (auto pPacket = m_DirectScreen.GetPacket())
+			case 3:
+				m_DisplayState = pServer->IsConnected() ? m_DisplayState : 0;
+				auto pitch = 0;
+				if (WAIT_OBJECT_0 == WaitForSingleObject(m_hTextureMapLock, 10))
 				{
-					auto remSize = pPacket->size;
-					auto *pData = pPacket->data;
-					pUdpClient->send((const char*)pData, remSize);
-					if (fp) fwrite((const char*)pData, 1, remSize, fp);
+					pitch += UpdateBuffer(&m_DirectScreen.Left);
+					pitch += UpdateBuffer(&m_DirectScreen.Right);
+					ReleaseMutex(m_hTextureMapLock);
+				}
 
-					//while (remSize)
-					//{
-					//	auto pNalu1 = memmem(pData + 3, remSize, nalu1, sizeof(nalu1));
-					//	auto pNalu2 = memmem(pData + 3, remSize, nalu2, sizeof(nalu2));
-					//	auto *pNext = (uint8_t *) min(pNalu1, pNalu2);
-					//	if (!pNext) 
-					//	{
-					//		//send full buffer
-					//		pUdpClient->send((const char*)pData, remSize);
-					//		if (fp) fwrite((const char*)pData, 1, remSize, fp);
-					//		break;
-					//	}
-					//	else
-					//	{
-					//		int size = (int)(pNext - pData);
-					//		pUdpClient->send((const char*)pData, size);
-					//		if (fp) fwrite((const char*)pData, 1, size, fp);
-					//		remSize -= size;
-					//		pData += size;
-					//	}
-					//}
+				if (!pitch ||
+					m_DirectScreen.Left.Desc.Width != m_DirectScreen.Right.Desc.Width || //left and right res should be same
+					m_DirectScreen.Left.Desc.Height != m_DirectScreen.Right.Desc.Height ||
+					m_DirectScreen.Left.Desc.Format != m_DirectScreen.Right.Desc.Format)
+				{
+					Sleep(1);
+					continue;
+				}
+
+				if (!m_DirectScreen.ProcessFrame(pitch))
+				{
+					while (auto pPacket = m_DirectScreen.GetPacket())
+					{
+						auto remSize = pPacket->size;
+						auto *pData = (const char *)pPacket->data;
+						//pUdpClient->send((const char*)pData, remSize);
+						pServer->SendBuffer(pData, remSize);
+						if (fp) fwrite(pData, 1, remSize, fp);
+					}
 				}
 			}
-
 			Sleep(1);
 		}
 		else
 			Sleep(100);
 	}
-	 
+
 	m_DirectScreen.Destroy();
 
 	if (fp) fclose(fp);
 	fp = nullptr;
 
-	delete pUdpClient;
-	pUdpClient = nullptr;
+	delete pServer;
+	pServer = nullptr;
+
+	//delete pUdpClient;
+	//pUdpClient = nullptr;
 	WSACleanup();
 }
 
+/*
 unsigned int WINAPI CTrackedHMD::RemoteControlThread(void *p)
 {
 	auto trackedHMD = static_cast<CTrackedHMD *>(p);
@@ -422,37 +412,51 @@ unsigned int WINAPI CTrackedHMD::RemoteControlThread(void *p)
 	_endthreadex(0);
 	return 0;
 }
+*/
+//void CTrackedHMD::RunRemoteControl()
+//{
+//	WSADATA wsaData;
+//	WSAStartup(MAKEWORD(2, 2), &wsaData);
+//
+//	USBPacket tUsbPacket = {};
+//
+////	UdpClientServer::CUdpServer *pUdpServer = new UdpClientServer::CUdpServer("0.0.0.0", 1974);
+//
+//	while (m_IsRunning)
+//	{
+//		if (pUdpServer->timed_recv((char *)&tUsbPacket, sizeof(tUsbPacket), 100) == sizeof(tUsbPacket))
+//		{
+//			SetPacketCrc(&tUsbPacket);
+//			ProcessRemotePacket(&tUsbPacket);
+//			m_DirectScreen.LastPacketReceive = GetTickCount();
+//		}
+//	}
+//
+//	delete pUdpServer;
+//	pUdpServer = nullptr;
+//	WSACleanup();
+//}
 
-void CTrackedHMD::RunRemoteControl()
+void CTrackedHMD::TcpPacketReceive(const char *pData, int len)
 {
-	WSADATA wsaData;
-	WSAStartup(MAKEWORD(2, 2), &wsaData);
-
-	USBPacket tUsbPacket = {};
-
-	UdpClientServer::CUdpServer *pUdpServer = new UdpClientServer::CUdpServer("0.0.0.0", 1974);
-
-	while (m_IsRunning)
+	if (pData == nullptr)
 	{
-		if (pUdpServer->timed_recv((char *)&tUsbPacket, sizeof(tUsbPacket), 100) == sizeof(tUsbPacket))
-		{
-			SetPacketCrc(&tUsbPacket);
-			ProcessRemotePacket(&tUsbPacket);
-			m_DirectScreen.LastPacketReceive = GetTickCount();
-		}
+		m_DisplayState = 0;
+		return;
 	}
-
-	delete pUdpServer;
-	pUdpServer = nullptr;
-	WSACleanup();
+	if (len != 32) return;
+	//read only last 32 bytes, discard others for now
+	USBPacket *pPacket = (USBPacket *)pData;
+	SetPacketCrc(pPacket);
+	ProcessRemotePacket(pPacket);
+	m_DirectScreen.LastPacketReceive = GetTickCount();
 }
-
 
 int CTrackedHMD::UpdateBuffer(DirectEyeData *pEyeData)
 {
-	if (!pEyeData) 
+	if (!pEyeData)
 		return false;
-	if (!pEyeData->pData) 
+	if (!pEyeData->pData)
 		return false;
 
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
@@ -461,7 +465,7 @@ int CTrackedHMD::UpdateBuffer(DirectEyeData *pEyeData)
 	int fmt = 0;
 
 	if (SUCCEEDED(m_pContext->Map(pEyeData->pData->pCPUResource, 0, D3D11_MAP_READ, 0, &mappedResource)))
-	{		
+	{
 		pEyeData->pData->pCPUTexture->GetDesc(&pEyeData->Desc);
 		width = pEyeData->Desc.Width;
 		height = pEyeData->Desc.Height;
@@ -469,7 +473,7 @@ int CTrackedHMD::UpdateBuffer(DirectEyeData *pEyeData)
 		dstStride = srcStride * 2;
 
 		//copy eye to pixel buffer. always assume 32 bit pixel				
-		auto srcPos = (unsigned char *) mappedResource.pData;
+		auto srcPos = (unsigned char *)mappedResource.pData;
 		auto dstPos = m_DirectScreen.pPixelBuffer[0] + (pEyeData->Eye == EVREye::Eye_Right ? srcStride : 0);
 
 		//copy left eye to left, right eye to right
@@ -484,7 +488,6 @@ int CTrackedHMD::UpdateBuffer(DirectEyeData *pEyeData)
 	pEyeData->pData = nullptr;
 	return srcStride;
 }
-
 
 void CTrackedHMD::ProcessRemotePacket(USBPacket *pPacket)
 {
@@ -912,7 +915,7 @@ void CTrackedHMD::DestroyAllSwapTextureSets(uint32_t unPid)
 }
 
 void CTrackedHMD::GetNextSwapTextureSetIndex(vr::SharedTextureHandle_t sharedTextureHandles[2], uint32_t(*pIndices)[2])
-{	
+{
 	//DriverLog(__FUNCTION__" hTex1: %lu, hTex2: %lu, pIndices: %p", sharedTextureHandles[0], sharedTextureHandles[1], pIndices);
 	if (WAIT_OBJECT_0 == WaitForSingleObject(m_hTextureMapLock, 10000))
 	{
@@ -921,7 +924,7 @@ void CTrackedHMD::GetNextSwapTextureSetIndex(vr::SharedTextureHandle_t sharedTex
 			auto iter = m_TextureMap.find(sharedTextureHandles[i]);
 			if (iter == m_TextureMap.end())
 				continue;
-			auto tl = iter->second;			
+			auto tl = iter->second;
 			//(*pIndices)[i] = tl.pData->Index;
 			(*pIndices)[i] = (tl.pData->Index + 1) % 3; //@LoSealL
 		}
@@ -930,7 +933,7 @@ void CTrackedHMD::GetNextSwapTextureSetIndex(vr::SharedTextureHandle_t sharedTex
 }
 
 void CTrackedHMD::SubmitLayer(vr::SharedTextureHandle_t sharedTextureHandles[2], const vr::VRTextureBounds_t(&bounds)[2], const vr::HmdMatrix34_t *pPose)
-{		
+{
 	if (!m_DirectScreen.FrameTime) return;
 	DWORD now = GetTickCount();
 	if (now - m_DirectScreen.LastFrameTime < m_DirectScreen.FrameTime)
@@ -960,7 +963,7 @@ void CTrackedHMD::SubmitLayer(vr::SharedTextureHandle_t sharedTextureHandles[2],
 }
 
 void CTrackedHMD::Present(vr::SharedTextureHandle_t syncTexture)
-{	
+{
 	return;
 	//DriverLog(__FUNCTION__" syncTexture: %lu", syncTexture);
 

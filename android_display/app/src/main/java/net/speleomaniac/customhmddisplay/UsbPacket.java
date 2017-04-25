@@ -40,7 +40,7 @@ class UsbPacket {
         synchronized (this) {
             bb.position(0);
             bb.put(Header.Type);
-            bb.putShort(Header.Sequence);
+            bb.putShort(Header.Sequence++);
             bb.put(Header.Crc8);
 
             bb.putFloat(Rotation.w);

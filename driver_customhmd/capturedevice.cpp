@@ -10,9 +10,6 @@
 #pragma comment(lib, "wmcodecdspuuid.lib")
 #pragma comment(lib, "strmiids.lib")
 
-// Video Processor
-//DEFINE_GUID(CLSID_VideoProcessorMFT, 0x88753b26, 0x5b24, 0x49bd, 0xb2, 0xe7, 0xc, 0x44, 0x5c, 0x78, 0xc9, 0x82);
-
 CCaptureDevice::ConverterDef ConverterFunctions[] = 
 {	
 	{ MFVideoFormat_YUY2, MFVideoFormat_NV12, CCaptureDevice::YUY2toNV12 },
@@ -41,7 +38,6 @@ CCaptureDevice *CCaptureDevice::GetCaptureDevice(CaptureOptions *pOptions)
 	hr = MFStartup(MF_VERSION);
 	EXITIFFAILED(hr);
 
-	// choose device
 	IMFAttributes *pAttributes = nullptr;
 	hr = MFCreateAttributes(&pAttributes, 1);
 	EXITIFFAILED(hr);
@@ -100,10 +96,6 @@ CCaptureDevice::CCaptureDevice(IMFActivate *pDevice, CaptureOptions *pOptions)
 	m_pReader = nullptr;
 	m_SourceStride = 0;
 	m_DestinationStride = 0;
-	//m_pMFT = nullptr;
-	//m_pSampleOut = nullptr;
-	//m_pMediabuffer = nullptr;
-	//m_MftOutputData = {};
 }
 
 CCaptureDevice::~CCaptureDevice()
@@ -163,6 +155,7 @@ bool CCaptureDevice::Start()
 			if (frameRate >= frameRateMax)
 			{
 				hr = pOriginalMediaType->GetGUID(MF_MT_SUBTYPE, &subtype);		
+
 				//MFT converters are shit, use own
 				if (!(pfCurrentConverter = GetConverter(subtype, m_pOptions->MediaFormat)))
 					continue;
@@ -207,15 +200,6 @@ bool CCaptureDevice::Start()
 	hr = m_pReader->SetStreamSelection(MF_SOURCE_READER_ALL_STREAMS, false);
 	hr = m_pReader->SetStreamSelection(MF_SOURCE_READER_FIRST_VIDEO_STREAM, true);
 
-	//IMFVideoMediaType *pOutputMediaType = nullptr;
-	//hr = MFCreateVideoMediaTypeFromSubtype(&m_pOptions->MediaFormat, &pOutputMediaType);
-	//hr = pOutputMediaType->SetUINT32(MF_MT_INTERLACE_MODE, MFVideoInterlace_Progressive);
-	//hr = pOutputMediaType->SetUINT32(MF_MT_VIDEO_CHROMA_SITING, MFVideoChromaSubsampling_ProgressiveChroma);
-	//hr = MFSetAttributeSize(pOutputMediaType, MF_MT_FRAME_SIZE, m_pOptions->Width, m_pOptions->Height);
-	//hr = MFSetAttributeRatio(pOutputMediaType, MF_MT_FRAME_RATE, frameRateMax, 1);
-	//hr = MFSetAttributeRatio(pOutputMediaType, MF_MT_PIXEL_ASPECT_RATIO, 1, 1);	
-	//hr = pOutputMediaType->Release();
-
 	hr = MFGetStrideForBitmapInfoHeader(m_pOptions->MediaFormat.Data1, m_pOptions->Width, &m_DestinationStride);
 
 	if (!m_Convert)
@@ -235,9 +219,7 @@ bool CCaptureDevice::Stop()
 	if (m_pDevice) m_pDevice->ShutdownObject();	
 	if (m_pReader) m_pReader->Release(); m_pReader = nullptr;
 	if (m_pSource) m_pSource->Release(); m_pSource = nullptr;
-	//if (m_pMFT) m_pMFT->Release(); m_pMFT = nullptr;
-	//if (m_pSampleOut) m_pSampleOut->Release(); m_pSampleOut = nullptr;
-	//if (m_pMediabuffer) m_pMediabuffer->Release(); m_pMediabuffer = nullptr;		
+
 	m_Status = Stopped;
 	LeaveCriticalSection(&m_CritSec);
 	return true;
@@ -306,8 +288,6 @@ STDMETHODIMP CCaptureDevice::OnReadSample(HRESULT aStatus, DWORD aStreamIndex, D
 	if (FAILED(aStatus))
 		return aStatus;
 
-	//EnterCriticalSection(&m_Critsec);
-	
 	EnterCriticalSection(&m_CritSec);
 	if (m_Status == Started)
 	{
@@ -316,11 +296,7 @@ STDMETHODIMP CCaptureDevice::OnReadSample(HRESULT aStatus, DWORD aStreamIndex, D
 			IMFMediaBuffer *pMediaBuffer = nullptr;
 			if (aSample)
 			{
-				//DWORD dwStatus;			
 				hr = aSample->GetBufferByIndex(0, &pMediaBuffer);
-
-				//hr = m_pMFT->ProcessInput(m_dwInputID, aSample, 0);
-				//hr = m_pMFT->ProcessOutput(0, 1, &m_MftOutputData, &dwStatus);
 
 				VideoBufferLock buffer(pMediaBuffer);    // Helper object to lock the video buffer.
 				BYTE *scanline0 = nullptr;
@@ -494,14 +470,7 @@ void CCaptureDevice::RGB24toNV12(uint8_t *inputBuffer, uint8_t *outputBuffer, in
 #define GET_B_FROM_YUV(y, u, v) ((298*y+516*u+128)>>8)
 
 void CCaptureDevice::YUY2toRGB24(uint8_t *inputBuffer, uint8_t *outputBuffer, int width, int height, int inStride, int outStride)
-//void YUV422toRGB888(unsigned char *d,
-//	unsigned char *s,
-//	unsigned int   width,
-//	unsigned int   height)
 {
-	//auto out_ysize = outStride * height;
-	//auto inPadding = inStride + (inStride - (width << 1));
-	//auto outPadding = outStride + (outStride - width);
 
 	for (int i = 0; i < height*(width / 2); i++)
 	{

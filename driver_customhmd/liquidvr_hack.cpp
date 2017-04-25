@@ -75,7 +75,7 @@ bool IsD2DConnected(uint16_t edid)
 				if (ppDisplayInitFactory->CreateManager(0, (void **)&pDisplayManager) == ALVR_OK)
 				{
 					ALVRDisplayEnumerator *pDisplayEnum = nullptr;
-					if (pDisplayManager->EnumerateDisplays(2, (void **)&pDisplayEnum) == ALVR_OK) //0 = inactive, 2 = active D2D displays?
+					if (pDisplayManager->EnumerateDisplays(2, (void **)&pDisplayEnum) == ALVR_OK) //0 = inactive, 2 = active D2D displays???
 					{
 						ALVRDisplay *pDisplay = nullptr;
 						auto result = pDisplayEnum->GetDisplay((void**)&pDisplay);

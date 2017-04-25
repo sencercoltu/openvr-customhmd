@@ -3,9 +3,9 @@
 #include <mfidl.h>
 #include <mfreadwrite.h>
 #include <mferror.h>
-#include <shlwapi.h> // QITAB and friends
-#include <objbase.h> // IID_PPV_ARGS and friends
-#include <dshow.h> // IAMVideoProcAmp and friends
+#include <shlwapi.h>
+#include <objbase.h>
+#include <dshow.h>
 #include <dmo.h>
 #include <wmcodecdsp.h>
 #include <math.h>
@@ -26,9 +26,6 @@ public:
 		{
 			Initialized = false;			
 			BufferSize = 0;
-			//if (pCaptureBuffer)
-			//	free(pCaptureBuffer);
-			//pCaptureBuffer = nullptr;
 			if (MediaFormat == MFVideoFormat_NV12)
 			{
 				int frame_pixels = Width * Height;
@@ -112,13 +109,9 @@ private:
 
 	CRITICAL_SECTION		m_CritSec;
 	pfConverterFunction		m_Convert;
-	long                    m_RefCount;        // Reference count.	
+	long                    m_RefCount;        
 	IMFSourceReader         *m_pReader;
 	IMFMediaSource			*m_pSource;
-	//IMFTransform 			*m_pMFT;
-	//IMFMediaBuffer			*m_pMediabuffer;
-	//IMFSample				*m_pSampleOut;
-	//MFT_OUTPUT_DATA_BUFFER  m_MftOutputData;
 	LONG                    m_SourceStride;
 	LONG                    m_DestinationStride;
 	CaptureOptions			*m_pOptions;

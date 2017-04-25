@@ -73,7 +73,7 @@ bool DirectStreamer::Init(int width, int height, float fps, char *url)
 	}
 
 	AVDictionary *pOptions = nullptr;
-	av_dict_set(&pOptions, "profile", "baseline", 0);
+	av_dict_set(&pOptions, "profile", "high", 0);
 	av_dict_set(&pOptions, "preset", "ultrafast", 0);
 	av_dict_set(&pOptions, "tune", "zerolatency", 0);
 	//av_dict_set(&pOptions, "tune", "zerolatency", 0);
@@ -83,7 +83,7 @@ bool DirectStreamer::Init(int width, int height, float fps, char *url)
 	SYSTEM_INFO sysinfo;
 	GetSystemInfo(&sysinfo);
 	int numCPU = max(sysinfo.dwNumberOfProcessors / 2, 1);
-	pCodecContext->profile = FF_PROFILE_H264_BASELINE;
+	pCodecContext->profile = FF_PROFILE_H264_CONSTRAINED_BASELINE;
 	pCodecContext->codec_id = VIDEO_CODEC_ID;
 	pCodecContext->bit_rate = Width * Height;
 	pCodecContext->rc_buffer_size = 3;
@@ -98,12 +98,12 @@ bool DirectStreamer::Init(int width, int height, float fps, char *url)
 
 	pCodecContext->qmin = 5;
 	pCodecContext->qmax = 30;
-	////pCodecContext->qcompress = 0.5f;
-	////pCodecContext->qblur = 0.5f;	
+	pCodecContext->qcompress = 0;	
+	pCodecContext->qblur = 1;	
 	//pCodecContext->refs = 1;
-	//pCodecContext->delay = 0;
-	pCodecContext->max_qdiff = 5;
-	pCodecContext->slices = numCPU;
+	pCodecContext->delay = 0;
+	//pCodecContext->max_qdiff = 10;
+	pCodecContext->slices = 8;
 	pCodecContext->ticks_per_frame = 2;
 
 	pCodecContext->thread_count = numCPU;
