@@ -7,16 +7,27 @@ I started my VR experience with a custom built HMD by using parts of a disassemb
 * Tracking and controller hardware is based on STM32F103.
 * Supporting framepacked 3D signal for HMD's with two monitors or 3D TV's. (double horizontal resolution :+1:)
 * IVRDirectModeComponent supporting driver for Android phone based orientation tracking and display. (in progress...)
-* Lighthouse-like positional tracking, (or sound TimeOfFlight based, still experimenting, also in progress...)
+* Lighthouse-like positional tracking, (or ultrasound TimeOfFlight based, still experimenting, also in progress...)
 * Expose any USB WebCam (YUY, YUV or RGB) to OpenVR (for Room-View or other camera functions).
 * Autodetect monitor position and size in Extended mode for placing the HeadSet Window. 
-* .
+* Minimal electronics in trackers/controllers. (eg. no button debouncing filters, all done in code. 72Mhz can handle it.)
+* Controllers communicate with the HeadSet which is connected via USB cable to the computer.
 * ...
+
 
 ### Dependencies:
 * ffmpeg from NuGet, for compiling the driver
 * dotNet 4.6.2, for the HMD monitor program.
 * VC2015 Runtime, for using the driver
+* ...
+
+
+### ToDo:
+* Positional tracking. (Already done some experiments with 2 DIY laser lighthouses, servo and stepper. Servo is too noisy and slow, stepper needs extra controllers. cheapest solution may be tracking by ultrasound...)
+* Fix/flip quaternion from RotationVector sensor for Android tracking. 
+* Hardware encoding instead of ffmpeg?
+* Use OpenGL mesh for distortion correction on Android display?  
+* ...
 
 
 _After long resisting to buy one of the expensive but ready VR solutions, I finally bought a Vive (for twice of the actual price :sob: ).
