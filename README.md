@@ -10,7 +10,14 @@ I started my VR experience with a custom built HMD by using parts of a disassemb
 * Lighthouse-like positional tracking, (or sound TimeOfFlight based, still experimenting, also in progress...)
 * Expose any USB WebCam (YUY, YUV or RGB) to OpenVR (for Room-View or other camera functions).
 * Autodetect monitor position and size in Extended mode for placing the HeadSet Window. 
+* .
 * ...
+
+### Dependencies:
+* ffmpeg from NuGet, for compiling the driver
+* dotNet 4.6.2, for the HMD monitor program.
+* VC2015 Runtime, for using the driver
+
 
 _After long resisting to buy one of the expensive but ready VR solutions, I finally bought a Vive (for twice of the actual price :sob: ).
 Unlike my older Sony headset's and unlike both my phones screens (G5, Z3), the ones in this expensive HMD are crap; the screen-door effect is annoying, the lenses generate too much flare when there are bright areas in corners etc. Text is unreadable even when doing 2x oversampling. Seems positional tracking is the only thing I paid for :angry:. Shame on me, for buying such an immature product for such a price. I'm going to sacrifice some FOV, FPS and latency for readability, and use my phone as output display for playing games like Elite Dangerous or DCS, which are uncomfortable to play on the Vive because it gives me eye pains. I used to play ED for hours with the orientation-only DIY'ed Sony ..._
