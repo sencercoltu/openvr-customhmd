@@ -24,6 +24,7 @@ import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
+import java.util.regex.Matcher;
 
 public class DisplayActivity
         extends Activity
@@ -57,7 +58,6 @@ public class DisplayActivity
 
         udpSocket = new UdpComm(1974);
         udpSocket.setPacketReceiveListener(this);
-        udpSocket.start();
 
         usbPacket.Header.Type = (byte)(UsbPacket.HMD_SOURCE | UsbPacket.ROTATION_DATA);
         sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
@@ -80,6 +80,7 @@ public class DisplayActivity
 
     private byte[] InfoPacket = new byte[4 + 4 + 4]; //magic width height
     private boolean Initialized = false;
+    private final String CodecName = "video/avc"; //"video/x-vnd.on2.vp8"; //"video/avc"
 
     @Override
     public void onPacketReceived(DatagramPacket packet) {
@@ -87,23 +88,24 @@ public class DisplayActivity
         byte[] frameData = packet.getData();
         int len = packet.getLength();
 
-        if (!Initialized) {
-            try {
-                InetAddress driverAddr = packet.getAddress();
-                udpSocket.setDriverAddress(driverAddr);
-                codec = MediaCodec.createDecoderByType("video/avc");
-                MediaFormat format = MediaFormat.createVideoFormat("video/avc", 1920, 1080);
-                format.setInteger(MediaFormat.KEY_MAX_WIDTH, 1920);
-                format.setInteger(MediaFormat.KEY_MAX_HEIGHT, 1080);
-
-                codec.configure(format, surface, null, 0);
-                codec.start();
-            } catch (IOException e) {
-                throw new RuntimeException(e.getMessage());
-            }
-
-            Initialized = true;
-        }
+//        if (!Initialized) {
+//            try {
+//
+//                InetAddress driverAddr = packet.getAddress();
+//                udpSocket.setDriverAddress(driverAddr);
+//                codec = MediaCodec.createDecoderByType();
+//                MediaFormat format = MediaFormat.createVideoFormat("video/avc", 1920, 1080);
+//                format.setInteger(MediaFormat.KEY_MAX_WIDTH, 1920);
+//                format.setInteger(MediaFormat.KEY_MAX_HEIGHT, 1080);
+//
+//                codec.configure(format, surface, null, 0);
+//                codec.start();
+//            } catch (IOException e) {
+//                throw new RuntimeException(e.getMessage());
+//            }
+//
+//            Initialized = true;
+//        }
 
 
 
@@ -111,6 +113,7 @@ public class DisplayActivity
             Initialized = false;
 
             if (codec != null ) {
+                codec.flush();
                 codec.stop();
                 codec.release();
                 codec = null;
@@ -126,8 +129,8 @@ public class DisplayActivity
                 try {
                     InetAddress driverAddr = packet.getAddress();
                     udpSocket.setDriverAddress(driverAddr);
-                    codec = MediaCodec.createDecoderByType("video/avc");
-                    MediaFormat format = MediaFormat.createVideoFormat("video/avc", width, height);
+                    codec = MediaCodec.createDecoderByType(CodecName);
+                    MediaFormat format = MediaFormat.createVideoFormat(CodecName, width, height);
                     format.setInteger(MediaFormat.KEY_MAX_WIDTH, width);
                     format.setInteger(MediaFormat.KEY_MAX_HEIGHT, height);
 
@@ -211,15 +214,17 @@ public class DisplayActivity
         }
     }
 
-
-
+    //Quaternion rotate = new Quaternion(1, 0, 0, 0).rotateByAngleX(0);
     @Override
     public void onSensorChanged(SensorEvent event) {
         if (event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
-            usbPacket.Rotation.w = event.values[3];
-            usbPacket.Rotation.x = event.values[0];
-            usbPacket.Rotation.y = event.values[1];
-            usbPacket.Rotation.z = event.values[2];
+            Quaternion q = new Quaternion(event.values[3], event.values[0], event.values[1], event.values[2]);
+            //q = q.multiply(rotate);
+
+            usbPacket.Rotation.w = q.w;
+            usbPacket.Rotation.x = q.x;
+            usbPacket.Rotation.y = q.y;
+            usbPacket.Rotation.z = q.z;
             if (udpSocket != null) {
                 usbPacket.buildRotationPacket();
                 udpSocket.sendPacket(usbPacket);
@@ -234,14 +239,16 @@ public class DisplayActivity
 
     @Override
     protected void onPause() {
-        super.onPause();
         sensorManager.unregisterListener(this);
+        udpSocket.interrupt();
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+        super.onPause();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        udpSocket.start();
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
         sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR), SensorManager.SENSOR_DELAY_FASTEST);
     }
