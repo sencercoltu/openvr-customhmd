@@ -1,7 +1,7 @@
 # openvr-customhmd
 DIY attempt for building OpenVR compatible HMD and controllers, and drivers (Windows only). 
 
-I started my VR experience with a custom built HMD by using parts of a disassembled [Sony HMZ-T2](http://www.sony.co.uk/pro/product/semiconductors-head-mounted-display/hmz-t2/overview/), an Arduino based Head Tracker, and [OpenTrack](https://github.com/opentrack/opentrack) software. But only few games were supporting FreeTrack-like protocols. So I decided to write a complete OpenVR driver which hopefully will support newer games, and I hope I will be able to play some VR games with friends who cannot afford ridiculously expensive hardware  
+I started my VR experience with a custom built HMD by using parts of a disassembled [Sony HMZ-T2](http://www.sony.co.uk/pro/product/semiconductors-head-mounted-display/hmz-t2/overview/), an Arduino based Head Tracker, and [OpenTrack](https://github.com/opentrack/opentrack) software. But only few games were supporting FreeTrack-like protocols. So I decided to write a complete OpenVR driver which hopefully will support newer games, and I hope I will be able to play some VR games with friends who cannot afford ridiculously expensive hardware.  
 
 ### Some features:
 * Tracking and controller hardware is based on STM32F103.
