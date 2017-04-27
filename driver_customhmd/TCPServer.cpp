@@ -1,15 +1,14 @@
 #include "TCPServer.h"
-#include <process.h>
 
-
-CTCPServer::CTCPServer(int port, ITcpPacketReceiveCallback *pReceiveListener)
+CTCPServer::CTCPServer(int port, pfnTcpPacketReceiveCallback cb, void *dst)
 {
+	m_Dest = dst;
 	m_LastDataReceive = 0;
 	m_IsConnected = false;
 	m_DataSize = m_DataRemain = 0;
 	m_DataToSend = nullptr;
 
-	m_pReceiveListener = pReceiveListener;
+	pfPacketCallback = cb;
 	m_Port = port;	
 	m_hThread = nullptr;
 	m_IsRunning = false;
@@ -70,7 +69,8 @@ void CTCPServer::Run()
 
 	while (m_IsRunning)
 	{
-		m_pReceiveListener->TcpPacketReceive(nullptr, 0);
+		if (pfPacketCallback)
+			pfPacketCallback(m_Dest, nullptr, 0);
 		m_IsConnected = false;
 		m_ServerSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
 		if (m_ServerSocket == INVALID_SOCKET)
@@ -150,7 +150,8 @@ void CTCPServer::Run()
 					res = recv(m_ClientSocket, recvBuf, DEFAULT_BUFLEN, 0);
 					if (res > 0) //callback 
 					{
-						m_pReceiveListener->TcpPacketReceive(recvBuf, res);
+						if (pfPacketCallback)
+							pfPacketCallback(m_Dest, recvBuf, res);
 						m_LastDataReceive = GetTickCount();
 					}
 					else if (res == 0)

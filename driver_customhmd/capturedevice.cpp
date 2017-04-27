@@ -253,10 +253,10 @@ bool CCaptureDevice::Pause()
 // IUnknown methods
 STDMETHODIMP CCaptureDevice::QueryInterface(REFIID aRiid, void** aPpv)
 {
-	static const QITAB qit[] =
+	static const QITAB qit[] = 
 	{
-		QITABENT(CCaptureDevice, IMFSourceReaderCallback),
-		{ 0 }
+		QITABENT(CCaptureDevice, IMFSourceReaderCallback), 
+		{ } 
 	};
 	return QISearch(this, qit, aRiid, aPpv);
 }
@@ -461,6 +461,73 @@ void CCaptureDevice::RGB24toNV12(uint8_t *inputBuffer, uint8_t *outputBuffer, in
 		Y_L += outPadding;
 	}	
 }
+
+
+/*
+#define CLIP(X) ( (X) > 255 ? 255 : (X) < 0 ? 0 : X)
+
+// RGB -> YUV
+#define RGB2Y(R, G, B) CLIP(( (  66 * (R) + 129 * (G) +  25 * (B) + 128) >> 8) +  16)
+#define RGB2U(R, G, B) CLIP(( ( -38 * (R) -  74 * (G) + 112 * (B) + 128) >> 8) + 128)
+#define RGB2V(R, G, B) CLIP(( ( 112 * (R) -  94 * (G) -  18 * (B) + 128) >> 8) + 128)
+
+// YUV -> RGB
+#define C(Y) ( (Y) - 16  )
+#define D(U) ( (U) - 128 )
+#define E(V) ( (V) - 128 )
+
+#define YUV2R(Y, U, V) CLIP(( 298 * C(Y)              + 409 * E(V) + 128) >> 8)
+#define YUV2G(Y, U, V) CLIP(( 298 * C(Y) - 100 * D(U) - 208 * E(V) + 128) >> 8)
+#define YUV2B(Y, U, V) CLIP(( 298 * C(Y) + 516 * D(U)              + 128) >> 8)
+
+// RGB -> YCbCr
+#define CRGB2Y(R, G, B) CLIP((19595 * R + 38470 * G + 7471 * B ) >> 16)
+#define CRGB2Cb(R, G, B) CLIP((36962 * (B - CLIP((19595 * R + 38470 * G + 7471 * B ) >> 16) ) >> 16) + 128)
+#define CRGB2Cr(R, G, B) CLIP((46727 * (R - CLIP((19595 * R + 38470 * G + 7471 * B ) >> 16) ) >> 16) + 128)
+
+// YCbCr -> RGB
+#define CYCbCr2R(Y, Cb, Cr) CLIP( Y + ( 91881 * Cr >> 16 ) - 179 )
+#define CYCbCr2G(Y, Cb, Cr) CLIP( Y - (( 22544 * Cb + 46793 * Cr ) >> 16) + 135)
+#define CYCbCr2B(Y, Cb, Cr) CLIP( Y + (116129 * Cb >> 16 ) - 226 )
+
+
+
+void Bitmap2Yuv420p( boost::uint8_t *destination, boost::uint8_t *rgb,
+const int &width, const int &height ) {
+const size_t image_size = width * height;
+boost::uint8_t *dst_y = destination;
+boost::uint8_t *dst_u = destination + image_size;
+boost::uint8_t *dst_v = destination + image_size + image_size/4;
+
+// Y plane
+for( size_t i = 0; i < image_size; ++i ) {
+*dst_y++ = ( ( 66*rgb[3*i] + 129*rgb[3*i+1] + 25*rgb[3*i+2] ) >> 8 ) + 16;
+}
+#if 1
+// U plane
+for( size_t y=0; y<height; y+=2 ) {
+for( size_t x=0; x<width; x+=2 ) {
+const size_t i = y*width + x;
+*dst_u++ = ( ( -38*rgb[3*i] + -74*rgb[3*i+1] + 112*rgb[3*i+2] ) >> 8 ) + 128;
+}
+// V plane
+for( size_t y=0; y<height; y+=2 ) {
+for( size_t x=0; x<width; x+=2 ) {
+const size_t i = y*width + x;
+*dst_v++ = ( ( 112*rgb[3*i] + -94*rgb[3*i+1] + -18*rgb[3*i+2] ) >> 8 ) + 128;
+}
+#else // also try this version:
+// U+V planes
+for( size_t y=0; y<height; y+=2 ) {
+for( size_t x=0; x<width; x+=2 ) {
+const size_t i = y*width + x;
+*dst_u++ = ( ( -38*rgb[3*i] + -74*rgb[3*i+1] + 112*rgb[3*i+2] ) >> 8 ) + 128;
+*dst_v++ = ( ( 112*rgb[3*i] + -94*rgb[3*i+1] + -18*rgb[3*i+2] ) >> 8 ) + 128;
+}
+#endif
+}
+
+*/
 
 // Clamp out of range values
 #define CLAMP(t) (((t)>255)?255:(((t)<0)?0:(t)))

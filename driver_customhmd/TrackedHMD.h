@@ -4,11 +4,7 @@
 #define TrackedHMD_H
 
 #include "TrackedDevice.h" 
-#include "DirectStreamer.h"
-#include <D3D11_1.h>
-#include <DXGI1_2.h>
-#include <map>
-#include "TCPServer.h"
+#include "DirectStreamer.h" 
 
 using namespace vr;
 
@@ -16,22 +12,14 @@ class CTrackedHMD :
 	public IVRDisplayComponent,
 	public IVRCameraComponent,
 	public IVRDriverDirectModeComponent,
-	public CTrackedDevice,
-	public ITcpPacketReceiveCallback
+	public CTrackedDevice
 {
+	friend struct DirectModeData;
+
 private:	
 	HMDData m_HMDData;		
 	CameraData m_Camera;
-
-	HANDLE m_hDisplayThread;
-	int m_DisplayState;
-	//HANDLE m_hControlThread;
-	bool m_IsRunning;
-	unsigned int static WINAPI RemoteDisplayThread(void *p);
-	void RunRemoteDisplay();
-	unsigned int static WINAPI RemoteControlThread(void *p);
-	void RunRemoteControl();
-
+	DirectModeData m_DirectMode;
 public:
 	CTrackedHMD(std::string displayName, CServerDriver *pServer);
 	~CTrackedHMD();
@@ -76,25 +64,6 @@ public: //IVRCameraComponent
 	bool SetCameraCompatibilityMode(ECameraCompatibilityMode nCameraCompatibilityMode) override;
 	bool GetCameraFrameBounds(EVRTrackedCameraFrameType eFrameType, uint32_t *pLeft, uint32_t *pTop, uint32_t *pWidth, uint32_t *pHeight) override;
 	bool GetCameraIntrinsics(EVRTrackedCameraFrameType eFrameType, HmdVector2_t *pFocalLength, HmdVector2_t *pCenter) override;
-
-
-private:
-	SharedTextureHandle_t m_SyncTexture;
-	ID3D11Texture2D *m_pSyncTexture;
-	ID3D11DeviceContext *m_pContext;
-	ID3D11Device *m_pDevice;
-	D3D_FEATURE_LEVEL m_FeatureLevel;
-	unsigned short RemoteSequence;
-	void ProcessRemotePacket(USBPacket *pPacket);
-	DirectStreamer m_DirectScreen;
-	void TcpPacketReceive(const char *pData, int len) override;
-	int m_FrameCount;
-
-	std::vector<TextureSet*> m_TextureSets;
-	std::map<SharedTextureHandle_t, TextureLink> m_TextureMap;	
-	int UpdateBuffer(DirectEyeData *pEyeData);
-	HANDLE m_hTextureMapLock;	
-	HANDLE m_hBufferLock;
 
 
 public: //IVRDriverDirectModeComponent

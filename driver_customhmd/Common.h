@@ -10,17 +10,21 @@
 #include <ws2tcpip.h>
 #include "resource.h"
 #include <openvr_driver.h>
+
 #include <vector>
 #include <memory>
+#include <map>
 #include <string>
 #include <locale>
 #include <codecvt>
+
 #include <HighLevelMonitorConfigurationAPI.h>
 #include "capturedevice.h"
 #include "..\stm32\Common\usb.h"
 #include "ShMem.h"
 #include "LiquidVR.h"
 #include "memmem.h"
+#include <process.h>
 
 #define SAFE_RELEASE(a) if(a) a->Release(); a = nullptr; 
 #define SAFE_CLOSE(a) if(a) CloseHandle((HANDLE)a); a = nullptr; 

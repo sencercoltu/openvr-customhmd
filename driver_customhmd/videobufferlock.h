@@ -1,5 +1,8 @@
 #pragma once
 
+#ifndef VideoBufferLock_h
+#define VideoBufferLock_h
+
 class VideoBufferLock
 {
 public:
@@ -19,3 +22,5 @@ private:
 
 	BOOL            mLocked;
 };
+
+#endif //VideoBufferLock_h

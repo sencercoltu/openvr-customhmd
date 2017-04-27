@@ -1,4 +1,8 @@
 #pragma once
+
+#ifndef CaptureDevice_h
+#define CaptureDevice_h
+
 #include <mfapi.h>
 #include <mfidl.h>
 #include <mfreadwrite.h>
@@ -8,7 +12,7 @@
 #include <dshow.h>
 #include <dmo.h>
 #include <wmcodecdsp.h>
-#include <math.h>
+//#include <math.h>
 #include <string>
 
 class CCaptureDevice : public IMFSourceReaderCallback
@@ -118,3 +122,5 @@ private:
 	IMFActivate				*m_pDevice;
 	DWORD					m_dwInputID, m_dwOutputID;
 };
+
+#endif //CaptureDevice_h

@@ -6,7 +6,7 @@
 //* Written 1.25.00 by Angela Bennett                *
 //****************************************************
 
-
+#define _USE_MATH_DEFINES
 #include "quaternion.h"
 
 //Quaternion
