@@ -1,13 +1,13 @@
 #include "DirectStreamer.h"
 #include "TrackedHMD.h"
 
-#include "C:\Program Files (x86)\Microsoft SDKs\DirectX\Include\D3DX11tex.h"
+//#include "C:\Program Files (x86)\Microsoft SDKs\DirectX\Include\D3DX11tex.h"
 
 #pragma comment(lib,"ws2_32.lib")
 #pragma comment(lib,"D3D11.lib")
 #pragma comment(lib,"Dxgi.lib")
 #pragma comment(lib,"D3DCompiler.lib")
-#pragma comment(lib,"C:\\Program Files (x86)\\Microsoft SDKs\\DirectX\\Lib\\x64\\D3DX11.lib")
+//#pragma comment(lib,"C:\\Program Files (x86)\\Microsoft SDKs\\DirectX\\Lib\\x64\\D3DX11.lib")
 
 
 void DirectModeData::Init(CTrackedHMD *pHmd)
@@ -253,8 +253,8 @@ void DirectModeData::CombineEyes()
 	UINT stride = sizeof(Vertex);
 	UINT offset = 0;
 
-	if (m_TlLeft.pData && m_TlLeft.pData->pGPUTexture) D3DX11SaveTextureToFile(m_pContext, m_TlLeft.pData->pGPUTexture, D3DX11_IFF_JPG, L"D:\\OUT\\IMG\\file-left.jpg");
-	if (m_TlRight.pData && m_TlRight.pData->pGPUTexture) D3DX11SaveTextureToFile(m_pContext, m_TlRight.pData->pGPUTexture, D3DX11_IFF_JPG, L"D:\\OUT\\IMG\\file-right.jpg");
+	//if (m_TlLeft.pData && m_TlLeft.pData->pGPUTexture) D3DX11SaveTextureToFile(m_pContext, m_TlLeft.pData->pGPUTexture, D3DX11_IFF_JPG, L"D:\\OUT\\IMG\\file-left.jpg");
+	//if (m_TlRight.pData && m_TlRight.pData->pGPUTexture) D3DX11SaveTextureToFile(m_pContext, m_TlRight.pData->pGPUTexture, D3DX11_IFF_JPG, L"D:\\OUT\\IMG\\file-right.jpg");
 
 
 	m_pContext->OMSetRenderTargets(1, &m_pRTView, nullptr);
@@ -299,7 +299,7 @@ void DirectModeData::CombineEyes()
 		return;
 
 
-	D3DX11SaveTextureToFile(m_pContext, pTexRes, D3DX11_IFF_JPG, L"D:\\OUT\\IMG\\file.jpg");
+	//D3DX11SaveTextureToFile(m_pContext, pTexRes, D3DX11_IFF_JPG, L"D:\\OUT\\IMG\\file.jpg");
 
 	//if (WAIT_OBJECT_0 == WaitForSingleObject(m_hTextureMapLock, 10))
 	//{
