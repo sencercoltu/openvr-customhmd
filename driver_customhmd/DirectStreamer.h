@@ -17,7 +17,6 @@ extern "C" {
 #include <libavformat\avio.h>
 }
 
-//#include <Evr.h>
 #include <D3D11_1.h>
 #include <DXGI1_2.h>
 #include <D3Dcompiler.h>
@@ -25,8 +24,8 @@ extern "C" {
 
 
 
-#define MESSAGE_MAX_BYTES 8192
-#define RING_BUFFER_BYTES (1024 * 256 + MESSAGE_MAX_BYTES)
+//#define MESSAGE_MAX_BYTES 8192
+//#define RING_BUFFER_BYTES (1024 * 256 + MESSAGE_MAX_BYTES)
 #define STREAM_PIX_FMT	AV_PIX_FMT_YUV420P 
 #define VIDEO_CODEC_ID	AV_CODEC_ID_H264
 
@@ -78,8 +77,7 @@ struct TextureSet
 struct TextureLink
 {
 	TextureData *pData;
-	TextureSet *pSet;
-	XMMATRIX tTrans;
+	TextureSet *pSet;	
 };
 
 struct DirectEyeData

@@ -1,22 +1,27 @@
 #include "DirectStreamer.h"
 #include "TrackedHMD.h"
 
-//#include "C:\Program Files (x86)\Microsoft SDKs\DirectX\Include\D3DX11tex.h"
+#define ENABLE_COMBINED_SS
+
 
 #pragma comment(lib,"ws2_32.lib")
 #pragma comment(lib,"D3D11.lib")
 #pragma comment(lib,"Dxgi.lib")
 #pragma comment(lib,"D3DCompiler.lib")
-//#pragma comment(lib,"C:\\Program Files (x86)\\Microsoft SDKs\\DirectX\\Lib\\x64\\D3DX11.lib")
 
+#ifdef ENABLE_COMBINED_SS
+#include "C:\Program Files (x86)\Microsoft SDKs\DirectX\Include\D3DX11tex.h"
+#ifdef _WIN64
+#pragma comment(lib,"C:\\Program Files (x86)\\Microsoft SDKs\\DirectX\\Lib\\x64\\D3DX11.lib")
+#else
+#pragma comment(lib,"C:\\Program Files (x86)\\Microsoft SDKs\\DirectX\\Lib\\x86\\D3DX11.lib")
+#endif
+#endif //ENABLE_COMBINED_SS
 
 void DirectModeData::Init(CTrackedHMD *pHmd)
 {
 	
 	HRESULT hr = CoInitializeEx(nullptr, COINITBASE_MULTITHREADED);
-	
-	m_TlLeft.tTrans = XMMatrixTranslation(1.0f, 0.0f, 0.0f);
-	m_TlRight.tTrans = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
 
 	pHMD = pHmd;
 	m_hBufferLock = CreateMutex(nullptr, FALSE, L"BufferLock");
@@ -25,8 +30,7 @@ void DirectModeData::Init(CTrackedHMD *pHmd)
 	D3D_FEATURE_LEVEL levels[] =
 	{
 		D3D_FEATURE_LEVEL_11_1,
-		D3D_FEATURE_LEVEL_11_0,
-		D3D_FEATURE_LEVEL_10_1
+		D3D_FEATURE_LEVEL_11_0
 	};
 
 	hr = D3D11CreateDevice(
@@ -53,15 +57,13 @@ void DirectModeData::Init(CTrackedHMD *pHmd)
 		//cmdesc.FrontCounterClockwise = true;
 		cmdesc.FrontCounterClockwise = false;
 		hr = m_pDevice->CreateRasterizerState(&cmdesc, &m_pCWcullMode);
-		
-
-		
+				
 		ZeroMemory(&textureDesc, sizeof(textureDesc));
 		textureDesc.Width = pHMD->m_HMDData.ScreenWidth;
 		textureDesc.Height = pHMD->m_HMDData.ScreenHeight;
 		textureDesc.MipLevels = 1;
 		textureDesc.ArraySize = 1;
-		textureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT; // DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+		textureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT; // seems amd h264 encoder supports this as input
 		textureDesc.SampleDesc.Count = 1;
 		textureDesc.Usage = D3D11_USAGE_DEFAULT;
 		textureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
@@ -110,7 +112,6 @@ void DirectModeData::Init(CTrackedHMD *pHmd)
 			}";
 
 
-
 		ID3DBlob *err = nullptr;
 		hr = D3DCompile(shaderCode, strlen(shaderCode) + 1, nullptr, nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "VS", "vs_4_0", D3DCOMPILE_WARNINGS_ARE_ERRORS, 0, &m_pVS_Buffer, &err);
 		if (err) 
@@ -118,16 +119,16 @@ void DirectModeData::Init(CTrackedHMD *pHmd)
 		hr = m_pDevice->CreateVertexShader(m_pVS_Buffer->GetBufferPointer(), m_pVS_Buffer->GetBufferSize(), nullptr, &m_pVS);
 		
 		hr = D3DCompile(shaderCode, strlen(shaderCode) + 1, nullptr, nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "PS", "ps_4_0", D3DCOMPILE_WARNINGS_ARE_ERRORS, 0, &m_pPS_Buffer, &err);
-		if (err) 
+		if (err)  
 			hr = err->Release();
 		hr = m_pDevice->CreatePixelShader(m_pPS_Buffer->GetBufferPointer(), m_pPS_Buffer->GetBufferSize(), nullptr, &m_pPS);
 
 		Vertex v[] =
 		{
-			Vertex(-1.0f, -1.0f, -1.0f, 0.0f, 1.0f),
-			Vertex(-1.0f,  1.0f, -1.0f, 0.0f, 0.0f),
-			Vertex(0.0f,  1.0f, -1.0f, 1.0f, 0.0f),
-			Vertex(0.0f, -1.0f, -1.0f, 1.0f, 1.0f)
+			Vertex(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f),
+			Vertex(-1.0f,  1.0f, 0.0f, 0.0f, 0.0f),
+			Vertex(0.0f,  1.0f, 0.0f, 1.0f, 0.0f),
+			Vertex(0.0f, -1.0f, 0.0f, 1.0f, 1.0f)
 		};
 
 		DWORD indices[] = {
@@ -247,34 +248,35 @@ void DirectModeData::CombineEyes()
 		return;
 	m_DirectScreen.LastFrameTime = now;
 
-	//float bgColor[4] = { (0.0f, 0.0f, 0.0f, 0.0f) };
-	//m_pContext->ClearRenderTargetView(m_pRTView, bgColor);
+	float bgColor[4] = { (0.0f, 0.0f, 0.0f, 0.0f) };
+	m_pContext->ClearRenderTargetView(m_pRTView, bgColor);
 
 	UINT stride = sizeof(Vertex);
 	UINT offset = 0;
 
 	//if (m_TlLeft.pData && m_TlLeft.pData->pGPUTexture) D3DX11SaveTextureToFile(m_pContext, m_TlLeft.pData->pGPUTexture, D3DX11_IFF_JPG, L"D:\\OUT\\IMG\\file-left.jpg");
 	//if (m_TlRight.pData && m_TlRight.pData->pGPUTexture) D3DX11SaveTextureToFile(m_pContext, m_TlRight.pData->pGPUTexture, D3DX11_IFF_JPG, L"D:\\OUT\\IMG\\file-right.jpg");
-
+	
 
 	m_pContext->OMSetRenderTargets(1, &m_pRTView, nullptr);
+	
+	m_pContext->VSSetConstantBuffers(0, 1, &m_pConstantBuffer);
+
 	m_pContext->IASetIndexBuffer(m_pSquareIndexBuffer, DXGI_FORMAT_R32_UINT, 0);
 	m_pContext->IASetVertexBuffers(0, 1, &m_pSquareVertBuffer, &stride, &offset);
 	m_pContext->IASetInputLayout(m_pVertLayout);
 	m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	m_pContext->VSSetShader(m_pVS, 0, 0);
-	m_pContext->PSSetShader(m_pPS, 0, 0);		
-	
+	m_pContext->PSSetShader(m_pPS, 0, 0);
+	m_pContext->PSSetSamplers(0, 1, &m_pSamplerState);
+	m_pContext->RSSetState(m_pCWcullMode);
 
 	//draw left texture to combined texture
 	if (m_TlLeft.pData)
 	{
-		Ep.SHIFT = XMMatrixTranspose(m_TlLeft.tTrans);
+		Ep.SHIFT = XMMatrixTranspose(XMMatrixTranslation(0.0f, 0.0f, 0.0f));
 		m_pContext->PSSetShaderResources(0, 1, &m_TlLeft.pData->pShaderResourceView);
-		m_pContext->PSSetSamplers(0, 1, &m_pSamplerState);
-		m_pContext->UpdateSubresource(m_pConstantBuffer, 0, nullptr, &Ep, 0, 0);		
-		m_pContext->VSSetConstantBuffers(0, 1, &m_pConstantBuffer);
-		m_pContext->RSSetState(m_pCWcullMode);
+		m_pContext->UpdateSubresource(m_pConstantBuffer, 0, nullptr, &Ep, 0, 0);
 		m_pContext->DrawIndexed(6, 0, 0);
 		m_TlLeft.pData = nullptr;
 	}
@@ -282,12 +284,9 @@ void DirectModeData::CombineEyes()
 	//draw right texture to combined texture
 	if (m_TlRight.pData)
 	{	
-		Ep.SHIFT = XMMatrixTranspose(m_TlRight.tTrans);
+		Ep.SHIFT = XMMatrixTranspose(XMMatrixTranslation(1.0f, 0.0f, 0.0f));
 		m_pContext->PSSetShaderResources(0, 1, &m_TlRight.pData->pShaderResourceView);
-		m_pContext->PSSetSamplers(0, 1, &m_pSamplerState);
 		m_pContext->UpdateSubresource(m_pConstantBuffer, 0, nullptr, &Ep, 0, 0);
-		m_pContext->VSSetConstantBuffers(0, 1, &m_pConstantBuffer);
-		m_pContext->RSSetState(m_pCWcullMode);
 		m_pContext->DrawIndexed(6, 0, 0);
 		m_TlRight.pData = nullptr;
 	}
@@ -298,8 +297,9 @@ void DirectModeData::CombineEyes()
 	if (!pTexRes)
 		return;
 
-
-	//D3DX11SaveTextureToFile(m_pContext, pTexRes, D3DX11_IFF_JPG, L"D:\\OUT\\IMG\\file.jpg");
+#ifdef ENABLE_COMBINED_SS
+	D3DX11SaveTextureToFile(m_pContext, pTexRes, D3DX11_IFF_JPG, L"D:\\OUT\\IMG\\file.jpg");
+#endif //ENABLE_COMBINED_SS
 
 	//if (WAIT_OBJECT_0 == WaitForSingleObject(m_hTextureMapLock, 10))
 	//{

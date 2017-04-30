@@ -184,6 +184,7 @@
   <ItemGroup>
     <ClCompile Include="..\stm32\Common\usb.cpp" />
     <ClCompile Include="capturedevice.cpp" />
+    <ClCompile Include="H264Encoder.cpp" />
     <ClCompile Include="memmem.c" />
     <ClCompile Include="DirectStreamer.cpp" />
     <ClCompile Include="driver_customhmd.cpp" />
@@ -203,6 +204,7 @@
     <ClInclude Include="..\stm32\Common\usb.h" />
     <ClInclude Include="capturedevice.h" />
     <ClInclude Include="DirectStreamer.h" />
+    <ClInclude Include="H264Encoder.h" />
     <ClInclude Include="memmem.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="TCPServer.h" />
