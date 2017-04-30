@@ -4,7 +4,7 @@
 #define TrackedHMD_H
 
 #include "TrackedDevice.h" 
-#include "DirectStreamer.h" 
+#include "DirectModeStreamer.h" 
 
 using namespace vr;
 
@@ -14,12 +14,12 @@ class CTrackedHMD :
 	public IVRDriverDirectModeComponent,
 	public CTrackedDevice
 {
-	friend struct DirectModeData;
+	friend struct DirectModeStreamer;	
 
 private:	
 	HMDData m_HMDData;		
 	CameraData m_Camera;
-	DirectModeData m_DirectMode;
+	DirectModeStreamer m_DMS;
 public:
 	CTrackedHMD(std::string displayName, CServerDriver *pServer);
 	~CTrackedHMD();
