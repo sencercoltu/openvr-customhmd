@@ -128,23 +128,56 @@ void DirectModeStreamer::Init(CTrackedHMD *pHmd)
 	textureDesc.Height = pHMD->m_HMDData.ScreenHeight;
 	textureDesc.MipLevels = 1;
 	textureDesc.ArraySize = 1;
-	textureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT; // seems amd h264 encoder supports this as input
+	textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB; // DXGI_FORMAT_R32G32B32A32_FLOAT; // seems amd h264 encoder supports this as input
 	textureDesc.SampleDesc.Count = 1;
 	textureDesc.Usage = D3D11_USAGE_DEFAULT;
+	//textureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
 	textureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
 	textureDesc.CPUAccessFlags = 0;
 	textureDesc.MiscFlags = D3D11_RESOURCE_MISC_SHARED_KEYEDMUTEX;
 	hr = m_pDevice->CreateTexture2D(&textureDesc, nullptr, &m_pRTTex);
 	EXIT_IF_FAILED;
 
-	D3D11_RENDER_TARGET_VIEW_DESC renderTargetViewDesc;
-	ZeroMemory(&renderTargetViewDesc, sizeof(renderTargetViewDesc));
-	renderTargetViewDesc.Format = textureDesc.Format;
-	renderTargetViewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
-	renderTargetViewDesc.Texture2D.MipSlice = 0;	
-
-	hr = m_pDevice->CreateRenderTargetView(m_pRTTex, &renderTargetViewDesc, &m_pRTView);
+	ID3D11Texture2D *pCpuTexture;
+	ZeroMemory(&textureDesc, sizeof(textureDesc));
+	textureDesc.Width = pHMD->m_HMDData.ScreenWidth;
+	textureDesc.Height = pHMD->m_HMDData.ScreenHeight;
+	textureDesc.MipLevels = 1;
+	textureDesc.ArraySize = 1;
+	textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB; // DXGI_FORMAT_R32G32B32A32_FLOAT; // seems amd h264 encoder supports this as input
+	textureDesc.SampleDesc.Count = 1;
+	textureDesc.Usage = D3D11_USAGE_STAGING;
+	textureDesc.BindFlags = 0;
+	textureDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+	textureDesc.MiscFlags = 0;
+	hr = m_pDevice->CreateTexture2D(&textureDesc, nullptr, &pCpuTexture);
 	EXIT_IF_FAILED;
+
+	hr = pCpuTexture->QueryInterface(__uuidof(ID3D11Resource), (void **)&m_pTexBuffer);
+	pCpuTexture->Release();
+	EXIT_IF_FAILED;
+
+	//D3D11_RENDER_TARGET_VIEW_DESC renderTargetViewDesc;
+	//ZeroMemory(&renderTargetViewDesc, sizeof(renderTargetViewDesc));
+	//renderTargetViewDesc.Format = textureDesc.Format;
+	//renderTargetViewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+	//renderTargetViewDesc.Texture2D.MipSlice = 0;	
+
+	hr = m_pDevice->CreateRenderTargetView(m_pRTTex, /*&renderTargetViewDesc*/ nullptr, &m_pRTView);
+	EXIT_IF_FAILED;
+
+	m_pRTView->GetResource(&m_pRTRes);
+
+
+	//D3D11_BUFFER_DESC bufDesc = {};
+	//bufDesc.Usage = D3D11_USAGE_STAGING;
+	//bufDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+	//bufDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+	//bufDesc.StructureByteStride = 1;
+	//bufDesc.ByteWidth = pHMD->m_HMDData.ScreenWidth * pHMD->m_HMDData.ScreenHeight * sizeof(float);
+	//hr = m_pDevice->CreateBuffer(&bufDesc, nullptr, &m_pTexBuffer);
+	//EXIT_IF_FAILED;
+	//
 /*
 	ID2D1Factory* m_pDirect2dFactory;
 	hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_MULTI_THREADED, &m_pDirect2dFactory);
@@ -352,12 +385,14 @@ void DirectModeStreamer::Destroy()
 	SAFE_CLOSE(m_hTextureMapLock);
 	SAFE_CLOSE(m_hBufferLock);
 
+	SAFE_RELEASE(m_pRTRes);		
 	SAFE_RELEASE(m_pRTView);
 	SAFE_RELEASE(m_pRTTex);
 	SAFE_RELEASE(m_pTexSync);
 
 	//SAFE_RELEASE(m_pMediaBuffer);
 
+	SAFE_RELEASE(m_pTexBuffer);
 	SAFE_RELEASE(m_pSquareIndexBuffer);
 	SAFE_RELEASE(m_pSquareVertBuffer);
 	SAFE_RELEASE(m_pVS);
@@ -517,13 +552,15 @@ void DirectModeStreamer::RunRemoteDisplay()
 			case 3:
 				m_DisplayState = pServer->IsConnected() ? m_DisplayState : 0;
 
-				auto pitch = 0;
-				//add frame to encoder
-				auto pEvent = GetEvent();				
-				if (pEvent)					
-				{
-					ProcessEvent(pEvent);
-					pEvent->Release();
+				if (pServer->IsReady())
+				{				
+					//add raw frame to encoder and send encoded 
+					auto pEvent = GetEvent();
+					if (pEvent)
+					{
+						ProcessEvent(pEvent, pServer);
+						pEvent->Release();
+					}
 				}
 
 
@@ -581,16 +618,16 @@ void DirectModeStreamer::RunRemoteDisplay()
 	WSACleanup();
 }
 
-void DirectModeStreamer::ProcessEvent(IMFMediaEvent *pEvent)
+void DirectModeStreamer::ProcessEvent(IMFMediaEvent *pEvent, CTCPServer *pServer)
 {
 	HRESULT hr;
 	MediaEventType type;
 	pEvent->GetType(&type);
-	pEvent->GetStatus(&hr);
-	PROPVARIANT val;
-	PropVariantInit(&val);
-	pEvent->GetValue(&val);
-	PropVariantClear(&val);
+	//pEvent->GetStatus(&hr);
+	//PROPVARIANT val;
+	//PropVariantInit(&val);
+	//pEvent->GetValue(&val);
+	//PropVariantClear(&val);
 	switch (type)
 	{
 		case METransformNeedInput:
@@ -601,12 +638,42 @@ void DirectModeStreamer::ProcessEvent(IMFMediaEvent *pEvent)
 			//IMFMediaBuffer *pBuffer = nullptr;
 			//hr = m_pInputSample->GetBufferByIndex(0, &pBuffer);
 			if (SUCCEEDED(m_pTexSync->AcquireSync(0, 10)))
-			{				
+			{	
+				m_pContext->CopyResource(m_pTexBuffer, m_pRTTex);
+				D3D11_MAPPED_SUBRESOURCE mappedResource;
+				hr = m_pContext->Map(m_pTexBuffer, 0, D3D11_MAP::D3D11_MAP_READ, 0, &mappedResource);
+				IMFMediaBuffer *pMediaBuffer;
+				m_pInputSample->GetBufferByIndex(0, &pMediaBuffer);
+				BYTE *pData;
+				DWORD dwLen, dwMax;
+				hr = pMediaBuffer->Lock(&pData, &dwMax, &dwLen);
+				memcpy(pData, mappedResource.pData, mappedResource.RowPitch * pHMD->m_HMDData.ScreenHeight);
+				hr = pMediaBuffer->Unlock();
+				m_pContext->Unmap(m_pTexBuffer, 0);				
+				hr = m_pTransform->ProcessInput(0, m_pInputSample, 0);
 				//copy tex buffer to sample buffer :(
 				//pBuffer->QueryInterface
+				//OutputDebugString(L"IN\n");
+				//IMFMediaBuffer *pSample;
+				//hr = MFCreateDXGISurfaceBuffer(__uuidof(ID3D11Texture2D), m_pRTTex, 0, FALSE, &pSample);
+				//if (pSample)
+				//{
+				//	IMFMediaBuffer *pBuffer;
+				//	hr = m_pInputSample->GetBufferByIndex(0, &pBuffer);					
+				//	BYTE *pSrc, *pDst;
+				//	DWORD srcLen, dstLen, srcMax, dstMax;
 
-
-				hr = m_pTransform->ProcessInput(0, m_pInputSample, 0);
+				//	hr = pSample->Lock(&pSrc, &srcMax, &srcLen);
+				//	hr = pBuffer->Lock(&pDst, &dstMax, &dstLen);
+				//	memcpy(pDst, pSrc, min(srcLen, dstMax));
+				//	hr = pBuffer->SetCurrentLength(srcLen);
+				//	hr = pBuffer->Unlock();
+				//	hr = pSample->Unlock();
+				//	
+				//	hr = m_pTransform->ProcessInput(0, m_pInputSample, 0);
+				//	hr = pSample->Release();
+				//	hr = pBuffer->Release();
+				//}
 				m_pTexSync->ReleaseSync(0);
 			}
 			//pBuffer->Release();
@@ -616,12 +683,34 @@ void DirectModeStreamer::ProcessEvent(IMFMediaEvent *pEvent)
 			DWORD status;
 			MFT_OUTPUT_DATA_BUFFER outBuf = { 0 };
 			outBuf.pSample = m_pOutputSample;
-			hr = m_pTransform->ProcessOutput(MFT_PROCESS_OUTPUT_DISCARD_WHEN_NO_BUFFER, 1, &outBuf, &status);
+			//OutputDebugString(L"OUT\n");
+			hr = m_pTransform->ProcessOutput(0, 1, &outBuf, &status);
 			if (SUCCEEDED(hr))
 			{
-				m_pOutputSample = outBuf.pSample;
-				if (outBuf.pEvents) outBuf.pEvents->Release();
+				m_pOutputSample = outBuf.pSample; //release at exit
+				if (outBuf.pEvents) 
+					outBuf.pEvents->Release();
 			}
+			IMFMediaBuffer *pBuffer;
+			hr = m_pOutputSample->GetBufferByIndex(0, &pBuffer);
+			if (pBuffer)
+			{
+				DWORD currLen, maxLen;
+				unsigned char *pData = nullptr;;
+				if (SUCCEEDED(pBuffer->Lock(&pData, &maxLen, &currLen)))
+				{	
+					if (pData && currLen)
+					{
+						pServer->SendBuffer((const char *)&currLen, sizeof(int));						
+						pServer->SendBuffer((const char *)pData, currLen);
+						if (m_FileDump) fwrite(pData, 1, currLen, m_FileDump);
+					}
+					pBuffer->Unlock();
+				}
+				pBuffer->Release();
+			}
+			
+
 			break;
 		}
 	}
@@ -959,6 +1048,21 @@ bool DirectModeStreamer::InitMFT()
 	BOOL bAsync = MFGetAttributeUINT32(pAttributes, MF_TRANSFORM_ASYNC, FALSE);
 	if (bAsync) pAttributes->SetUINT32(MF_TRANSFORM_ASYNC_UNLOCK, TRUE);
 
+
+	hr = pAttributes->SetUINT32(MF_TRANSFORM_ASYNC_UNLOCK, TRUE);
+
+
+	hr = pAttributes->SetUINT32(CODECAPI_AVEncMPVDefaultBPictureCount, 0);
+	hr = pAttributes->SetUINT32(CODECAPI_AVEncCommonRateControlMode, eAVEncCommonRateControlMode_CBR);
+	hr = pAttributes->SetUINT32(CODECAPI_AVEncCommonQuality, 70);
+	hr = pAttributes->SetUINT32(CODECAPI_AVEncMPVGOPSize, 2);
+	hr = pAttributes->SetUINT32(CODECAPI_AVLowLatencyMode, TRUE);
+
+	hr = pAttributes->SetUINT32(MFT_PREFERRED_ENCODER_PROFILE, eAVEncH264VProfile_Base);
+	hr = pAttributes->SetUINT32(MF_MT_ALL_SAMPLES_INDEPENDENT, TRUE);
+	hr = pAttributes->SetUINT32(MF_LOW_LATENCY, TRUE);
+
+
 	pAttributes->Release();
 	pAttributes = nullptr;
 
@@ -1003,12 +1107,9 @@ bool DirectModeStreamer::InitMFT()
 	hr = pMFTOutputMediaType->SetUINT32(MF_MT_ALL_SAMPLES_INDEPENDENT, TRUE);
 	hr = pMFTOutputMediaType->SetUINT32(MF_LOW_LATENCY, TRUE);	
 	hr = m_pTransform->SetOutputType(0, pMFTOutputMediaType, 0);
-
-	pMFTOutputMediaType->Release();
 	EXIT_IF_FAILED_MFT;
 
-	hr = m_pTransform->GetInputAvailableType(1, 1, &pMFTInputMediaType);
-
+	//hr = m_pTransform->GetInputAvailableType(1, 1, &pMFTInputMediaType);
 
 	hr = MFCreateMediaType(&pMFTInputMediaType);
 	hr = pMFTInputMediaType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video);
@@ -1023,25 +1124,63 @@ bool DirectModeStreamer::InitMFT()
 	//pMFTInputMediaType->Release();
 	EXIT_IF_FAILED_MFT;
 
-	IMFVideoSampleAllocatorEx *pAllocator;
-	hr = MFCreateVideoSampleAllocatorEx(__uuidof(IMFVideoSampleAllocatorEx), (void **)&pAllocator);	
-	EXIT_IF_FAILED_MFT;
 	
-	hr = MFCreateAttributes(&pAttributes, 2);
-	EXIT_IF_FAILED_MFT;
-	//pMFTInputMediaType->CopyAllItems(pAttributes);
-	hr = pAttributes->SetUINT32(MF_SA_D3D11_USAGE, D3D11_USAGE_DEFAULT);
-	hr = pAttributes->SetUINT32(MF_SA_D3D11_BINDFLAGS, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_VIDEO_ENCODER);
-	hr = pAllocator->SetDirectXManager(m_pManager);
-	hr = pAllocator->InitializeSampleAllocatorEx(1, 1, pAttributes, pMFTInputMediaType);
-	pMFTInputMediaType->Release();
-	pAttributes->Release();
-	EXIT_IF_FAILED_MFT;
-	
-	hr = pAllocator->AllocateSample(&m_pInputSample);	
-	pAllocator->Release();
-	EXIT_IF_FAILED_MFT;
+	//IMFVideoSampleAllocatorEx *pAllocator;
+	//hr = MFCreateVideoSampleAllocatorEx(__uuidof(IMFVideoSampleAllocatorEx), (void **)&pAllocator);	
+	//EXIT_IF_FAILED_MFT;
+	//
+	//hr = MFCreateAttributes(&pAttributes, 2);
+	//EXIT_IF_FAILED_MFT;
+	//hr = pAllocator->SetDirectXManager(m_pManager);
+	//hr = pAllocator->InitializeSampleAllocatorEx(1, 1, pAttributes, pMFTInputMediaType);
+	//
+	//pAttributes->Release();
+	//EXIT_IF_FAILED_MFT;
+	//
+	//hr = pAllocator->AllocateSample(&m_pInputSample);	
+	//pAllocator->Release();
+	//EXIT_IF_FAILED_MFT;
 
+	//hr = MFCreateVideoSampleFromSurface(m_pRTTex, &m_pInputSample);
+
+	//UINT32 cnt;
+	//m_pInputSample->GetCount(&cnt);
+	//for (auto i = 0; i < cnt; i++)
+	//{
+	//	GUID key;
+	//	PROPVARIANT v;
+	//	PropVariantInit(&v);
+	//	m_pInputSample->GetItemByIndex(i, &key, &v);
+	//	PropVariantClear(&v);
+	//}
+	//m_pInputSample->Release();
+
+	// Create the DirectX surface buffer
+	
+	
+	IMFMediaBuffer *pBuffer;
+	//hr = MFCreateDXGISurfaceBuffer(__uuidof(ID3D11Texture2D), m_pRTTex, 0, false, &pBuffer);
+	//IMF2DBuffer *p2DBuffer;
+	//hr = pBuffer->QueryInterface(__uuidof(IMF2DBuffer), (void**)&p2DBuffer);
+	//DWORD Length;
+	//hr = p2DBuffer->GetContiguousLength(&Length);	
+	//p2DBuffer->Release();
+
+	//// Set the data length of the buffer
+	//hr = pBuffer->SetCurrentLength(Length);
+
+	//// Create a media sample and add the buffer to the sample
+	hr = MFCreateSample(&m_pInputSample);
+	////m_pInputSample->CopyAllItems(pMFTInputMediaType);
+
+	hr = MFCreate2DMediaBuffer(Width, Height, D3DFMT_A8R8G8B8, FALSE, &pBuffer);
+	hr = m_pInputSample->AddBuffer(pBuffer);
+	// Set the time stamp and the duration
+	pBuffer->Release();
+	
+
+	hr = pMFTInputMediaType->Release();
+	hr = pMFTOutputMediaType->Release();
 
 	//IMFSample *pSample;
 	//hr = MFCreateVideoSampleFromSurface(m_pRTTex, &pSample);
@@ -1049,9 +1188,20 @@ bool DirectModeStreamer::InitMFT()
 
 	//m_pInputSample = new CIdidotAMDSampleFix(pSample);
 
-	m_pInputSample->SetSampleDuration(1);
-	m_pInputSample->SetSampleTime(GetTickCount64());
+	hr = m_pInputSample->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video);
+	hr = m_pInputSample->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_ARGB32);
+	hr = m_pInputSample->SetUINT32(MF_MT_DEFAULT_STRIDE, 4 * Width);
+	hr = MFSetAttributeSize(m_pInputSample, MF_MT_FRAME_SIZE, Width, Height);
 
+
+
+	m_pInputSample->SetSampleDuration((LONGLONG)m_FrameTime);
+	m_pInputSample->SetSampleTime(GetTickCount64());
+		
+
+
+	MFT_OUTPUT_STREAM_INFO info;
+	hr = m_pTransform->GetOutputStreamInfo(0, &info);
 
 	DWORD mftStatus = 0;
 
@@ -1070,7 +1220,8 @@ bool DirectModeStreamer::InitMFT()
 	hr = m_pTransform->ProcessMessage(MFT_MESSAGE_SET_D3D_MANAGER, (ULONG_PTR)m_pManager);
 	EXIT_IF_FAILED_MFT;
 
-
+	fopen_s(&m_FileDump, "D:\\OUT\\xx.h264", "wb");
+	
 
 	hr = m_pTransform->ProcessMessage(MFT_MESSAGE_COMMAND_FLUSH, 0); EXIT_IF_FAILED_MFT;
 	hr = m_pTransform->ProcessMessage(MFT_MESSAGE_NOTIFY_BEGIN_STREAMING, 0); EXIT_IF_FAILED_MFT;
@@ -1087,7 +1238,10 @@ void DirectModeStreamer::DestroyMFT()
 	//	m_pEventGenerator->EndGetEvent(this, nullptr);
 
 	if (m_pTransform)
+	{
 		m_pTransform->ProcessMessage(MFT_MESSAGE_NOTIFY_END_OF_STREAM, 0);
+		m_pTransform->ProcessMessage(MFT_MESSAGE_NOTIFY_END_STREAMING, 0);
+	}
 
 	if (m_pManager && m_pDevice)
 		m_pManager->ResetDevice(m_pDevice, m_ManagerToken);
@@ -1097,7 +1251,9 @@ void DirectModeStreamer::DestroyMFT()
 	SAFE_RELEASE(m_pEventGenerator);
 	SAFE_RELEASE(m_pInputSample);
 	SAFE_RELEASE(m_pOutputSample);
-
+	if (m_FileDump)
+		fclose(m_FileDump);
+	m_FileDump = nullptr;
 }
 
 IMFMediaEvent *DirectModeStreamer::GetEvent()
@@ -1128,6 +1284,58 @@ IMFMediaEvent *DirectModeStreamer::GetEvent()
 
 */
 
+HRESULT CMFMediaBufferWrapper::QueryInterface(REFIID riid, void ** ppvObject)
+{
+	if (riid == __uuidof(IMFMediaBuffer))
+	{
+		*ppvObject = (void *)this;
+		return S_OK;
+	}
+	if (riid == __uuidof(IUnknown))
+	{
+		*ppvObject = (void *)(IUnknown*)this;
+		return S_OK;
+	}
+	return E_NOINTERFACE;
+}
 
+ULONG CMFMediaBufferWrapper::AddRef(void)
+{
+	return ++m_RefCount;
+}
 
+ULONG CMFMediaBufferWrapper::Release(void)
+{
+	m_RefCount--;
+	if (!m_RefCount)
+		delete this;
+	return m_RefCount;
+}
 
+HRESULT CMFMediaBufferWrapper::Lock(BYTE ** ppbBuffer, DWORD * pcbMaxLength, DWORD * pcbCurrentLength)
+{
+	return S_OK;
+}
+
+HRESULT CMFMediaBufferWrapper::Unlock(void)
+{
+	return S_OK;
+}
+
+HRESULT CMFMediaBufferWrapper::GetCurrentLength(DWORD * pcbCurrentLength)
+{
+	*pcbCurrentLength = m_CurrLength;
+	return S_OK;
+}
+
+HRESULT CMFMediaBufferWrapper::SetCurrentLength(DWORD cbCurrentLength)
+{
+	m_CurrLength = cbCurrentLength;
+	return S_OK;
+}
+
+HRESULT CMFMediaBufferWrapper::GetMaxLength(DWORD * pcbMaxLength)
+{
+	*pcbMaxLength = m_MaxLength;
+	return S_OK;
+}

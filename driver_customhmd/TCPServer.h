@@ -9,7 +9,7 @@ typedef void (*pfnTcpPacketReceiveCallback)(void *dst, const char *pData, int le
 
 class CTCPServer
 {
-private:
+private:	
 	HANDLE m_hThread;
 	bool m_IsRunning;
 	unsigned int static WINAPI ProcessThread(void *p);

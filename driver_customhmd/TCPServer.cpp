@@ -62,6 +62,7 @@ void CTCPServer::Run()
 	hints.ai_protocol = IPPROTO_TCP;
 	hints.ai_flags = AI_PASSIVE;
 
+	
 
 	char szPort[64] = {};
 	sprintf_s(szPort, "%u", m_Port);
@@ -166,8 +167,8 @@ void CTCPServer::Run()
 					int res;
 					if (m_DataRemain == m_DataSize)
 						res = send(m_ClientSocket, (const char *)&m_DataSize, sizeof(int), 0);
-					
-					res = send(m_ClientSocket, m_DataToSend, min(m_DataRemain, MAX_SEND_SIZE), 0);
+					int sz = min(m_DataRemain, MAX_SEND_SIZE);
+					res = send(m_ClientSocket, m_DataToSend, sz, 0);					
 					if (res == SOCKET_ERROR)
 						break;
 					if (res > 0)

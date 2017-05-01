@@ -139,15 +139,39 @@ struct DirectModeStreamer;
 //	virtual ULONG Release(void) override;
 //};
 
+
+class CMFMediaBufferWrapper : public IMFMediaBuffer
+{
+private:
+	ULONG m_RefCount;
+	DWORD m_CurrLength;	
+	DWORD m_MaxLength;
+public:
+	CMFMediaBufferWrapper() : m_RefCount(1) {};
+	// Inherited via IMFMediaBuffer
+	virtual HRESULT QueryInterface(REFIID riid, void ** ppvObject) override;
+	virtual ULONG AddRef(void) override;
+	virtual ULONG Release(void) override;
+	virtual HRESULT Lock(BYTE ** ppbBuffer, DWORD * pcbMaxLength, DWORD * pcbCurrentLength) override;
+	virtual HRESULT Unlock(void) override;
+	virtual HRESULT GetCurrentLength(DWORD * pcbCurrentLength) override;
+	virtual HRESULT SetCurrentLength(DWORD cbCurrentLength) override;
+	virtual HRESULT GetMaxLength(DWORD * pcbMaxLength) override;
+};
+
 struct DirectModeStreamer
 {
 	friend class CTrackedHMD;
 	CTrackedHMD *pHMD;
 public:
 
+	FILE *m_FileDump;
+
 	DirectModeStreamer()
 	{
+		m_FileDump = nullptr;
 		//m_pMediaBuffer = nullptr;
+		m_pTexBuffer = nullptr;
 		m_ManagerToken = 0;
 		m_pManager = nullptr;
 
@@ -177,6 +201,7 @@ public:
 
 		m_pRTView = nullptr;
 		m_pRTTex = nullptr;
+		m_pRTRes = nullptr;
 		m_pSquareIndexBuffer = nullptr;
 		m_pSquareVertBuffer = nullptr;
 		m_pVS = nullptr;
@@ -208,11 +233,13 @@ public:
 	ID3D11DeviceContext *m_pContext;
 	ID3D11Device *m_pDevice;
 
-	void ProcessEvent(IMFMediaEvent *pEvent);
+	void ProcessEvent(IMFMediaEvent *pEvent, CTCPServer *pServer);
 
 	IDXGIKeyedMutex *m_pTexSync;
 	ID3D11Texture2D *m_pRTTex;
+	ID3D11Resource *m_pTexBuffer;
 	ID3D11RenderTargetView *m_pRTView;
+	ID3D11Resource *m_pRTRes;
 	ID3D11SamplerState *m_pSamplerState;
 	ID3D11Buffer *m_pConstantBuffer;
 	CbEyePos Ep;
