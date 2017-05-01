@@ -190,8 +190,8 @@ public class DisplayActivity
     protected void onResume() {
         super.onResume();
         if (tcpClient == null) {
-            //tcpClient = new TcpClient(this, "127.0.0.1", 1974);
-            tcpClient = new TcpClient(this, "192.168.0.10", 1974);
+            tcpClient = new TcpClient(this, "127.0.0.1", 1974);
+            //tcpClient = new TcpClient(this, "192.168.0.10", 1974);
             tcpClient.start();
         }
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);

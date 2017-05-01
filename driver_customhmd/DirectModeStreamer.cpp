@@ -5,11 +5,11 @@
 
 
 #pragma comment(lib, "ws2_32.lib")
-#pragma comment(lib, "D2d1.lib")
+//#pragma comment(lib, "D2d1.lib")
 #pragma comment(lib, "D3D11.lib")
 #pragma comment(lib, "Dxgi.lib")
 #pragma comment(lib, "D3DCompiler.lib")
-#pragma comment(lib, "Evr.lib")
+//#pragma comment(lib, "Evr.lib")
 
 
 #ifdef ENABLE_COMBINED_SS
@@ -405,7 +405,7 @@ void DirectModeStreamer::Destroy()
 	SAFE_RELEASE(m_pConstantBuffer);
 	SAFE_RELEASE(m_pCWcullMode);
 
-	SAFE_RELEASE(m_pInputSample);
+	//SAFE_RELEASE(m_pInputSample);
 
 	CoUninitialize();
 
@@ -482,7 +482,8 @@ void DirectModeStreamer::CombineEyes()
 
 		pTexRes->Release();
 #endif //ENABLE_COMBINED_SS
-		m_pTexSync->ReleaseSync(0);
+		m_FrameReady = true;
+		m_pTexSync->ReleaseSync(0);		
 	}
 }
 
@@ -506,8 +507,11 @@ void DirectModeStreamer::RunRemoteDisplay()
 	//UdpClientServer::CUdpClient *pUdpClient = new UdpClientServer::CUdpClient(m_HMDData.DirectStreamURL, 1974);
 
 	//m_DirectScreen.Init(pHMD->m_HMDData.ScreenWidth, pHMD->m_HMDData.ScreenHeight, pHMD->m_HMDData.Frequency, pHMD->m_HMDData.DirectStreamURL);
-	InitMFT();
-
+	//InitMFT();
+	InitEncoder();
+#ifdef _DEBUG
+	fopen_s(&m_FileDump, "D:\\OUT\\xx.h264", "wb");
+#endif //_DEBUG
 
 	InfoPacket infoPacket = {};
 	infoPacket.H = 'H';
@@ -517,14 +521,14 @@ void DirectModeStreamer::RunRemoteDisplay()
 	infoPacket.Width = pHMD->m_HMDData.ScreenWidth;
 	infoPacket.Height = pHMD->m_HMDData.ScreenHeight;
 
+	unsigned char *pFrameBuffer = (unsigned char *) malloc(8192*1024);	
+
 	//CMFTEventReceiver *pEventReceiver = nullptr;
 	//if (m_pEventGenerator)
 	//{
 	//	pEventReceiver = new CMFTEventReceiver(this);
 	//	hr = m_pEventGenerator->BeginGetEvent(pEventReceiver, pEventReceiver);
 	//}
-
-
 
 	FILE *fp = nullptr;
 	//fopen_s(&fp, "D:\\test.h264", "wb");	
@@ -547,20 +551,48 @@ void DirectModeStreamer::RunRemoteDisplay()
 			case 2:
 				//pServer->SendBuffer((const char*)m_DirectScreen.pCodecContext->extradata, m_DirectScreen.pCodecContext->extradata_size);
 				//if (fp) fwrite((const char*)m_DirectScreen.pCodecContext->extradata, 1, m_DirectScreen.pCodecContext->extradata_size, fp);
+				m_pEncoder->ReInit(pHMD->m_HMDData.ScreenWidth, pHMD->m_HMDData.ScreenHeight);
 				m_DisplayState = pServer->IsConnected() ? m_DisplayState + 1 : 0;
 				continue;
 			case 3:
 				m_DisplayState = pServer->IsConnected() ? m_DisplayState : 0;
 
-				if (pServer->IsReady())
-				{				
-					//add raw frame to encoder and send encoded 
-					auto pEvent = GetEvent();
-					if (pEvent)
+				if (pServer->IsReady() && m_FrameReady)
+				{	
+					
+					AMF_RESULT res;
+					amf_pts start_time = amf_high_precision_clock();
+					m_pSurfaceFrame->SetProperty(L"StartTimeProperty", start_time);
+					if (SUCCEEDED(m_pTexSync->AcquireSync(0, 10)))
 					{
-						ProcessEvent(pEvent, pServer);
-						pEvent->Release();
+						m_FrameReady = false;						
+						res = m_pSurfaceTex->CopySurfaceRegion(m_pSurfaceFrame, 0, 0, 0, 0, pHMD->m_HMDData.ScreenWidth, pHMD->m_HMDData.ScreenHeight);
+						res = m_pEncoder->SubmitInput(m_pSurfaceFrame);
+						m_pTexSync->ReleaseSync(0);
 					}
+					
+					amf::AMFDataPtr data;
+					while (true)
+					{
+						res = m_pEncoder->QueryOutput(&data);
+						if (data == nullptr)
+							break;						
+						amf::AMFBufferPtr buffer(data);
+						unsigned char *pData = (unsigned char *)buffer->GetNative();						
+						int len = (int)buffer->GetSize();
+						memcpy(pFrameBuffer, pData, len);						
+						pServer->SendBuffer((const char *)&len, sizeof(int));
+						pServer->SendBuffer((const char *)pFrameBuffer, len);
+						if (m_FileDump) fwrite(pFrameBuffer, 1, len, m_FileDump);
+					}
+					
+					//add raw frame to encoder and send encoded 
+					//auto pEvent = GetEvent();
+					//if (pEvent)
+					//{
+					//	ProcessEvent(pEvent, pServer);
+					//	pEvent->Release();
+					//}
 				}
 
 
@@ -599,7 +631,7 @@ void DirectModeStreamer::RunRemoteDisplay()
 			Sleep(100);
 	}
 
-	//m_DirectScreen.Destroy();
+	DestroyEncoder();
 
 	if (fp) fclose(fp);
 	fp = nullptr;
@@ -607,17 +639,26 @@ void DirectModeStreamer::RunRemoteDisplay()
 	delete pServer;
 	pServer = nullptr;
 
+	if (m_FileDump)
+		fclose(m_FileDump);
+	m_FileDump = nullptr;
+
 	//if (pEventReceiver)
 	//{
 	//	pEventReceiver->Release();
 	//	pEventReceiver = nullptr;
 	//}
 
+	if (pFrameBuffer)
+		free(pFrameBuffer);
+	pFrameBuffer = nullptr;
+
 	//delete pUdpClient;
 	//pUdpClient = nullptr;
 	WSACleanup();
 }
 
+/*
 void DirectModeStreamer::ProcessEvent(IMFMediaEvent *pEvent, CTCPServer *pServer)
 {
 	HRESULT hr;
@@ -715,7 +756,7 @@ void DirectModeStreamer::ProcessEvent(IMFMediaEvent *pEvent, CTCPServer *pServer
 		}
 	}
 }
-
+*/
 
 
 void DirectModeStreamer::TcpPacketReceive(void *dst, const char *pData, int len)
@@ -734,265 +775,118 @@ void DirectModeStreamer::TcpPacketReceive(void *dst, const char *pData, int len)
 	pDM->m_LastPacketReceive = GetTickCount();
 }
 
-int DirectModeStreamer::UpdateBuffer(DirectEyeData *pEyeData)
-{
-	return 0;
-	//if (!pEyeData)
-	//	return 0;
-	//if (!pEyeData->pData)
-	//	return 0;
-
-	//D3D11_MAPPED_SUBRESOURCE mappedResource;
-
-	//int width = 0, height = 0, srcStride = 0, dstStride = 0;
-	//int fmt = 0;
-
-	//if (SUCCEEDED(m_pContext->Map(pEyeData->pData->pCPUResource, 0, D3D11_MAP_READ, 0, &mappedResource)))
-	//{
-	//	pEyeData->pData->pCPUTexture->GetDesc(&pEyeData->Desc);
-	//	width = pEyeData->Desc.Width;
-	//	height = pEyeData->Desc.Height;
-	//	srcStride = mappedResource.RowPitch;
-	//	dstStride = srcStride * 2;
-
-	//	//copy eye to pixel buffer. always assume 32 bit pixel				
-	//	auto srcPos = (unsigned char *)mappedResource.pData;
-	//	auto dstPos = m_DirectScreen.pPixelBuffer[0] + (pEyeData->Eye == EVREye::Eye_Right ? srcStride : 0);
-
-	//	//copy left eye to left, right eye to right
-	//	for (unsigned int y = 0; y < pEyeData->Desc.Height; y++)
-	//	{
-	//		memcpy(dstPos, srcPos, srcStride);
-	//		dstPos += dstStride;
-	//		srcPos += srcStride;
-	//	}
-	//	m_pContext->Unmap(pEyeData->pData->pCPUResource, 0);
-	//}
-	//pEyeData->pData = nullptr;
-	//return srcStride;
-}
+//int DirectModeStreamer::UpdateBuffer(DirectEyeData *pEyeData)
+//{
+//	return 0;
+//	//if (!pEyeData)
+//	//	return 0;
+//	//if (!pEyeData->pData)
+//	//	return 0;
+//
+//	//D3D11_MAPPED_SUBRESOURCE mappedResource;
+//
+//	//int width = 0, height = 0, srcStride = 0, dstStride = 0;
+//	//int fmt = 0;
+//
+//	//if (SUCCEEDED(m_pContext->Map(pEyeData->pData->pCPUResource, 0, D3D11_MAP_READ, 0, &mappedResource)))
+//	//{
+//	//	pEyeData->pData->pCPUTexture->GetDesc(&pEyeData->Desc);
+//	//	width = pEyeData->Desc.Width;
+//	//	height = pEyeData->Desc.Height;
+//	//	srcStride = mappedResource.RowPitch;
+//	//	dstStride = srcStride * 2;
+//
+//	//	//copy eye to pixel buffer. always assume 32 bit pixel				
+//	//	auto srcPos = (unsigned char *)mappedResource.pData;
+//	//	auto dstPos = m_DirectScreen.pPixelBuffer[0] + (pEyeData->Eye == EVREye::Eye_Right ? srcStride : 0);
+//
+//	//	//copy left eye to left, right eye to right
+//	//	for (unsigned int y = 0; y < pEyeData->Desc.Height; y++)
+//	//	{
+//	//		memcpy(dstPos, srcPos, srcStride);
+//	//		dstPos += dstStride;
+//	//		srcPos += srcStride;
+//	//	}
+//	//	m_pContext->Unmap(pEyeData->pData->pCPUResource, 0);
+//	//}
+//	//pEyeData->pData = nullptr;
+//	//return srcStride;
+//}
 
 void DirectModeStreamer::ProcessRemotePacket(USBPacket *pPacket)
 {
 	pHMD->m_pServer->ProcessUSBPacket(pPacket);
 }
 
-//
-//int DirectStreamer::ProcessFrame(int pitch)
-//{
-//	return 0;
-//	FrameCount++;
-//
-//	/*AVPixelFormat fmt = AV_PIX_FMT_NONE;
-//	if (Left.Desc.Format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB)
-//		fmt = AV_PIX_FMT_RGBA;
-//	else if (Left.Desc.Format == DXGI_FORMAT_B8G8R8A8_UNORM_SRGB)
-//		fmt = AV_PIX_FMT_BGRA;
-//	else
-//	{
-//		Sleep(1);
-//		return -1;
-//	}
-//
-//	SaveFrameRGB(pPixelBuffer[0], pitch * Left.Desc.Height, FrameCount);
-//
-//	in_linesize[0] = pitch;
-//	pSwsContext = sws_getCachedContext(pSwsContext, Left.Desc.Width * 2, Left.Desc.Height, fmt, Width, Height, STREAM_PIX_FMT, 0, 0, 0, 0);
-//	int h = sws_scale(pSwsContext, (const uint8_t * const *)&pPixelBuffer, in_linesize, 0, Height, pFrame->data, pFrame->linesize);
-//
-//	SaveFrameYUV(pFrame, FrameCount);
-//
-//	pFrame->pts = FrameCount;
-//	pFrame->pkt_duration = (int64_t)FrameTime;
-//		
-//	return avcodec_send_frame(pCodecContext, pFrame);*/
-//}
-//
-//AVPacket *DirectStreamer::GetPacket()
-//{
-//	av_init_packet(pPacket);
-//	return avcodec_receive_packet(pCodecContext, pPacket) == 0 ? pPacket : nullptr;
-//}
-//
-//bool DirectStreamer::Init(int width, int height, float fps, char *url)
-//{
-//	ZeroMemory(in_linesize, sizeof(in_linesize));
-//	in_linesize[0] = { 4 * width };
-//
-//	if (fps > 0)
-//		FrameTime = 1000.0f / fps;
-//	else
-//		FrameTime = 100; //default to 10 fps for now
-//
-//	FPS = (int)(1000 / FrameTime);
-//
-//	Width = width;
-//	Height = height;
-//
-//	av_register_all();
-//	avcodec_register_all();
-//
-//	Left.Eye = EVREye::Eye_Left;
-//	Right.Eye = EVREye::Eye_Right;
-//
-//	pCodec = avcodec_find_encoder(VIDEO_CODEC_ID);
-//	if (!pCodec)
-//	{
-//		Destroy();
-//		return false;
-//	}
-//
-//
-//	pCodecContext = avcodec_alloc_context3(pCodec);
-//	if (!pCodecContext)
-//	{
-//		Destroy();
-//		return false;
-//	}
-//
-//	AVDictionary *pOptions = nullptr;
-//	av_dict_set(&pOptions, "profile", "high", 0);
-//	av_dict_set(&pOptions, "preset", "ultrafast", 0);
-//	av_dict_set(&pOptions, "tune", "zerolatency", 0);
-//	//av_dict_set(&pOptions, "tune", "zerolatency", 0);
-//
-//	//av_opt_set(&pCodecContext, "profile", "baseline", 0);
-//
-//	SYSTEM_INFO sysinfo;
-//	GetSystemInfo(&sysinfo);
-//	int numCPU = max(sysinfo.dwNumberOfProcessors / 2, 1);
-//	pCodecContext->profile = FF_PROFILE_H264_CONSTRAINED_BASELINE;
-//	pCodecContext->codec_id = VIDEO_CODEC_ID;
-//	pCodecContext->bit_rate = Width * Height;
-//	pCodecContext->rc_buffer_size = 3;
-//	pCodecContext->width = Width;
-//	pCodecContext->height = Height;
-//	pCodecContext->gop_size = 1;
-//	pCodecContext->keyint_min = 1;
-//	pCodecContext->pix_fmt = STREAM_PIX_FMT;
-//	pCodecContext->time_base.den = FPS;
-//	pCodecContext->time_base.num = 1;
-//	pCodecContext->max_b_frames = 0;
-//
-//	pCodecContext->qmin = 5;
-//	pCodecContext->qmax = 30;
-//	pCodecContext->qcompress = 0;	
-//	pCodecContext->qblur = 1;	
-//	//pCodecContext->refs = 1;
-//	pCodecContext->delay = 0;
-//	//pCodecContext->max_qdiff = 10;
-//	pCodecContext->slices = 8;
-//	pCodecContext->ticks_per_frame = 2;
-//
-//	pCodecContext->thread_count = numCPU;
-//	pCodecContext->thread_type = FF_THREAD_SLICE; // FF_THREAD_SLICE;	
-//	pCodecContext->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
-//
-//
-//	//tcp
-//
-//	//av_opt_set(&pCodecContext, "preset", "ultrafast", 0);
-//	//av_opt_set(&pCodecContext, "tune", "zerolatency", 0);
-//
-//	//av_opt_set(pCodecContext->priv_data, "x264opts", "sync-lookahead=0:slice-max-size=1400", 0);
-//
-//	if (avcodec_open2(pCodecContext, nullptr, &pOptions) < 0)
-//	{
-//		Destroy();
-//		return false;
-//	}
-//
-//	if (pOptions)
-//		av_dict_free(&pOptions);
-//
-//
-//	pPacket = av_packet_alloc();
-//	if (!pPacket)
-//	{
-//		Destroy();
-//		return false;
-//	}
-//
-//	pFrame = av_frame_alloc();
-//	pFrame->format = STREAM_PIX_FMT;
-//	pFrame->width = pCodecContext->width;
-//	pFrame->height = pCodecContext->height;
-//	if (av_image_alloc(pFrame->data, pFrame->linesize, pFrame->width, pFrame->height, pCodecContext->pix_fmt, 32) < 0)
-//	{
-//		Destroy();
-//		return false;
-//	}
-//
-//	int BufferSize = 3840 * 2160 * 4; //rgba	4k
-//	pPixelBuffer[0] = (uint8_t *)malloc(BufferSize);
-//	pPixelBuffer[1] = nullptr;
-//	pPixelBuffer[2] = nullptr;
-//
-//	if (pPixelBuffer[0] == nullptr)
-//	{
-//		Destroy();
-//		return false;
-//	}
-//	ZeroMemory(pPixelBuffer[0], BufferSize);
-//
-//
-//	//InitMFT(Width, Height, FPS);
-//	return true;
-//}
-//
-//void DirectStreamer::Destroy()
-//{
-//	if (pFrame)
-//	{
-//		if (pFrame->data[0]) av_freep(&pFrame->data[0]);
-//		av_frame_free(&pFrame);
-//	}
-//
-//	if (pPacket)
-//	{
-//		av_packet_unref(pPacket);
-//		av_packet_free(&pPacket);
-//	}
-//
-//
-//	if (pCodecContext) avcodec_close(pCodecContext);
-//
-//	pCodecContext = nullptr;
-//	pCodec = nullptr;
-//
-//	SAFE_FREE(pPixelBuffer[0]);
-//}
-//
-//void DirectStreamer::SaveFrameYUV(AVFrame *pFrame, int frameno)
-//{
-//	return;
-//	FILE *yuvFile = nullptr;
-//	char szFilename[MAX_PATH];
-//	sprintf_s(szFilename, "D:\\OUT\\xx-%d.yuv", frameno);
-//	fopen_s(&yuvFile, szFilename, "wb");
-//	if (yuvFile)
-//	{
-//		fwrite(pFrame->data[0], 1, pCodecContext->width * pCodecContext->height, yuvFile);
-//		fwrite(pFrame->data[1], 1, pCodecContext->width * pCodecContext->height / 4, yuvFile);
-//		fwrite(pFrame->data[2], 1, pCodecContext->width * pCodecContext->height / 4, yuvFile);
-//		fclose(yuvFile);
-//	}
-//}
-//
-//void DirectStreamer::SaveFrameRGB(uint8_t *pixels, int size, int frameno)
-//{
-//	return;		
-//	FILE *yuvFile = nullptr;
-//	char szFilename[MAX_PATH];
-//	sprintf_s(szFilename, "D:\\OUT\\xx-%d.rgb", frameno);
-//	fopen_s(&yuvFile, szFilename, "wb");
-//	if (yuvFile)
-//	{
-//		fwrite(pixels, 1, size, yuvFile);
-//		fclose(yuvFile);
-//	}
-//}
+#define EXIT_AND_DESTROY if (res != AMF_OK) { DestroyEncoder(); return false;}
 
+bool DirectModeStreamer::InitEncoder()
+{
+	AMF_RESULT res = AMF_OK;
+	res = g_AMFFactory.Init();
+	if (res != AMF_OK)
+		return false;
+	
+	amf_increase_timer_precision();
+#ifdef _DEBUG
+	amf::AMFTraceEnableWriter(AMF_TRACE_WRITER_DEBUG_OUTPUT, true);
+#endif //_DEBUG
+
+	res = g_AMFFactory.GetFactory()->CreateContext(&m_pEncderContext);
+	EXIT_AND_DESTROY;
+
+	res = m_pEncderContext->InitDX11(m_pDevice, amf::AMF_DX11_1); // can be DX11 device
+	EXIT_AND_DESTROY;
+
+	res = g_AMFFactory.GetFactory()->CreateComponent(m_pEncderContext, AMFVideoEncoderVCE_AVC, &m_pEncoder);
+	EXIT_AND_DESTROY;
+
+	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_USAGE, AMF_VIDEO_ENCODER_USAGE_ULTRA_LOW_LATENCY);
+	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_B_PIC_PATTERN, 0);
+	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_QUALITY_PRESET, AMF_VIDEO_ENCODER_QUALITY_PRESET_SPEED);
+	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_TARGET_BITRATE, 1500000);
+	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_FRAMESIZE, ::AMFConstructSize(pHMD->m_HMDData.ScreenWidth, pHMD->m_HMDData.ScreenHeight));
+	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_FRAMERATE, ::AMFConstructRate((amf_uint32)pHMD->m_HMDData.Frequency, 1));
+	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_PROFILE, AMF_VIDEO_ENCODER_PROFILE_BASELINE);
+	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD, AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_CBR);
+	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_PROFILE_LEVEL, 51);
+
+	res = m_pEncoder->Init(amf::AMF_SURFACE_RGBA, pHMD->m_HMDData.ScreenWidth, pHMD->m_HMDData.ScreenHeight);
+	EXIT_AND_DESTROY;
+
+	res = m_pEncderContext->AllocSurface(amf::AMF_MEMORY_DX11, amf::AMF_SURFACE_RGBA, pHMD->m_HMDData.ScreenWidth, pHMD->m_HMDData.ScreenHeight, &m_pSurfaceFrame);
+	EXIT_AND_DESTROY;
+
+	res = m_pEncderContext->CreateSurfaceFromDX11Native(m_pRTTex, &m_pSurfaceTex, this);
+	EXIT_AND_DESTROY;
+
+	return true;
+}
+
+void DirectModeStreamer::DestroyEncoder()
+{
+
+	//if (m_pSurfaceIn)
+	//	m_pSurfaceIn->Release();
+	m_pSurfaceFrame = nullptr;
+	m_pSurfaceTex = nullptr;
+
+	if (m_pEncoder)
+		m_pEncoder->Terminate();
+	m_pEncoder = nullptr;
+
+	if (m_pEncderContext)
+		m_pEncderContext->Terminate();
+	m_pEncderContext = nullptr;
+#ifdef _DEBUG
+	amf::AMFTraceEnableWriter(AMF_TRACE_WRITER_DEBUG_OUTPUT, false);
+#endif //_DEBUG
+	amf_restore_timer_precision();
+	g_AMFFactory.Terminate();
+}
+
+
+/*
 #define EXIT_IF_FAILED_MFT if (FAILED(hr)) { DestroyMFT(); return false; }
 
 bool DirectModeStreamer::InitMFT()
@@ -1220,7 +1114,7 @@ bool DirectModeStreamer::InitMFT()
 	hr = m_pTransform->ProcessMessage(MFT_MESSAGE_SET_D3D_MANAGER, (ULONG_PTR)m_pManager);
 	EXIT_IF_FAILED_MFT;
 
-	fopen_s(&m_FileDump, "D:\\OUT\\xx.h264", "wb");
+	
 	
 
 	hr = m_pTransform->ProcessMessage(MFT_MESSAGE_COMMAND_FLUSH, 0); EXIT_IF_FAILED_MFT;
@@ -1251,6 +1145,7 @@ void DirectModeStreamer::DestroyMFT()
 	SAFE_RELEASE(m_pEventGenerator);
 	SAFE_RELEASE(m_pInputSample);
 	SAFE_RELEASE(m_pOutputSample);
+	fopen_s(&m_FileDump, "D:\\OUT\\xx.h264", "wb");
 	if (m_FileDump)
 		fclose(m_FileDump);
 	m_FileDump = nullptr;
@@ -1264,78 +1159,4 @@ IMFMediaEvent *DirectModeStreamer::GetEvent()
 		return pEvent;
 	return nullptr;
 }
-
-
-/*
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 */
-
-HRESULT CMFMediaBufferWrapper::QueryInterface(REFIID riid, void ** ppvObject)
-{
-	if (riid == __uuidof(IMFMediaBuffer))
-	{
-		*ppvObject = (void *)this;
-		return S_OK;
-	}
-	if (riid == __uuidof(IUnknown))
-	{
-		*ppvObject = (void *)(IUnknown*)this;
-		return S_OK;
-	}
-	return E_NOINTERFACE;
-}
-
-ULONG CMFMediaBufferWrapper::AddRef(void)
-{
-	return ++m_RefCount;
-}
-
-ULONG CMFMediaBufferWrapper::Release(void)
-{
-	m_RefCount--;
-	if (!m_RefCount)
-		delete this;
-	return m_RefCount;
-}
-
-HRESULT CMFMediaBufferWrapper::Lock(BYTE ** ppbBuffer, DWORD * pcbMaxLength, DWORD * pcbCurrentLength)
-{
-	return S_OK;
-}
-
-HRESULT CMFMediaBufferWrapper::Unlock(void)
-{
-	return S_OK;
-}
-
-HRESULT CMFMediaBufferWrapper::GetCurrentLength(DWORD * pcbCurrentLength)
-{
-	*pcbCurrentLength = m_CurrLength;
-	return S_OK;
-}
-
-HRESULT CMFMediaBufferWrapper::SetCurrentLength(DWORD cbCurrentLength)
-{
-	m_CurrLength = cbCurrentLength;
-	return S_OK;
-}
-
-HRESULT CMFMediaBufferWrapper::GetMaxLength(DWORD * pcbMaxLength)
-{
-	*pcbMaxLength = m_MaxLength;
-	return S_OK;
-}

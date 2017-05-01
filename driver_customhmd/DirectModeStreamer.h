@@ -7,13 +7,23 @@
 #include "TCPServer.h"
 
 
-#include <D2d1.h>
+//#include <D2d1.h>
 #include <D3D11_1.h>
 #include <DXGI1_2.h>
 #include <D3Dcompiler.h>
 #include <DirectXMath.h>
-#include <Codecapi.h>
-#include <Evr.h>
+//#include <Codecapi.h>
+//#include <Evr.h>
+
+
+#include "AMDEnc\public\common\AMFFactory.h"
+#include "AMDEnc\public\common\Thread.h"
+#include "AMDEnc\public\common\InterfaceImpl.h"
+#include "AMDEnc\public\include\components\VideoEncoderVCE.h"
+
+#ifdef _DEBUG
+#include "AMDEnc\public\common\TraceAdapter.h"
+#endif //_DEBUG
 
 using namespace vr;
 using namespace DirectX;
@@ -139,47 +149,41 @@ struct DirectModeStreamer;
 //	virtual ULONG Release(void) override;
 //};
 
-
-class CMFMediaBufferWrapper : public IMFMediaBuffer
-{
-private:
-	ULONG m_RefCount;
-	DWORD m_CurrLength;	
-	DWORD m_MaxLength;
-public:
-	CMFMediaBufferWrapper() : m_RefCount(1) {};
-	// Inherited via IMFMediaBuffer
-	virtual HRESULT QueryInterface(REFIID riid, void ** ppvObject) override;
-	virtual ULONG AddRef(void) override;
-	virtual ULONG Release(void) override;
-	virtual HRESULT Lock(BYTE ** ppbBuffer, DWORD * pcbMaxLength, DWORD * pcbCurrentLength) override;
-	virtual HRESULT Unlock(void) override;
-	virtual HRESULT GetCurrentLength(DWORD * pcbCurrentLength) override;
-	virtual HRESULT SetCurrentLength(DWORD cbCurrentLength) override;
-	virtual HRESULT GetMaxLength(DWORD * pcbMaxLength) override;
-};
-
-struct DirectModeStreamer
+struct DirectModeStreamer : public amf::AMFSurfaceObserver
 {
 	friend class CTrackedHMD;
 	CTrackedHMD *pHMD;
 public:
 
+	virtual void AMF_STD_CALL OnSurfaceDataRelease(amf::AMFSurface* pSurface) override
+	{
+
+	}
+
 	FILE *m_FileDump;
 
 	DirectModeStreamer()
 	{
+		m_pEncderContext = nullptr;
+		m_pEncoder = nullptr;
+		m_pSurfaceTex = nullptr;
+		m_pSurfaceFrame = nullptr;
+
+		m_FrameReady = false;
+
 		m_FileDump = nullptr;
 		//m_pMediaBuffer = nullptr;
 		m_pTexBuffer = nullptr;
+
+		/*
 		m_ManagerToken = 0;
 		m_pManager = nullptr;
-
 		m_pTexSync = nullptr;
 		m_pTransform = nullptr;
 		m_pOutputSample = nullptr;
 		m_pInputSample = nullptr;
 		m_pEventGenerator = nullptr;
+		*/
 
 		ZeroMemory(&Ep, sizeof(Ep));
 		//ZeroMemory(&m_Streamer, sizeof(m_Streamer));
@@ -213,6 +217,7 @@ public:
 		m_pConstantBuffer = nullptr;
 		m_pCWcullMode = nullptr;		
 
+
 	}
 
 	DWORD m_LastFrameTime, m_LastPacketReceive;
@@ -227,13 +232,12 @@ public:
 	unsigned short RemoteSequence;
 	//DirectStreamer m_Streamer;
 	int m_FrameCount;
+	bool m_FrameReady;
 
 	SharedTextureHandle_t m_SyncTexture;
 	ID3D11Texture2D *m_pSyncTexture;
 	ID3D11DeviceContext *m_pContext;
 	ID3D11Device *m_pDevice;
-
-	void ProcessEvent(IMFMediaEvent *pEvent, CTCPServer *pServer);
 
 	IDXGIKeyedMutex *m_pTexSync;
 	ID3D11Texture2D *m_pRTTex;
@@ -243,16 +247,6 @@ public:
 	ID3D11SamplerState *m_pSamplerState;
 	ID3D11Buffer *m_pConstantBuffer;
 	CbEyePos Ep;
-
-	//IMFMediaBuffer *m_pMediaBuffer;
-	UINT m_ManagerToken;
-	IMFDXGIDeviceManager *m_pManager;
-	IMFTransform *m_pTransform;
-	IMFMediaEventGenerator *m_pEventGenerator;
-	IMFSample *m_pInputSample;
-	IMFSample *m_pOutputSample;
-
-	
 
 	ID3D11Buffer *m_pSquareIndexBuffer;
 	ID3D11Buffer *m_pSquareVertBuffer;
@@ -273,15 +267,36 @@ public:
 	TextureLink m_TlLeft;
 	TextureLink m_TlRight;
 
+
+	amf::AMFContextPtr m_pEncderContext;
+	amf::AMFComponentPtr m_pEncoder;
+	amf::AMFSurfacePtr m_pSurfaceTex;
+	amf::AMFSurfacePtr m_pSurfaceFrame;
+
+	bool InitEncoder();
+	void DestroyEncoder();
+
+	/*
+	//IMFMediaBuffer *m_pMediaBuffer;
+	UINT m_ManagerToken;
+	IMFDXGIDeviceManager *m_pManager;
+	IMFTransform *m_pTransform;
+	IMFMediaEventGenerator *m_pEventGenerator;
+	IMFSample *m_pInputSample;
+	IMFSample *m_pOutputSample;
+
 	bool InitMFT();
 	void DestroyMFT();
 	IMFMediaEvent *GetEvent();
+	void ProcessEvent(IMFMediaEvent *pEvent, CTCPServer *pServer);
+	*/
+
 	void CombineEyes();
 	unsigned int static WINAPI RemoteDisplayThread(void *p);
 	void RunRemoteDisplay();
 	static void TcpPacketReceive(void *dst, const char *pData, int len);
 	void ProcessRemotePacket(USBPacket *pPacket);
-	int UpdateBuffer(DirectEyeData *pEyeData);
+	//int UpdateBuffer(DirectEyeData *pEyeData);
 	
 
 };

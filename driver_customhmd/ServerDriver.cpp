@@ -33,7 +33,7 @@ EVRInitError CServerDriver::Init(IVRDriverContext *pDriverContext) //IVRDriverLo
 	//	m_Align.v[2] = m_pSettings->GetFloat("driver_customhmd", "eoZ");
 	//}
 
-	
+	 
 	m_HMDAdded = true;
 	auto hmd = new CTrackedHMD("HMD", this);
 

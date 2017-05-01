@@ -183,6 +183,16 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\stm32\Common\usb.cpp" />
+    <ClCompile Include="AMDEnc\public\common\AMFFactory.cpp" />
+    <ClCompile Include="AMDEnc\public\common\AMFSTL.cpp" />
+    <ClCompile Include="AMDEnc\public\common\DataStreamFactory.cpp" />
+    <ClCompile Include="AMDEnc\public\common\DataStreamFile.cpp" />
+    <ClCompile Include="AMDEnc\public\common\DataStreamMemory.cpp" />
+    <ClCompile Include="AMDEnc\public\common\IOCapsImpl.cpp" />
+    <ClCompile Include="AMDEnc\public\common\PropertyStorageExImpl.cpp" />
+    <ClCompile Include="AMDEnc\public\common\Thread.cpp" />
+    <ClCompile Include="AMDEnc\public\common\TraceAdapter.cpp" />
+    <ClCompile Include="AMDEnc\public\common\Windows\ThreadWindows.cpp" />
     <ClCompile Include="capturedevice.cpp" />
     <ClCompile Include="memmem.c" />
     <ClCompile Include="DirectModeStreamer.cpp" />
@@ -201,6 +211,19 @@
   <ItemGroup>
     <ClInclude Include="..\..\OpenVR\headers\openvr_driver.h" />
     <ClInclude Include="..\stm32\Common\usb.h" />
+    <ClInclude Include="AMDEnc\public\common\AMFFactory.h" />
+    <ClInclude Include="AMDEnc\public\common\AMFSTL.h" />
+    <ClInclude Include="AMDEnc\public\common\ByteArray.h" />
+    <ClInclude Include="AMDEnc\public\common\DataStream.h" />
+    <ClInclude Include="AMDEnc\public\common\DataStreamFile.h" />
+    <ClInclude Include="AMDEnc\public\common\DataStreamMemory.h" />
+    <ClInclude Include="AMDEnc\public\common\InterfaceImpl.h" />
+    <ClInclude Include="AMDEnc\public\common\IOCapsImpl.h" />
+    <ClInclude Include="AMDEnc\public\common\ObservableImpl.h" />
+    <ClInclude Include="AMDEnc\public\common\PropertyStorageExImpl.h" />
+    <ClInclude Include="AMDEnc\public\common\PropertyStorageImpl.h" />
+    <ClInclude Include="AMDEnc\public\common\Thread.h" />
+    <ClInclude Include="AMDEnc\public\common\TraceAdapter.h" />
     <ClInclude Include="capturedevice.h" />
     <ClInclude Include="DirectModeStreamer.h" />
     <ClInclude Include="memmem.h" />
