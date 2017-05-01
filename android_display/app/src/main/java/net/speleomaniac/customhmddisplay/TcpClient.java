@@ -67,17 +67,21 @@ class TcpClient extends Thread {
     }
 
     void disconnect() {
-        isRunning  = false;
+        if (isInterrupted())
+            return;
+        interrupt();
+        //isRunning  = false;
         closeDriverSocket();
     }
 
-    boolean isRunning = false;
+    //boolean isRunning = false;
 
     @Override
     public synchronized void start() {
-        if (isRunning)
-            return;
-        isRunning = true;
+        if (isAlive()) return;
+        //if (isRunning)
+        //   return;
+        //isRunning = true;
         super.start();
     }
 
@@ -88,7 +92,7 @@ class TcpClient extends Thread {
         headerBuffer.order(ByteOrder.LITTLE_ENDIAN);
         byte[] buffer = new byte[1024 * 1024 * 10]; //10M
         byte[] outBuffer;
-        while (isRunning) {
+        while (!Thread.interrupted()) {
             try {
                 _reconnect = false;
                 LastPacketReceive = System.currentTimeMillis();
@@ -98,7 +102,7 @@ class TcpClient extends Thread {
                 output = driverSocket.getOutputStream();
                 IsConnected = true;
 
-                while (!_reconnect && IsConnected && driverSocket != null && isRunning) {
+                while (!Thread.interrupted() && !_reconnect && IsConnected && driverSocket != null) {
                     synchronized (socketLock) {
                         if (packetToSend != null) {
                             output.write(packetToSend.Buffer, 0, 32);
@@ -110,7 +114,7 @@ class TcpClient extends Thread {
                     int avail = 0;
                         avail = input.available();
                     if (avail > 4) {
-                        input.read(header);
+                        int read = input.read(header);
                         headerBuffer.rewind();
                         size = headerBuffer.getInt();
                     }
@@ -125,7 +129,7 @@ class TcpClient extends Thread {
 
                     int remain = size;
                     int pos = 0;
-                    while (isRunning && IsConnected && remain > 0) {
+                    while (!Thread.interrupted() && IsConnected && remain > 0) {
                         avail = 0;
                         if (input == null)
                             break;

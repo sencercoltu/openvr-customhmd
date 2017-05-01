@@ -100,7 +100,13 @@ void DirectModeStreamer::Init(CTrackedHMD *pHmd)
 
 	HRESULT hr = CoInitializeEx(nullptr, COINITBASE_MULTITHREADED);
 
+
+
 	pHMD = pHmd;
+
+	m_FrameTime = (1.0f / pHmd->m_HMDData.Frequency) * 1000.0f;
+
+
 	m_hBufferLock = CreateMutex(nullptr, FALSE, L"BufferLock");
 	m_hTextureMapLock = CreateMutex(nullptr, FALSE, L"TextureMapLock");
 
@@ -113,7 +119,7 @@ void DirectModeStreamer::Init(CTrackedHMD *pHmd)
 		nullptr,
 		D3D_DRIVER_TYPE_HARDWARE,
 		nullptr,
-		D3D11_CREATE_DEVICE_BGRA_SUPPORT | D3D11_CREATE_DEVICE_DEBUG | D3D11_CREATE_DEVICE_VIDEO_SUPPORT,
+		0, //D3D11_CREATE_DEVICE_BGRA_SUPPORT | D3D11_CREATE_DEVICE_DEBUG | D3D11_CREATE_DEVICE_VIDEO_SUPPORT,
 		levels,
 		ARRAYSIZE(levels),
 		D3D11_SDK_VERSION,
@@ -153,9 +159,6 @@ void DirectModeStreamer::Init(CTrackedHMD *pHmd)
 	hr = m_pDevice->CreateTexture2D(&textureDesc, nullptr, &pCpuTexture);
 	EXIT_IF_FAILED;
 
-	hr = pCpuTexture->QueryInterface(__uuidof(ID3D11Resource), (void **)&m_pTexBuffer);
-	pCpuTexture->Release();
-	EXIT_IF_FAILED;
 
 	//D3D11_RENDER_TARGET_VIEW_DESC renderTargetViewDesc;
 	//ZeroMemory(&renderTargetViewDesc, sizeof(renderTargetViewDesc));
@@ -165,8 +168,6 @@ void DirectModeStreamer::Init(CTrackedHMD *pHmd)
 
 	hr = m_pDevice->CreateRenderTargetView(m_pRTTex, /*&renderTargetViewDesc*/ nullptr, &m_pRTView);
 	EXIT_IF_FAILED;
-
-	m_pRTView->GetResource(&m_pRTRes);
 
 
 	//D3D11_BUFFER_DESC bufDesc = {};
@@ -365,6 +366,19 @@ void DirectModeStreamer::Init(CTrackedHMD *pHmd)
 	hr = m_pRTTex->QueryInterface(__uuidof(IDXGIKeyedMutex), (void **)&m_pTexSync);
 	EXIT_IF_FAILED;
 
+	UINT stride = sizeof(Vertex);
+	UINT offset = 0;
+	m_pContext->VSSetConstantBuffers(0, 1, &m_pConstantBuffer);
+	m_pContext->IASetIndexBuffer(m_pSquareIndexBuffer, DXGI_FORMAT_R32_UINT, 0);
+	m_pContext->IASetVertexBuffers(0, 1, &m_pSquareVertBuffer, &stride, &offset);
+	m_pContext->IASetInputLayout(m_pVertLayout);
+	m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	m_pContext->VSSetShader(m_pVS, 0, 0);
+	m_pContext->PSSetShader(m_pPS, 0, 0);
+	m_pContext->PSSetSamplers(0, 1, &m_pSamplerState);
+	m_pContext->RSSetState(m_pCWcullMode);
+
+
 	m_hDisplayThread = reinterpret_cast<HANDLE>(_beginthreadex(nullptr, 0, RemoteDisplayThread, this, CREATE_SUSPENDED, nullptr));
 	if (m_hDisplayThread)
 	{
@@ -385,14 +399,12 @@ void DirectModeStreamer::Destroy()
 	SAFE_CLOSE(m_hTextureMapLock);
 	SAFE_CLOSE(m_hBufferLock);
 
-	SAFE_RELEASE(m_pRTRes);		
 	SAFE_RELEASE(m_pRTView);
 	SAFE_RELEASE(m_pRTTex);
 	SAFE_RELEASE(m_pTexSync);
 
 	//SAFE_RELEASE(m_pMediaBuffer);
 
-	SAFE_RELEASE(m_pTexBuffer);
 	SAFE_RELEASE(m_pSquareIndexBuffer);
 	SAFE_RELEASE(m_pSquareVertBuffer);
 	SAFE_RELEASE(m_pVS);
@@ -415,39 +427,15 @@ void DirectModeStreamer::Destroy()
 void DirectModeStreamer::CombineEyes()
 {
 	if (!m_FrameTime || !m_pTexSync) return;
-	ID3D11ShaderResourceView *pEmptyTexture[1] = { nullptr };
-	DWORD now = GetTickCount();
+	DWORD now = GetTickCount(); //limit framerate to display
 	if (now - m_LastFrameTime < m_FrameTime)
 		return;
 	m_LastFrameTime = now;
 
-
-
-	if (SUCCEEDED(m_pTexSync->AcquireSync(0, 10)))
+	ID3D11ShaderResourceView *pEmptyTexture[1] = { nullptr };
+	if (SUCCEEDED(m_pTexSync->AcquireSync(0, 100)))
 	{
-
-		float bgColor[4] = { (0.0f, 0.0f, 0.0f, 0.0f) };
-		m_pContext->ClearRenderTargetView(m_pRTView, bgColor);
-
-		UINT stride = sizeof(Vertex);
-		UINT offset = 0;
-
-		//if (m_TlLeft.pData && m_TlLeft.pData->pGPUTexture) D3DX11SaveTextureToFile(m_pContext, m_TlLeft.pData->pGPUTexture, D3DX11_IFF_JPG, L"D:\\OUT\\IMG\\file-left.jpg");
-		//if (m_TlRight.pData && m_TlRight.pData->pGPUTexture) D3DX11SaveTextureToFile(m_pContext, m_TlRight.pData->pGPUTexture, D3DX11_IFF_JPG, L"D:\\OUT\\IMG\\file-right.jpg");
-
-
 		m_pContext->OMSetRenderTargets(1, &m_pRTView, nullptr);
-
-		m_pContext->VSSetConstantBuffers(0, 1, &m_pConstantBuffer);
-
-		m_pContext->IASetIndexBuffer(m_pSquareIndexBuffer, DXGI_FORMAT_R32_UINT, 0);
-		m_pContext->IASetVertexBuffers(0, 1, &m_pSquareVertBuffer, &stride, &offset);
-		m_pContext->IASetInputLayout(m_pVertLayout);
-		m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		m_pContext->VSSetShader(m_pVS, 0, 0);
-		m_pContext->PSSetShader(m_pPS, 0, 0);
-		m_pContext->PSSetSamplers(0, 1, &m_pSamplerState);
-		m_pContext->RSSetState(m_pCWcullMode);
 
 		//draw left texture to combined texture
 		if (m_TlLeft.pData)
@@ -477,14 +465,15 @@ void DirectModeStreamer::CombineEyes()
 		m_pRTTex->QueryInterface(__uuidof(ID3D11Resource), (void**)&pTexRes);
 		if (!pTexRes)
 			return;
-
 		D3DX11SaveTextureToFile(m_pContext, pTexRes, D3DX11_IFF_JPG, L"D:\\OUT\\IMG\\file.jpg");
-
 		pTexRes->Release();
 #endif //ENABLE_COMBINED_SS
+
 		m_FrameReady = true;
+		//OutputDebugString(L"Combine\n");
 		m_pTexSync->ReleaseSync(0);		
 	}
+	
 }
 
 
@@ -510,7 +499,7 @@ void DirectModeStreamer::RunRemoteDisplay()
 	//InitMFT();
 	InitEncoder();
 #ifdef _DEBUG
-	fopen_s(&m_FileDump, "D:\\OUT\\xx.h264", "wb");
+	//fopen_s(&m_FileDump, "D:\\OUT\\xx.h264", "wb");
 #endif //_DEBUG
 
 	InfoPacket infoPacket = {};
@@ -522,14 +511,14 @@ void DirectModeStreamer::RunRemoteDisplay()
 	infoPacket.Height = pHMD->m_HMDData.ScreenHeight;
 
 	unsigned char *pFrameBuffer = (unsigned char *) malloc(8192*1024);	
-
+	int counter = 0;
 	//CMFTEventReceiver *pEventReceiver = nullptr;
 	//if (m_pEventGenerator)
 	//{
 	//	pEventReceiver = new CMFTEventReceiver(this);
 	//	hr = m_pEventGenerator->BeginGetEvent(pEventReceiver, pEventReceiver);
 	//}
-
+	//wchar_t szDebug[256];
 	FILE *fp = nullptr;
 	//fopen_s(&fp, "D:\\test.h264", "wb");	
 	while (m_IsRunning)
@@ -559,33 +548,34 @@ void DirectModeStreamer::RunRemoteDisplay()
 
 				if (pServer->IsReady() && m_FrameReady)
 				{	
-					
 					AMF_RESULT res;
-					amf_pts start_time = amf_high_precision_clock();
-					m_pSurfaceFrame->SetProperty(L"StartTimeProperty", start_time);
-					if (SUCCEEDED(m_pTexSync->AcquireSync(0, 10)))
-					{
-						m_FrameReady = false;						
-						res = m_pSurfaceTex->CopySurfaceRegion(m_pSurfaceFrame, 0, 0, 0, 0, pHMD->m_HMDData.ScreenWidth, pHMD->m_HMDData.ScreenHeight);
-						res = m_pEncoder->SubmitInput(m_pSurfaceFrame);
+					ULONGLONG start_time = GetTickCount64();
+					if (SUCCEEDED(m_pTexSync->AcquireSync(0, 100)))
+					{						
+						res = m_pEncoder->SubmitInput(m_pSurfaceTex);						
+						m_FrameReady = false;
 						m_pTexSync->ReleaseSync(0);
 					}
-					
+					//res = m_pEncoder->Drain();
 					amf::AMFDataPtr data;
 					while (true)
-					{
+					{						
 						res = m_pEncoder->QueryOutput(&data);
-						if (data == nullptr)
+						if (res != AMF_OK || data == nullptr)
 							break;						
 						amf::AMFBufferPtr buffer(data);
 						unsigned char *pData = (unsigned char *)buffer->GetNative();						
 						int len = (int)buffer->GetSize();
-						memcpy(pFrameBuffer, pData, len);						
-						pServer->SendBuffer((const char *)&len, sizeof(int));
-						pServer->SendBuffer((const char *)pFrameBuffer, len);
-						if (m_FileDump) fwrite(pFrameBuffer, 1, len, m_FileDump);
+						*((int *)pFrameBuffer) = len;
+						memcpy(&pFrameBuffer[4], pData, len);												
+						pServer->SendBuffer((const char *)pFrameBuffer, len + 4);
+						if (m_FileDump) fwrite(pFrameBuffer, 1, len, m_FileDump);						
 					}
+					counter++;
 					
+					//wsprintf(szDebug, L"Elapsed %d: %ull\n", counter, GetTickCount64() - start_time);
+					//OutputDebugString(szDebug);
+					OutputDebugString(L"Sent\n");
 					//add raw frame to encoder and send encoded 
 					//auto pEvent = GetEvent();
 					//if (pEvent)
@@ -828,9 +818,9 @@ bool DirectModeStreamer::InitEncoder()
 		return false;
 	
 	amf_increase_timer_precision();
-#ifdef _DEBUG
-	amf::AMFTraceEnableWriter(AMF_TRACE_WRITER_DEBUG_OUTPUT, true);
-#endif //_DEBUG
+//#ifdef _DEBUG
+//	amf::AMFTraceEnableWriter(AMF_TRACE_WRITER_DEBUG_OUTPUT, true);
+//#endif //_DEBUG
 
 	res = g_AMFFactory.GetFactory()->CreateContext(&m_pEncderContext);
 	EXIT_AND_DESTROY;
@@ -844,17 +834,19 @@ bool DirectModeStreamer::InitEncoder()
 	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_USAGE, AMF_VIDEO_ENCODER_USAGE_ULTRA_LOW_LATENCY);
 	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_B_PIC_PATTERN, 0);
 	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_QUALITY_PRESET, AMF_VIDEO_ENCODER_QUALITY_PRESET_SPEED);
-	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_TARGET_BITRATE, 1500000);
+	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_TARGET_BITRATE, 3000000);
 	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_FRAMESIZE, ::AMFConstructSize(pHMD->m_HMDData.ScreenWidth, pHMD->m_HMDData.ScreenHeight));
-	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_FRAMERATE, ::AMFConstructRate((amf_uint32)pHMD->m_HMDData.Frequency, 1));
+	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_FRAMERATE, ::AMFConstructRate((amf_uint32)1 /*pHMD->m_HMDData.Frequency*/, 1));
 	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_PROFILE, AMF_VIDEO_ENCODER_PROFILE_BASELINE);
-	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD, AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_CBR);
-	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_PROFILE_LEVEL, 51);
+	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD, AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_CBR);
+	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_SCANTYPE, AMF_VIDEO_ENCODER_SCANTYPE_PROGRESSIVE);
+	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_MAX_NUM_REFRAMES, 0);
+	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_PROFILE_LEVEL, 51);
+	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_B_REFERENCE_ENABLE, false);
+	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_SLICES_PER_FRAME, 4);
+	
 
 	res = m_pEncoder->Init(amf::AMF_SURFACE_RGBA, pHMD->m_HMDData.ScreenWidth, pHMD->m_HMDData.ScreenHeight);
-	EXIT_AND_DESTROY;
-
-	res = m_pEncderContext->AllocSurface(amf::AMF_MEMORY_DX11, amf::AMF_SURFACE_RGBA, pHMD->m_HMDData.ScreenWidth, pHMD->m_HMDData.ScreenHeight, &m_pSurfaceFrame);
 	EXIT_AND_DESTROY;
 
 	res = m_pEncderContext->CreateSurfaceFromDX11Native(m_pRTTex, &m_pSurfaceTex, this);
@@ -868,7 +860,6 @@ void DirectModeStreamer::DestroyEncoder()
 
 	//if (m_pSurfaceIn)
 	//	m_pSurfaceIn->Release();
-	m_pSurfaceFrame = nullptr;
 	m_pSurfaceTex = nullptr;
 
 	if (m_pEncoder)
@@ -878,9 +869,9 @@ void DirectModeStreamer::DestroyEncoder()
 	if (m_pEncderContext)
 		m_pEncderContext->Terminate();
 	m_pEncderContext = nullptr;
-#ifdef _DEBUG
-	amf::AMFTraceEnableWriter(AMF_TRACE_WRITER_DEBUG_OUTPUT, false);
-#endif //_DEBUG
+//#ifdef _DEBUG
+//	amf::AMFTraceEnableWriter(AMF_TRACE_WRITER_DEBUG_OUTPUT, false);
+//#endif //_DEBUG
 	amf_restore_timer_precision();
 	g_AMFFactory.Terminate();
 }

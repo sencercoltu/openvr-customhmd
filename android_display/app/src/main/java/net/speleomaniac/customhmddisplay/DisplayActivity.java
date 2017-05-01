@@ -9,6 +9,7 @@ import android.hardware.SensorManager;
 import android.media.MediaCodec;
 import android.media.MediaFormat;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -22,7 +23,7 @@ public class DisplayActivity
         extends Activity
         implements SurfaceHolder.Callback,
                    TcpClient.PacketReceiveListener,
-                    SensorEventListener {
+                   SensorEventListener {
 
     private TcpClient tcpClient = null;
     private MediaCodec codec;
@@ -66,84 +67,6 @@ public class DisplayActivity
     public void surfaceDestroyed(SurfaceHolder holder) {
     }
 
-
-    private byte[] InfoPacket = new byte[4 + 4 + 4]; //magic width height
-    private final String CodecName = "video/avc"; //"video/x-vnd.on2.vp8"; //"video/avc"
-    private int State = 0;
-    @Override
-    public void onPacketReceived(byte[] frameData, int len) {
-        try {
-
-            if (surface == null || tcpClient == null || !tcpClient.IsConnected || frameData == null)
-            {
-                State = 0;
-                return;
-            }
-
-            switch(State)
-            {
-                case 0: {
-                    if (len == 12 && frameData[0] == 'H' && frameData[1] == 'M' && frameData[2] == 'D' && frameData[3] == 'D') {
-
-                        if (codec != null ) {
-                            codec.flush();
-                            codec.stop();
-                            codec.release();
-                            codec = null;
-                        }
-
-                        ByteBuffer bb = ByteBuffer.wrap(frameData);
-                        bb.order(ByteOrder.LITTLE_ENDIAN);
-                        int magic = bb.getInt();
-                        int width = bb.getInt();
-                        int height = bb.getInt();
-
-                        if (width > 0 && height > 0) {
-                                codec = MediaCodec.createDecoderByType(CodecName);
-                                MediaFormat format = MediaFormat.createVideoFormat(CodecName, width, height);
-                                format.setInteger(MediaFormat.KEY_MAX_WIDTH, width);
-                                format.setInteger(MediaFormat.KEY_MAX_HEIGHT, height);
-                                codec.configure(format, surface, null, 0);
-                                codec.start();
-                            State = 1;
-                        }
-                    }
-                    else {
-                        tcpClient.reconnect();
-                    }
-
-                }
-                break;
-                case 1: {
-                    int inIndex = codec.dequeueInputBuffer(10000);
-                    if (inIndex >= 0) {
-                        ByteBuffer inputBuffer = codec.getInputBuffer(inIndex);
-                        inputBuffer.clear();
-                        inputBuffer.put(frameData, 0, len);
-                        codec.queueInputBuffer(inIndex, 0, len, 1, 0);
-                    }
-
-                    MediaCodec.BufferInfo buffInfo = new MediaCodec.BufferInfo();
-                    int outIndex = codec.dequeueOutputBuffer(buffInfo, 10000);
-
-                    switch (outIndex) {
-                        case MediaCodec.INFO_OUTPUT_FORMAT_CHANGED:
-                            break;
-                        case MediaCodec.INFO_TRY_AGAIN_LATER:
-                            break;
-                        case MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED:
-                            break;
-                        default:
-                            codec.releaseOutputBuffer(outIndex, true);
-                            break;
-                    }
-                    break;
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 
     //Quaternion rotate = new Quaternion(1, 0, 0, 0).rotateByAngleX(0);
     @Override
@@ -190,13 +113,103 @@ public class DisplayActivity
     protected void onResume() {
         super.onResume();
         if (tcpClient == null) {
-            tcpClient = new TcpClient(this, "127.0.0.1", 1974);
-            //tcpClient = new TcpClient(this, "192.168.0.10", 1974);
+            //tcpClient = new TcpClient(this, "127.0.0.1", 1974);
+            tcpClient = new TcpClient(this, "192.168.0.10", 1974);
             tcpClient.start();
         }
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
-        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR), SensorManager.SENSOR_DELAY_FASTEST);
+        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR), SensorManager.SENSOR_DELAY_GAME);
     }
 
+    private byte[] InfoPacket = new byte[4 + 4 + 4]; //magic width height
+    private final String CodecName = "video/avc"; //"video/x-vnd.on2.vp8"; //"video/avc"
+    private int State = 0;
+    private Thread OutputRunner;
+
+    @Override
+    public void onPacketReceived(byte[] frameData, int len) {
+        try {
+            if (surface == null || tcpClient == null || !tcpClient.IsConnected || frameData == null)
+            {
+                State = 0;
+                return;
+            }
+
+            switch(State)
+            {
+                case 0: {
+                    if (len == 12 && frameData[0] == 'H' && frameData[1] == 'M' && frameData[2] == 'D' && frameData[3] == 'D') {
+                        if (OutputRunner != null) {
+                            OutputRunner.interrupt();
+                            OutputRunner.wait();
+                            OutputRunner = null;
+                        }
+                        if (codec != null ) {
+                            codec.flush();
+                            codec.stop();
+                            codec.release();
+                            codec = null;
+                        }
+
+                        ByteBuffer bb = ByteBuffer.wrap(frameData);
+                        bb.order(ByteOrder.LITTLE_ENDIAN);
+                        int magic = bb.getInt();
+                        int width = bb.getInt();
+                        int height = bb.getInt();
+
+                        if (width > 0 && height > 0) {
+                            codec = MediaCodec.createDecoderByType(CodecName);
+                            MediaFormat format = MediaFormat.createVideoFormat(CodecName, width, height);
+                            format.setInteger(MediaFormat.KEY_MAX_WIDTH, width);
+                            format.setInteger(MediaFormat.KEY_MAX_HEIGHT, height);
+                            format.setInteger(MediaFormat.KEY_OPERATING_RATE, Short.MAX_VALUE);
+                            codec.configure(format, surface, null, 0);
+                            codec.start();
+                            State = 1;
+                            OutputRunner = new Thread () {
+                                @Override
+                                public void run() {
+                                    MediaCodec.BufferInfo buffInfo = new MediaCodec.BufferInfo();
+                                    while (!Thread.interrupted()) {
+                                        int outIndex = codec.dequeueOutputBuffer(buffInfo, 100);
+                                        switch (outIndex) {
+                                            case MediaCodec.INFO_OUTPUT_FORMAT_CHANGED:
+                                                break;
+                                            case MediaCodec.INFO_TRY_AGAIN_LATER:
+                                                break;
+                                            case MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED:
+                                                break;
+                                            default:
+                                                codec.releaseOutputBuffer(outIndex, true);
+                                                break;
+                                        }
+                                    }
+                                }
+                            };
+                            OutputRunner.start();
+                        }
+                    }
+                    else {
+                        tcpClient.reconnect();
+                    }
+                }
+                break;
+                case 1: {
+                    int inIndex = codec.dequeueInputBuffer(100000);
+                    if (inIndex >= 0) {
+                        ByteBuffer inputBuffer = codec.getInputBuffer(inIndex);
+                        if (inputBuffer != null) {
+                            inputBuffer.clear();
+                            inputBuffer.put(frameData, 0, len);
+                            codec.queueInputBuffer(inIndex, 0, len, 1, 0);
+                        }
+                    }
+                    break;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
 }

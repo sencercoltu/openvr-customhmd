@@ -167,13 +167,10 @@ public:
 		m_pEncderContext = nullptr;
 		m_pEncoder = nullptr;
 		m_pSurfaceTex = nullptr;
-		m_pSurfaceFrame = nullptr;
 
 		m_FrameReady = false;
 
 		m_FileDump = nullptr;
-		//m_pMediaBuffer = nullptr;
-		m_pTexBuffer = nullptr;
 
 		/*
 		m_ManagerToken = 0;
@@ -205,7 +202,6 @@ public:
 
 		m_pRTView = nullptr;
 		m_pRTTex = nullptr;
-		m_pRTRes = nullptr;
 		m_pSquareIndexBuffer = nullptr;
 		m_pSquareVertBuffer = nullptr;
 		m_pVS = nullptr;
@@ -217,7 +213,7 @@ public:
 		m_pConstantBuffer = nullptr;
 		m_pCWcullMode = nullptr;		
 
-
+		m_FrameTime = (1.0f / 30.0f) * 1000.0f;
 	}
 
 	DWORD m_LastFrameTime, m_LastPacketReceive;
@@ -229,8 +225,7 @@ public:
 	HANDLE m_hDisplayThread;
 	int m_DisplayState;
 	bool m_IsRunning;
-	unsigned short RemoteSequence;
-	//DirectStreamer m_Streamer;
+	unsigned short RemoteSequence;	
 	int m_FrameCount;
 	bool m_FrameReady;
 
@@ -241,9 +236,7 @@ public:
 
 	IDXGIKeyedMutex *m_pTexSync;
 	ID3D11Texture2D *m_pRTTex;
-	ID3D11Resource *m_pTexBuffer;
 	ID3D11RenderTargetView *m_pRTView;
-	ID3D11Resource *m_pRTRes;
 	ID3D11SamplerState *m_pSamplerState;
 	ID3D11Buffer *m_pConstantBuffer;
 	CbEyePos Ep;
@@ -271,7 +264,6 @@ public:
 	amf::AMFContextPtr m_pEncderContext;
 	amf::AMFComponentPtr m_pEncoder;
 	amf::AMFSurfacePtr m_pSurfaceTex;
-	amf::AMFSurfacePtr m_pSurfaceFrame;
 
 	bool InitEncoder();
 	void DestroyEncoder();

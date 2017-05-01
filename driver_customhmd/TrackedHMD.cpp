@@ -710,8 +710,10 @@ void CTrackedHMD::Present(vr::SharedTextureHandle_t syncTexture)
 			m_DMS.m_pDevice->OpenSharedResource((HANDLE)m_DMS.m_SyncTexture, __uuidof(ID3D11Texture2D), (void **)&m_DMS.m_pSyncTexture);
 	}
 
+	
 	if (!syncTexture)
 	{
+		//OutputDebugString(L"PresentNoSync\n");
 		m_DMS.CombineEyes();
 		return;
 	}	
@@ -719,8 +721,9 @@ void CTrackedHMD::Present(vr::SharedTextureHandle_t syncTexture)
 	IDXGIKeyedMutex *pSyncMutex = nullptr;
 	if (m_DMS.m_pSyncTexture != nullptr && SUCCEEDED(m_DMS.m_pSyncTexture->QueryInterface(__uuidof(IDXGIKeyedMutex), (void **)&pSyncMutex)))
 	{
-		if (SUCCEEDED(pSyncMutex->AcquireSync(0, 10)))
+		if (SUCCEEDED(pSyncMutex->AcquireSync(0, 100)))
 		{			
+			//OutputDebugString(L"PresentSync\n");
 			m_DMS.CombineEyes();
 			pSyncMutex->ReleaseSync(0);
 		}
