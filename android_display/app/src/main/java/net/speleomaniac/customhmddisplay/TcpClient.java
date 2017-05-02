@@ -70,6 +70,11 @@ class TcpClient extends Thread {
         if (isInterrupted())
             return;
         interrupt();
+        try {
+            join();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         //isRunning  = false;
         closeDriverSocket();
     }
@@ -113,7 +118,7 @@ class TcpClient extends Thread {
                     int size = 0;
                     int avail = 0;
                         avail = input.available();
-                    if (avail > 4) {
+                    if (avail >= 4) {
                         int read = input.read(header);
                         headerBuffer.rewind();
                         size = headerBuffer.getInt();

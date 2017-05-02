@@ -112,7 +112,7 @@ public:
 	{
 		m_pEncderContext = nullptr;
 		m_pEncoder = nullptr;
-		m_pSurfaceTex = nullptr;
+		m_TexIndex = -1;
 		m_FrameReady = false;
 		m_FileDump = nullptr;
 
@@ -127,7 +127,9 @@ public:
 		m_pEventGenerator = nullptr;
 		*/
 
-		m_pVirtualTexture = nullptr;
+		ZeroMemory(&m_TextureCache, sizeof(m_TextureCache));
+
+		//m_pVirtualTexture = nullptr;
 		m_hDisplayThread = nullptr;
 		m_IsRunning = false;
 		m_DisplayState = 0;
@@ -138,6 +140,8 @@ public:
 		m_pContext = nullptr;
 		m_pDevice = nullptr;
 		
+		m_EndcodeElapsed = 0;
+
 		//DirectMode disabled
 		//No need to render both eyes on one surface anymore
 		/*
@@ -168,11 +172,13 @@ public:
 	DWORD m_LastPacketReceive;
 	float m_FrameTime;
 
+	amf_pts m_EndcodeElapsed;
+
 	void Init(CTrackedHMD *pHmd);
 	void Destroy();
 	void TextureFromHandle(SharedTextureHandle_t handle);
 
-	ID3D11Texture2D *m_pVirtualTexture;
+	
 	HANDLE m_hDisplayThread;
 	int m_DisplayState;
 	bool m_IsRunning;
@@ -218,7 +224,17 @@ public:
 
 	amf::AMFContextPtr m_pEncderContext;
 	amf::AMFComponentPtr m_pEncoder;
-	amf::AMFSurfacePtr m_pSurfaceTex;
+	
+	struct TextureCache
+	{
+		vr::SharedTextureHandle_t m_hVirtualTexture;
+		ID3D11Texture2D *m_pVirtualTexture;
+		amf::AMFSurfacePtr m_pSurfaceTex;
+		IDXGIKeyedMutex *m_pTexSync;
+	};
+	int m_TexIndex;
+
+	TextureCache m_TextureCache[3];
 
 	bool InitEncoder();
 	void DestroyEncoder();

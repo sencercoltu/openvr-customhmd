@@ -15,6 +15,7 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.Window;
+import android.view.WindowManager;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -68,19 +69,20 @@ public class DisplayActivity
     }
 
 
-    //Quaternion rotate = new Quaternion(1, 0, 0, 0).rotateByAngleX(0);
+
+    float Q[] = new float[4];
     @Override
     public void onSensorChanged(SensorEvent event) {
         if (State == 0)
             return;
         if (event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
-            Quaternion q = new Quaternion(event.values[3], event.values[0], event.values[1], event.values[2]);
-            //q = q.multiply(rotate);
 
-            usbPacket.Rotation.w = q.w;
-            usbPacket.Rotation.x = q.x;
-            usbPacket.Rotation.y = q.y;
-            usbPacket.Rotation.z = q.z;
+            SensorManager.getQuaternionFromVector(Q, event.values);
+
+            usbPacket.Rotation.w = Q[0];
+            usbPacket.Rotation.x = Q[2];
+            usbPacket.Rotation.y = Q[1];
+            usbPacket.Rotation.z = Q[3];
             if (tcpClient != null && tcpClient.IsConnected) {
                 usbPacket.buildRotationPacket();
                 tcpClient.sendPacket(usbPacket);
@@ -98,13 +100,9 @@ public class DisplayActivity
         sensorManager.unregisterListener(this);
         if (tcpClient != null) {
             tcpClient.disconnect();
-            try {
-                tcpClient.join();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
             tcpClient = null;
         }
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
         super.onPause();
     }
@@ -117,12 +115,13 @@ public class DisplayActivity
             tcpClient = new TcpClient(this, "192.168.0.10", 1974);
             tcpClient.start();
         }
-        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
-        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR), SensorManager.SENSOR_DELAY_GAME);
+        //setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR), SensorManager.SENSOR_DELAY_FASTEST);
     }
 
     private byte[] InfoPacket = new byte[4 + 4 + 4]; //magic width height
-    private final String CodecName = "video/avc"; //"video/x-vnd.on2.vp8"; //"video/avc"
     private int State = 0;
     private Thread OutputRunner;
 
@@ -141,7 +140,7 @@ public class DisplayActivity
                     if (len == 12 && frameData[0] == 'H' && frameData[1] == 'M' && frameData[2] == 'D' && frameData[3] == 'D') {
                         if (OutputRunner != null) {
                             OutputRunner.interrupt();
-                            OutputRunner.wait();
+                            OutputRunner.join();
                             OutputRunner = null;
                         }
                         if (codec != null ) {
@@ -158,8 +157,9 @@ public class DisplayActivity
                         int height = bb.getInt();
 
                         if (width > 0 && height > 0) {
-                            codec = MediaCodec.createDecoderByType(CodecName);
-                            MediaFormat format = MediaFormat.createVideoFormat(CodecName, width, height);
+                            String codecName = "video/avc";
+                            codec = MediaCodec.createDecoderByType(codecName);
+                            MediaFormat format = MediaFormat.createVideoFormat(codecName, width, height);
                             format.setInteger(MediaFormat.KEY_MAX_WIDTH, width);
                             format.setInteger(MediaFormat.KEY_MAX_HEIGHT, height);
                             format.setInteger(MediaFormat.KEY_OPERATING_RATE, Short.MAX_VALUE);

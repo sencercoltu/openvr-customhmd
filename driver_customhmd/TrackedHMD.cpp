@@ -166,7 +166,8 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 					int width = atoi(value);
 					pos++;
 					char *h = pos;
-					pos = strchr(value, '@');
+					pos++;
+					pos = strchr(pos, '@');
 					if (pos)
 					{
 						pos[0] = 0;
@@ -788,13 +789,7 @@ void CTrackedHMD::Present(vr::SharedTextureHandle_t backbufferTextureHandle)
 		m_DMS.m_FrameReady = false;
 		return;
 	}
-	if (backbufferTextureHandle != m_HMDData.hVirtualTexture)
-	{
-		//changed		
-		m_DMS.m_FrameReady = false;
-		m_HMDData.hVirtualTexture = backbufferTextureHandle;				
-		m_DMS.TextureFromHandle(backbufferTextureHandle);
-	}
+	m_DMS.TextureFromHandle(backbufferTextureHandle);
 	m_DMS.m_FrameReady = true;
 }
 

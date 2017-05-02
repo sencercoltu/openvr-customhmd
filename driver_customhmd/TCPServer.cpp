@@ -55,6 +55,7 @@ void CTCPServer::Run()
 
 	int iResult;
 	char recvBuf[DEFAULT_BUFLEN];
+	int bufPos = 0;
 
 	ZeroMemory(&hints, sizeof(hints));
 	hints.ai_family = AF_INET;
@@ -122,6 +123,7 @@ void CTCPServer::Run()
 					m_DataToSend = nullptr;
 					m_IsConnected = true;
 					m_LastDataReceive = GetTickCount();
+					bufPos = 0;
 					break;
 				}
 			}
@@ -148,14 +150,21 @@ void CTCPServer::Run()
 			{
 				if (FD_ISSET(m_ClientSocket, &rd))
 				{
-					res = recv(m_ClientSocket, recvBuf, DEFAULT_BUFLEN, 0);
+					res = recv(m_ClientSocket, &recvBuf[bufPos], DEFAULT_BUFLEN - bufPos, 0);
 					if (res > 0) //callback 
 					{
-						if (pfPacketCallback)
-							pfPacketCallback(m_Dest, recvBuf, res);
-						m_LastDataReceive = GetTickCount();
+						bufPos += res;
+						if (bufPos == DEFAULT_BUFLEN)
+						{
+							if (pfPacketCallback)
+								pfPacketCallback(m_Dest, recvBuf, res);
+							m_LastDataReceive = GetTickCount();
+							bufPos = 0;
+						}
+						else if (bufPos > DEFAULT_BUFLEN)
+							break;
 					}
-					else if (res == 0)
+					else if (res == 0)					
 						break;
 					else if (WSAGetLastError() != WSAEWOULDBLOCK)
 						break;

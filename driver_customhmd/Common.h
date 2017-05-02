@@ -223,8 +223,7 @@ struct HMDData : TrackerData
 	float Frequency;
 	float AspectRatio;	
 	float SuperSample;		
-	USBDataCache LastState;		
-	SharedTextureHandle_t hVirtualTexture;
+	USBDataCache LastState;			
 	char DirectStreamURL[256];
 };
 

@@ -327,16 +327,40 @@ void DirectModeStreamer::Init(CTrackedHMD *pHmd)
 }
 
 void DirectModeStreamer::TextureFromHandle(SharedTextureHandle_t handle)
-{
-	m_pSurfaceTex = nullptr;
-	SAFE_RELEASE(m_pVirtualTexture);
-	HRESULT hr = m_pDevice->OpenSharedResource((HANDLE)pHMD->m_HMDData.hVirtualTexture, __uuidof(ID3D11Texture2D), (void **)&m_pVirtualTexture);
-	if (m_pVirtualTexture)
+{	
+	ID3D11Texture2D *pTexture;	
+	//assume 3 buffers
+	for (int i = 0; i < 3; i++)
 	{
-		AMF_RESULT res = m_pEncderContext->CreateSurfaceFromDX11Native(m_pVirtualTexture, &m_pSurfaceTex, this);
+		if (!m_TextureCache[i].m_hVirtualTexture)
+		{
+			//empty slot
+			HRESULT hr = m_pDevice->OpenSharedResource((HANDLE)handle, __uuidof(ID3D11Texture2D), (void **)&pTexture);
+			if (pTexture)
+			{
+				AMF_RESULT res = m_pEncderContext->CreateSurfaceFromDX11Native(pTexture, &m_TextureCache[i].m_pSurfaceTex, this);
+				if (res == AMF_OK)
+				{
+					if (SUCCEEDED(pTexture->QueryInterface(__uuidof(IDXGIKeyedMutex), (void **)&m_TextureCache[i].m_pTexSync)))
+					{
+						m_TextureCache[i].m_pVirtualTexture = pTexture;
+						m_TextureCache[i].m_hVirtualTexture = handle;
+						m_TexIndex = i;
+						return;
+					}
+				}
+				m_TextureCache[i].m_pSurfaceTex = nullptr;
+				pTexture->Release();
+				return;
+			}
+		}
+		else if (m_TextureCache[i].m_hVirtualTexture == handle)
+		{
+			m_TexIndex = i;
+			return;
+		}
 	}
 }
-
 
 void DirectModeStreamer::Destroy()
 {
@@ -345,7 +369,7 @@ void DirectModeStreamer::Destroy()
 	SAFE_THREADCLOSE(m_hDisplayThread);
 	SAFE_RELEASE(m_pContext);
 	SAFE_RELEASE(m_pDevice);
-	SAFE_RELEASE(m_pVirtualTexture);	
+	
 	//DirectMode disabled
 	/*
 	SAFE_RELEASE(m_pSyncTexture);
@@ -463,11 +487,13 @@ void DirectModeStreamer::RunRemoteDisplay()
 	infoPacket.Width = pHMD->m_HMDData.ScreenWidth;
 	infoPacket.Height = pHMD->m_HMDData.ScreenHeight;
 
+	amf_pts lastSPSPPS = 0;
+
 	unsigned char *pFrameBuffer = (unsigned char *) malloc(8192*1024);	
 	int counter = 0;
 	while (m_IsRunning)
 	{
-		Sleep(1);
+		Sleep(1); //failsafe
 		if (pServer->IsReady())
 		{
 			switch (m_DisplayState)
@@ -483,37 +509,59 @@ void DirectModeStreamer::RunRemoteDisplay()
 				continue;
 			case 2:
 				m_pEncoder->ReInit(pHMD->m_HMDData.ScreenWidth, pHMD->m_HMDData.ScreenHeight);
+				lastSPSPPS = amf_high_precision_clock();
 				m_DisplayState = pServer->IsConnected() ? m_DisplayState + 1 : 0;
 				continue;
 			case 3:
 				m_DisplayState = pServer->IsConnected() ? m_DisplayState : 0;
+				DWORD now = GetTickCount(); //limit framerate to display
+				if ((now - m_LastFrameTime) < m_FrameTime)
+					continue;			
 
-				if (pServer->IsReady() && m_FrameReady && m_pSurfaceTex)
-				{	
+				if (pServer->IsReady() && m_FrameReady && m_TexIndex > 0)
+				{						
 					AMF_RESULT res;
-					ULONGLONG start_time = GetTickCount64();
-					//if (SUCCEEDED(pHMD->m_HMDData.pVirtualTexture->AcquireSync(0, 100)))
-					//{						
-						res = m_pEncoder->SubmitInput(m_pSurfaceTex);						
+					amf_pts start_time;
+					
+					if (SUCCEEDED(m_TextureCache[m_TexIndex].m_pTexSync->AcquireSync(0, 10)))
+					{		
+						//if ((amf_high_precision_clock() - lastSPSPPS) / 10000000 >= 10)
+						//{
+						//	m_pEncoder->ReInit(pHMD->m_HMDData.ScreenWidth, pHMD->m_HMDData.ScreenHeight);
+						//	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_INSERT_SPS, true);
+						//	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_INSERT_PPS, true);
+						//	lastSPSPPS = amf_high_precision_clock();
+						//}
+						m_LastFrameTime = now;
+						start_time = amf_high_precision_clock();
+						res = m_pEncoder->SubmitInput(m_TextureCache[m_TexIndex].m_pSurfaceTex);
+						m_EndcodeElapsed +=  amf_high_precision_clock() - start_time;
 						m_FrameReady = false;
-					//	m_pTexSync->ReleaseSync(0);
-					//}
+						m_TextureCache[m_TexIndex].m_pTexSync->ReleaseSync(0);
+					}
 					
 					amf::AMFDataPtr data;
-					while (true)
-					{						
-						res = m_pEncoder->QueryOutput(&data);
-						if (res != AMF_OK || data == nullptr)
-							break;						
+					start_time = amf_high_precision_clock();
+					res = m_pEncoder->QueryOutput(&data);
+					m_EndcodeElapsed += amf_high_precision_clock() - start_time;
+					if (res == AMF_OK && data)
+					{
 						amf::AMFBufferPtr buffer(data);
-						unsigned char *pData = (unsigned char *)buffer->GetNative();						
+						unsigned char *pData = (unsigned char *)buffer->GetNative();
 						int len = (int)buffer->GetSize();
-						*((int *)pFrameBuffer) = len;
-						memcpy(&pFrameBuffer[4], pData, len);												
-						pServer->SendBuffer((const char *)pFrameBuffer, len + 4);
-						if (m_FileDump) fwrite(pFrameBuffer, 1, len, m_FileDump);						
+						if (len > 0)
+						{
+							*((int *)pFrameBuffer) = len;
+							memcpy(&pFrameBuffer[4], pData, len);
+							pServer->SendBuffer((const char *)pFrameBuffer, len + 4);
+							if (m_FileDump) fwrite(&pFrameBuffer[4], 1, len - 4, m_FileDump);
+						}
 					}
-					counter++;
+					else
+					{
+						counter++;
+					}
+					
 
 					//MFT disabled
 					//add raw frame to encoder and send encoded 
@@ -698,18 +746,26 @@ bool DirectModeStreamer::InitEncoder()
 	EXIT_AND_DESTROY;
 
 	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_USAGE, AMF_VIDEO_ENCODER_USAGE_ULTRA_LOW_LATENCY);
-	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_B_PIC_PATTERN, 0);
-	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_QUALITY_PRESET, AMF_VIDEO_ENCODER_QUALITY_PRESET_SPEED);
-	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_TARGET_BITRATE, 3000000);
+	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_B_PIC_PATTERN, 0);
+	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_QUALITY_PRESET, AMF_VIDEO_ENCODER_QUALITY_PRESET_SPEED);
+	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_TARGET_BITRATE, 1024 * 1024 * 20);
+	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_PEAK_BITRATE, 1024 * 1024 * 20);
 	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_FRAMESIZE, ::AMFConstructSize(pHMD->m_HMDData.ScreenWidth, pHMD->m_HMDData.ScreenHeight));
-	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_FRAMERATE, ::AMFConstructRate((amf_uint32)1 /*pHMD->m_HMDData.Frequency*/, 1));
-	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_PROFILE, AMF_VIDEO_ENCODER_PROFILE_BASELINE);
+	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_FRAMERATE, ::AMFConstructRate((amf_uint32)pHMD->m_HMDData.Frequency, 1));
+	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_PROFILE, AMF_VIDEO_ENCODER_PROFILE_BASELINE);
 	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD, AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_CBR);
-	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_SCANTYPE, AMF_VIDEO_ENCODER_SCANTYPE_PROGRESSIVE);
-	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_MAX_NUM_REFRAMES, 0);
-	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_PROFILE_LEVEL, 51);
-	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_B_REFERENCE_ENABLE, false);
+	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_SCANTYPE, AMF_VIDEO_ENCODER_SCANTYPE_INTERLACED);
+	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_MAX_NUM_REFRAMES, 0);
+	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_PROFILE_LEVEL, 42);
+	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_B_REFERENCE_ENABLE, false);
 	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_SLICES_PER_FRAME, 4);
+	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_VBV_BUFFER_SIZE, 1024 * 100);
+	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_MIN_QP, 5);
+	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_MAX_QP, 30);
+	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_QP_I, 50);
+	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_INITIAL_VBV_BUFFER_FULLNESS, 16);
+	
+	
 	
 
 	res = m_pEncoder->Init(amf::AMF_SURFACE_RGBA, pHMD->m_HMDData.ScreenWidth, pHMD->m_HMDData.ScreenHeight);
@@ -720,10 +776,16 @@ bool DirectModeStreamer::InitEncoder()
 
 void DirectModeStreamer::DestroyEncoder()
 {
-
 	//if (m_pSurfaceIn)
 	//	m_pSurfaceIn->Release();
-	m_pSurfaceTex = nullptr;
+	m_TexIndex = -1;
+	for (int i = 0; i < 3; i++)
+	{
+		m_TextureCache[i].m_pSurfaceTex = nullptr;
+		m_TextureCache[i].m_hVirtualTexture = 0;
+		SAFE_RELEASE(m_TextureCache[i].m_pVirtualTexture);
+		SAFE_RELEASE(m_TextureCache[i].m_pTexSync);
+	}
 
 	if (m_pEncoder)
 		m_pEncoder->Terminate();
