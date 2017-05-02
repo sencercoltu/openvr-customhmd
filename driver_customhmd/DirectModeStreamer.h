@@ -7,13 +7,13 @@
 #include "TCPServer.h"
 
 
-//#include <D2d1.h>
 #include <D3D11_1.h>
 #include <DXGI1_2.h>
-#include <D3Dcompiler.h>
-#include <DirectXMath.h>
-//#include <Codecapi.h>
-//#include <Evr.h>
+
+
+//#include <D3Dcompiler.h> //DirectMode disabled
+//#include <DirectXMath.h> //DirectMode disabled
+
 
 
 #include "AMDEnc\public\common\AMFFactory.h"
@@ -26,7 +26,8 @@
 #endif //_DEBUG
 
 using namespace vr;
-using namespace DirectX;
+
+//using namespace DirectX; //DirectMode disabled
 
 struct InfoPacket {
 	char H;
@@ -37,11 +38,12 @@ struct InfoPacket {
 	int Height;
 };
 
+//DirectMode disabled
+/*
 struct TextureData
 {
 	uint32_t Index;
 	EVREye Eye;
-
 	ID3D11Texture2D *pGPUTexture;
 	ID3D11ShaderResourceView *pShaderResourceView;
 	HANDLE hSharedHandle;
@@ -75,41 +77,7 @@ struct DirectEyeData
 	EVREye Eye;
 };
 
-//struct DirectStreamer
-//{
-//public:
-//
-//
-//	unsigned long BufferSize;
-//	unsigned char *pPixelBuffer[3];
-//
-//	int FPS = 50;
-//
-//	DWORD LastPacketReceive;
-//
-//	DirectEyeData Left;
-//	DirectEyeData Right;
-//
-//	USBRotationData RotData = {};
-//
-//	int Width;
-//	int Height;
-//	int FrameCount;
-//
-//private:	
-//
-//public:
-//	bool Init(CTrackedHMD *pHmd);
-//
-//	IMFMediaEvent *GetEvent();
-//
-//	void Destroy();
-//
-//};
-
-//Vertex Structure and Vertex Layout (Input Layout)//
-
-struct Vertex    //Overloaded Vertex Structure
+struct Vertex   
 {
 	Vertex() {}
 	Vertex(float x, float y, float z, float u, float v) : pos(x, y, z),  tex(u, v) {}
@@ -123,31 +91,9 @@ struct CbEyePos
 	CbEyePos() {}
 	XMMATRIX SHIFT;
 };
-
+*/
 
 struct DirectModeStreamer;
-
-//class CMFTEventReceiver : 
-//	public IMFAsyncCallback
-//{
-//private:
-//	ULONG _refCount;
-//	DirectModeStreamer *m_pStreamer;
-//public:
-//	CMFTEventReceiver(DirectModeStreamer *pStreamer)
-//	{
-//		m_pStreamer = pStreamer;
-//		_refCount = 1;			
-//	}
-//	virtual HRESULT STDMETHODCALLTYPE GetParameters( /* [out] */ __RPC__out DWORD *pdwFlags, /* [out] */ __RPC__out DWORD *pdwQueue) override;
-//	virtual HRESULT STDMETHODCALLTYPE Invoke( /* [in] */ __RPC__in_opt IMFAsyncResult *pAsyncResult) override;
-//	
-//	virtual HRESULT QueryInterface(REFIID riid, void ** ppvObject) override;
-//
-//	virtual ULONG AddRef(void) override;
-//
-//	virtual ULONG Release(void) override;
-//};
 
 struct DirectModeStreamer : public amf::AMFSurfaceObserver
 {
@@ -167,11 +113,10 @@ public:
 		m_pEncderContext = nullptr;
 		m_pEncoder = nullptr;
 		m_pSurfaceTex = nullptr;
-
 		m_FrameReady = false;
-
 		m_FileDump = nullptr;
 
+		//MFT disabled
 		/*
 		m_ManagerToken = 0;
 		m_pManager = nullptr;
@@ -182,24 +127,27 @@ public:
 		m_pEventGenerator = nullptr;
 		*/
 
-		ZeroMemory(&Ep, sizeof(Ep));
-		//ZeroMemory(&m_Streamer, sizeof(m_Streamer));
+		m_pVirtualTexture = nullptr;
 		m_hDisplayThread = nullptr;
 		m_IsRunning = false;
 		m_DisplayState = 0;
-		RemoteSequence = 0;		
+		m_RemoteSequence = 0;
 		m_FrameCount = 0;
-		m_SyncTexture = 0;
-		m_pSyncTexture = nullptr;
+		m_FeatureLevel = D3D_FEATURE_LEVEL::D3D_FEATURE_LEVEL_11_1;
+
 		m_pContext = nullptr;
 		m_pDevice = nullptr;
-		m_FeatureLevel = D3D_FEATURE_LEVEL::D3D_FEATURE_LEVEL_11_1;
-		m_hTextureMapLock = nullptr;
-		m_hBufferLock = nullptr;
-
+		
+		//DirectMode disabled
+		//No need to render both eyes on one surface anymore
+		/*
 		ZeroMemory(&m_TlLeft, sizeof(m_TlLeft));
 		ZeroMemory(&m_TlRight, sizeof(m_TlRight));
-
+		ZeroMemory(&Ep, sizeof(Ep));
+		m_SyncTexture = 0;
+		m_pSyncTexture = nullptr;
+		m_hTextureMapLock = nullptr;
+		m_hBufferLock = nullptr;
 		m_pRTView = nullptr;
 		m_pRTTex = nullptr;
 		m_pSquareIndexBuffer = nullptr;
@@ -212,27 +160,34 @@ public:
 		m_pSamplerState = nullptr;
 		m_pConstantBuffer = nullptr;
 		m_pCWcullMode = nullptr;		
-
+		*/
 		m_FrameTime = (1.0f / 30.0f) * 1000.0f;
 	}
 
-	DWORD m_LastFrameTime, m_LastPacketReceive;
+	DWORD m_LastFrameTime;
+	DWORD m_LastPacketReceive;
 	float m_FrameTime;
 
 	void Init(CTrackedHMD *pHmd);
 	void Destroy();
+	void TextureFromHandle(SharedTextureHandle_t handle);
 
+	ID3D11Texture2D *m_pVirtualTexture;
 	HANDLE m_hDisplayThread;
 	int m_DisplayState;
 	bool m_IsRunning;
-	unsigned short RemoteSequence;	
-	int m_FrameCount;
+	unsigned short m_RemoteSequence;	
+	uint64_t m_FrameCount;
 	bool m_FrameReady;
+	D3D_FEATURE_LEVEL m_FeatureLevel;
 
-	SharedTextureHandle_t m_SyncTexture;
-	ID3D11Texture2D *m_pSyncTexture;
 	ID3D11DeviceContext *m_pContext;
 	ID3D11Device *m_pDevice;
+
+	//DirectMode disabled
+	/*
+	SharedTextureHandle_t m_SyncTexture;
+	ID3D11Texture2D *m_pSyncTexture;
 
 	IDXGIKeyedMutex *m_pTexSync;
 	ID3D11Texture2D *m_pRTTex;
@@ -250,8 +205,6 @@ public:
 	ID3D11InputLayout* m_pVertLayout;
 	ID3D11RasterizerState* m_pCWcullMode;
 
-
-	D3D_FEATURE_LEVEL m_FeatureLevel;
 	HANDLE m_hTextureMapLock;
 	HANDLE m_hBufferLock;
 
@@ -260,6 +213,8 @@ public:
 	TextureLink m_TlLeft;
 	TextureLink m_TlRight;
 
+	void CombineEyes();
+	*/
 
 	amf::AMFContextPtr m_pEncderContext;
 	amf::AMFComponentPtr m_pEncoder;
@@ -268,6 +223,7 @@ public:
 	bool InitEncoder();
 	void DestroyEncoder();
 
+	//MFT disabled
 	/*
 	//IMFMediaBuffer *m_pMediaBuffer;
 	UINT m_ManagerToken;
@@ -283,7 +239,6 @@ public:
 	void ProcessEvent(IMFMediaEvent *pEvent, CTCPServer *pServer);
 	*/
 
-	void CombineEyes();
 	unsigned int static WINAPI RemoteDisplayThread(void *p);
 	void RunRemoteDisplay();
 	static void TcpPacketReceive(void *dst, const char *pData, int len);

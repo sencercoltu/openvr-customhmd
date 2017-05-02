@@ -9,6 +9,14 @@
 
 using namespace vr;
 
+enum ExposedComponent
+{
+	None = 0x0,
+	Display = 0x01,
+	Controller = 0x02,
+	Camera = 0x04
+};
+
 //#define SET_ERROR(a) if (pError) *pError = a;
 #define SET_PROP(t,p,e) m_pProperties->Set##t##Property(m_ulPropertyContainer, Prop_##p##_##t##, ##p####e##);
 
@@ -27,6 +35,8 @@ public:	//ITrackedDeviceServerDriver
 protected:
 	virtual void PacketReceived(USBPacket *pPacket, HmdVector3d_t *pCenterEuler, HmdVector3d_t *pRelativePos) = 0;
 	virtual void RunFrame(DWORD currTick) {}
+
+	DWORD m_ExposedComponents;
 
 	struct SendButtonData
 	{

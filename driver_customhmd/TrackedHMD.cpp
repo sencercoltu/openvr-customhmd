@@ -7,8 +7,31 @@
 
 CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTrackedDevice(displayName, pServer)
 {
+	m_ExposedComponents = ExposedComponent::Display;
+	m_DisplayMode = DisplayMode::SteamExtended; //initial is extended
+
 	vr::EVRSettingsError error;
 
+	if (m_pSettings)
+	{
+		char value[256] = {};
+		m_pSettings->GetString("driver_customhmd", "displayMode", value, sizeof(value));
+		if (!strcmp(value, "steam"))
+		{
+			//dont expose direct or virtual, decide later
+			
+		}
+		else if (!strcmp(value, "virtual"))
+		{
+			m_DisplayMode = DisplayMode::Virtual; //stream by vireual component
+		}
+		else if (!strcmp(value, "direct"))
+		{
+			m_DisplayMode = DisplayMode::DirectVirtual; //stream by directmode component
+		}
+	}
+
+	//too lazy to make icons, copied from vive
 	NamedIconPathDeviceOff = "{customhmd}headset_status_off.png";
 	NamedIconPathDeviceSearching = "{customhmd}headset_status_searching.gif";
 	NamedIconPathDeviceSearchingAlert = "{customhmd}headset_status_searching_alert.gif";
@@ -18,6 +41,7 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 	NamedIconPathDeviceStandby = "{customhmd}headset_status_standby.png";
 	NamedIconPathDeviceAlertLow = "{customhmd}headset_status_error.png";
 
+	//Properties
 	TrackingSystemName = "Custom HMD";
 	ModelNumber = "3CPO";
 	SerialNumber = "HMD-1244244";
@@ -32,8 +56,7 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 	DongleVersion = 1461100729;
 	ContainsProximitySensor = false;
 	DeviceClass = TrackedDeviceClass_HMD;
-	HasCamera = true;
-
+	HasCamera = false;
 	ReportsTimeSinceVSync = false;
 	SecondsFromVsyncToPhotons = 0.0f;
 	DisplayFrequency = 60.0f;
@@ -49,7 +72,7 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 	DisplayMCImageRight = "";
 	DisplayGCBlackClamp = 0.0f;
 	EdidVendorID = m_pSettings->GetInt32("driver_customhmd", "edid_vid", &error);
-	if (error != VRSettingsError_None) EdidVendorID = 0xD94D;
+	if (error != VRSettingsError_None) EdidVendorID = 0xD94D; //hardcoded for sony hmz-t2 if not set
 	EdidProductID = m_pSettings->GetInt32("driver_customhmd", "edid_pid", &error);
 	if (error != VRSettingsError_None) EdidProductID = 0xD602;
 	CameraToHeadTransform = HmdMatrix34_t();
@@ -78,11 +101,7 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 	DisplayMCImageWidth = 0;
 	DisplayMCImageHeight = 0;
 	DisplayMCImageNumChannels = 0;
-	DisplayMCImageData = nullptr;
-	UsesDriverDirectMode = false;
-
-	ZeroMemory(&m_Camera, sizeof(m_Camera));
-	m_Camera.hLock = CreateMutex(nullptr, FALSE, L"CameraLock");
+	DisplayMCImageData = nullptr;	
 
 	ZeroMemory(&m_HMDData, sizeof(m_HMDData));
 	m_HMDData.pHMDDriver = this;
@@ -90,6 +109,9 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 	//m_HMDData.IPDValue = 0.05f;
 	m_HMDData.PosX = 0;
 	m_HMDData.PosY = 0;
+
+
+	//initial setup for framepacked 128x720 3d signal, detection will be done later
 	m_HMDData.ScreenWidth = 1280;
 	m_HMDData.ScreenHeight = 1470;
 	m_HMDData.AspectRatio = ((float)(m_HMDData.ScreenHeight - 30) / 2.0f) / (float)m_HMDData.ScreenWidth;
@@ -97,10 +119,10 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 	m_HMDData.IsConnected = true;
 	m_HMDData.FakePackDetected = true;
 	m_HMDData.SuperSample = 1.0f;
+
 	m_HMDData.PoseUpdated = false;
 	m_HMDData.hPoseLock = CreateMutex(NULL, FALSE, L"PoseLock");
-
-	//wcscpy_s(m_HMDData.Port, L"\\\\.\\COM3");
+		
 	wcscpy_s(m_HMDData.Model, L"");
 
 	m_HMDData.Pose.willDriftInYaw = false;
@@ -115,24 +137,27 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 	m_HMDData.Pose.vecDriverFromHeadTranslation[2] = -0.15;
 	m_HMDData.Pose.poseTimeOffset = -0.032f;
 
-	if (m_pSettings)
+	if (m_pSettings && (m_DisplayMode == DisplayMode::DirectVirtual || m_DisplayMode == DisplayMode::Virtual))
 	{
+		//check for 
 		char value[256] = {};
-		m_pSettings->GetString("driver_customhmd", "directStream", value, sizeof(value));
+		m_pSettings->GetString("driver_customhmd", "virtualDisplay", value, sizeof(value));
 		if (value[0])
 		{
+			//TODO: add port instead fixed 1974			
 			strcpy_s(m_HMDData.DirectStreamURL, value);
 			m_HMDData.ScreenWidth = 1920;
 			m_HMDData.ScreenHeight = 1080;
-			m_HMDData.IsConnected = UsesDriverDirectMode = m_HMDData.DirectMode = true;
-			m_HMDData.FakePackDetected = false;
+			m_HMDData.IsConnected = true; //set initial as connected
+			m_HMDData.FakePackDetected = false; //
 			m_HMDData.Frequency = 60;
 			DriverLog("Using remote display %s...", value);
 
 			value[0] = 0;
-			m_pSettings->GetString("driver_customhmd", "directResolution", value, sizeof(value));
+			m_pSettings->GetString("driver_customhmd", "virtualResolution", value, sizeof(value));
 			if (value[0])
 			{
+				//use given resolution and refresh rate
 				auto pos = strchr(value, 'x');
 				if (pos)
 				{
@@ -155,21 +180,28 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 					{
 						m_HMDData.ScreenWidth = width;
 						m_HMDData.ScreenHeight = height;
+						m_HMDData.EyeWidth = m_HMDData.ScreenWidth / 2; 
 					}
 				}
 			}
 		}
 		else
 		{
-			bool steamVrDirectMode = m_pSettings->GetBool("steamvr", "directMode", &error);
-			if (error != VRSettingsError_None) steamVrDirectMode = false;
+			m_HMDData.DirectMode = m_pSettings->GetBool("steamvr", "directMode", &error);
+			if (error != VRSettingsError_None) m_HMDData.DirectMode = false;
+			
+			if (m_HMDData.DirectMode)
+				m_DisplayMode = DisplayMode::SteamDirect;
+
+
 			//we cannot put monitor into directmode (no API for mortals like us :( )
 			//so we cannot use direct mode if it's not enabled in steamvr settings. maybe set m_HMDData.DirectMode directly from steamvr's settings...
-			m_HMDData.DirectMode = m_pSettings->GetBool("driver_customhmd", "directMode", &error);
-			if (error != VRSettingsError_None) m_HMDData.DirectMode = false;
+			//m_HMDData.DirectMode = m_pSettings->GetBool("driver_customhmd", "directMode", &error);
+			//if (error != VRSettingsError_None) m_HMDData.DirectMode = false;
 
-			if (!m_HMDData.DirectMode)
+			if (m_DisplayMode = DisplayMode::SteamExtended)
 			{
+				//get monitor name for position and resolution detection, not needed for directMode
 				value[0] = 0;
 				m_pSettings->GetString("driver_customhmd", "monitor", value, sizeof(value));
 				if (value[0])
@@ -178,76 +210,85 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 					std::wstring wchar_value(basic_string.begin(), basic_string.end());
 					wcscpy_s(m_HMDData.Model, wchar_value.c_str());
 					DriverLog("Using model %S for detection...", m_HMDData.Model);
+					DriverLog("Enumerating monitors...");
+					EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, (LPARAM)&m_HMDData);
+					DriverLog("Monitor detection finished.");
 				}
+				//if any value is set tread as windowed, else fullscreen
+				error = VRSettingsError_None; int x = m_pSettings->GetInt32("driver_customhmd", "windowX", &error);
+				if (error == VRSettingsError_None) { m_HMDData.PosX = x; m_HMDData.Windowed = true; }
+				error = VRSettingsError_None; int y = m_pSettings->GetInt32("driver_customhmd", "windowY", &error);
+				if (error == VRSettingsError_None) { m_HMDData.PosY = x; m_HMDData.Windowed = true; }
+				error = VRSettingsError_None; int w = m_pSettings->GetInt32("driver_customhmd", "windowW", &error);
+				if (error == VRSettingsError_None) { m_HMDData.ScreenWidth = w; m_HMDData.Windowed = true; }
+				error = VRSettingsError_None; int h = m_pSettings->GetInt32("driver_customhmd", "windowH", &error);
+				if (error == VRSettingsError_None) { m_HMDData.ScreenHeight = h; m_HMDData.Windowed = true; }
 			}
+			else if (m_DisplayMode == DisplayMode::SteamDirect)
+			{
+				//check if monitor is connected (AMD card liquidVR non documented rev-engineered check)				
+				//may add NVIDIA detection and auto-whitelist later
+				m_HMDData.IsConnected = IsD2DConnected(EdidVendorID);
+			}
+
+			m_HMDData.EyeWidth = m_HMDData.ScreenWidth;
+			//detect SBS / FramePacked and set eyeWidth 
+			if (!m_HMDData.FakePackDetected)
+				m_HMDData.EyeWidth /= 2;		
+				
+
 		}
 		m_HMDData.SuperSample = m_pSettings->GetFloat("driver_customhmd", "supersample");
 	}
 
-	//m_HMDData.Logger = m_pLog;
+	DisplayFrequency = m_HMDData.Frequency; //last override
 
-	if (!m_HMDData.DirectMode)
-	{
-		DriverLog("HMD: Enumerating monitors...");
-		EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, (LPARAM)&m_HMDData);
-		DriverLog("HMD: Monitor detection finished.");
-		//if any value is set tread as windowed
-		error = VRSettingsError_None; int x = m_pSettings->GetInt32("driver_customhmd", "windowX", &error);
-		if (error == VRSettingsError_None) { m_HMDData.PosX = x; m_HMDData.Windowed = true; }
-		error = VRSettingsError_None; int y = m_pSettings->GetInt32("driver_customhmd", "windowY", &error);
-		if (error == VRSettingsError_None) { m_HMDData.PosY = x; m_HMDData.Windowed = true; }
-		error = VRSettingsError_None; int w = m_pSettings->GetInt32("driver_customhmd", "windowW", &error);
-		if (error == VRSettingsError_None) { m_HMDData.ScreenWidth = w; m_HMDData.Windowed = true; }
-		error = VRSettingsError_None; int h = m_pSettings->GetInt32("driver_customhmd", "windowH", &error);
-		if (error == VRSettingsError_None) { m_HMDData.ScreenHeight = h; m_HMDData.Windowed = true; }
-	}
-	else if (!m_HMDData.DirectStreamURL[0])
-	{
-		m_HMDData.IsConnected = IsD2DConnected(EdidVendorID);
-	}
-
+	ZeroMemory(&m_Camera, sizeof(m_Camera));
 	char desiredCamera[128] = { 0 };
 	m_pSettings->GetString("driver_customhmd", "camera", desiredCamera, sizeof(desiredCamera));
-	m_Camera.Options.Name = desiredCamera;
-	m_Camera.Options.Width = 320;
-	m_Camera.Options.Height = 240;
-	m_Camera.Options.MediaFormat = MFVideoFormat_NV12;
-	m_Camera.StreamFormat = CVS_FORMAT_NV12; //default
-	m_Camera.Options.pfCallback = CameraFrameUpdateCallback;
-	m_Camera.Options.pUserData = this;
-
-	DisplayFrequency = m_HMDData.Frequency;
-
-	m_HMDData.EyeWidth = m_HMDData.ScreenWidth / 2;
-
-	//one time setup to determine buffersize
-	m_Camera.Options.Setup();
+	if (desiredCamera[0])
+	{		
+		HasCamera = true;
+		m_ExposedComponents |= ExposedComponent::Camera;
+		m_Camera.hLock = CreateMutex(nullptr, FALSE, L"CameraLock");
+		m_Camera.Options.Name = desiredCamera;
+		m_Camera.Options.Width = 320;
+		m_Camera.Options.Height = 240;
+		m_Camera.Options.MediaFormat = MFVideoFormat_NV12;
+		m_Camera.StreamFormat = CVS_FORMAT_NV12; //default
+		m_Camera.Options.pfCallback = CameraFrameUpdateCallback;
+		m_Camera.Options.pUserData = this;
+		//one time setup to determine buffersize
+		m_Camera.Options.Setup();
+	}
+	else
+	{
+		HasCamera = false;
+		m_ExposedComponents &= ~ExposedComponent::Camera;
+	}
 
 	if (IsConnected())
 	{
 		m_pDriverHost->TrackedDeviceAdded(SerialNumber.c_str(), vr::TrackedDeviceClass_HMD, this);
-		if (m_HMDData.DirectStreamURL[0]) //starty remote display thread
-		{
-			m_DMS.Init(this);
-		}
+
+		if (m_DisplayMode == DisplayMode::Virtual || m_DisplayMode == DisplayMode::DirectVirtual) //start virtual display thread
+			m_DMS.Init(this);  
 	}
 }
 
 bool CTrackedHMD::IsConnected()
 {
 	CShMem mem;
-	if (((mem.GetState() != Disconnected) || m_HMDData.DirectStreamURL[0]) && m_HMDData.IsConnected)
+	if (((mem.GetState() != Disconnected) || m_DisplayMode == DisplayMode::DirectVirtual || m_DisplayMode == DisplayMode::Virtual) && m_HMDData.IsConnected)  //m_HMDData.IsConnected is always set for virtual modes
 		return true;
 	return false;
 }
 
 CTrackedHMD::~CTrackedHMD()
 {
-	m_DMS.Destroy();
+	m_DMS.Destroy(); 
 	SAFE_CLOSE(m_HMDData.hPoseLock);
 }
-
-
 
 EVRInitError CTrackedHMD::Activate(uint32_t unObjectId)
 {
@@ -276,7 +317,7 @@ void CTrackedHMD::SetDefaultProperties()
 	error = SET_PROP(Bool, IsOnDesktop, );
 	error = SET_PROP(Bool, DisplaySuppressed, );
 	error = SET_PROP(Bool, DisplayAllowNightMode, );
-	error = SET_PROP(Bool, UsesDriverDirectMode, );
+	//error = SET_PROP(Bool, HasDriverDirectModeComponent, );
 
 	error = SET_PROP(Float, SecondsFromVsyncToPhotons, );
 	error = SET_PROP(Float, DisplayFrequency, );
@@ -326,6 +367,7 @@ void CTrackedHMD::SetDefaultProperties()
 void CTrackedHMD::Deactivate()
 {
 	DriverLog(__FUNCTION__);
+	m_DMS.Destroy();
 	m_Camera.Destroy();
 	m_unObjectId = k_unTrackedDeviceIndexInvalid;
 	//	TRACE(__FUNCTIONW__);
@@ -340,25 +382,32 @@ void *CTrackedHMD::GetComponent(const char *pchComponentNameAndVersion)
 {
 	DriverLog(__FUNCTION__" %s", pchComponentNameAndVersion);
 
-	if (!_stricmp(pchComponentNameAndVersion, IVRDriverDirectModeComponent_Version))
+	if (!_stricmp(pchComponentNameAndVersion, ITrackedDeviceServerDriver_Version)) //always return
 	{
-		return (IVRDriverDirectModeComponent*)this;
+		return (ITrackedDeviceServerDriver*)this;
 	}
 
-	if (!_stricmp(pchComponentNameAndVersion, IVRDisplayComponent_Version))
+	if (!_stricmp(pchComponentNameAndVersion, IVRDisplayComponent_Version) && (m_ExposedComponents & ExposedComponent::Display)) //always return
 	{
 		return (IVRDisplayComponent*)this;
 	}
 
-	if (!_stricmp(pchComponentNameAndVersion, IVRCameraComponent_Version))
+	if (!_stricmp(pchComponentNameAndVersion, IVRCameraComponent_Version) && (m_ExposedComponents & ExposedComponent::Camera)) //only return if has camera
 	{
 		return (IVRCameraComponent*)this;
 	}
 
-	if (!_stricmp(pchComponentNameAndVersion, ITrackedDeviceServerDriver_Version))
+	if (!_stricmp(pchComponentNameAndVersion, IVRVirtualDisplay_Version) && (m_ExposedComponents & ExposedComponent::Display) && (m_DisplayMode == DisplayMode::Virtual))
 	{
-		return (ITrackedDeviceServerDriver*)this;
+		return (IVRVirtualDisplay*)this;
 	}
+
+
+	//DirectMode disabled
+	//if (!_stricmp(pchComponentNameAndVersion, IVRDriverDirectModeComponent_Version) && (m_DisplayMode == DisplayMode::DirectVirtual))
+	//{
+	//	return (IVRDriverDirectModeComponent*)this;
+	//}
 
 	return nullptr;
 }
@@ -487,7 +536,7 @@ DriverPose_t CTrackedHMD::GetPose()
 
 
 
-
+/* //cant co-exist with ivrvirtualdisplay
 void CTrackedHMD::CreateSwapTextureSet(uint32_t unPid, uint32_t unFormat, uint32_t unWidth, uint32_t unHeight, vr::SharedTextureHandle_t(*pSharedTextureHandles)[3])
 {
 	DriverLog(__FUNCTION__" Create TexSwapSet %u: fmt(%u) size(%ux%u)", unPid, unFormat, unWidth, unHeight);
@@ -730,8 +779,36 @@ void CTrackedHMD::Present(vr::SharedTextureHandle_t syncTexture)
 		pSyncMutex->Release();
 	}
 }
+*/
 
+void CTrackedHMD::Present(vr::SharedTextureHandle_t backbufferTextureHandle)
+{
+	if (!backbufferTextureHandle)
+	{
+		m_DMS.m_FrameReady = false;
+		return;
+	}
+	if (backbufferTextureHandle != m_HMDData.hVirtualTexture)
+	{
+		//changed		
+		m_DMS.m_FrameReady = false;
+		m_HMDData.hVirtualTexture = backbufferTextureHandle;				
+		m_DMS.TextureFromHandle(backbufferTextureHandle);
+	}
+	m_DMS.m_FrameReady = true;
+}
 
+void CTrackedHMD::WaitForPresent()
+{
+	//already presented
+}
+
+bool CTrackedHMD::GetTimeSinceLastVsync(float *pfSecondsSinceLastVsync, uint64_t *pulFrameCounter)
+{
+	*pfSecondsSinceLastVsync = m_DMS.m_FrameTime;
+	*pulFrameCounter = m_DMS.m_FrameCount;
+	return true;
+}
 
 
 
@@ -1304,7 +1381,8 @@ BOOL CALLBACK CTrackedHMD::MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LP
 							pMonData->PosY = monInfo.rcMonitor.top;
 							pMonData->ScreenWidth = monInfo.rcMonitor.right - monInfo.rcMonitor.left;
 							pMonData->ScreenHeight = monInfo.rcMonitor.bottom - monInfo.rcMonitor.top;
-							if (pMonData->ScreenWidth == 1280 && pMonData->ScreenHeight == 1470)
+							if ((pMonData->ScreenWidth == 1280 && pMonData->ScreenHeight == 1470) ||
+								(pMonData->ScreenWidth == 1920 && pMonData->ScreenHeight == 2190)) // does it also work for 1920? -> test it
 							{
 								pMonData->FakePackDetected = true;
 								pMonData->AspectRatio = ((float)(pMonData->ScreenHeight - 30) / 2.0f) / (float)pMonData->ScreenWidth;

@@ -2,6 +2,7 @@
 
 CTrackedDevice::CTrackedDevice(std::string displayName, CServerDriver *pServer)
 {
+	m_ExposedComponents = ExposedComponent::None;
 	//m_pLog = vr::VRDriverLog(); // pServer->m_pLog;
 	InitDriverLog(vr::VRDriverLog());
 	DriverLog(__FUNCTION__" %s", displayName.c_str());

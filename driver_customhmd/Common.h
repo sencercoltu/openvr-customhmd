@@ -220,12 +220,11 @@ struct HMDData : TrackerData
 	int ScreenWidth;
 	int ScreenHeight;
 	int EyeWidth;	
-	//int EyeTexWidth;
-	//int EyeTexHeight;
 	float Frequency;
 	float AspectRatio;	
 	float SuperSample;		
-	USBDataCache LastState;	
+	USBDataCache LastState;		
+	SharedTextureHandle_t hVirtualTexture;
 	char DirectStreamURL[256];
 };
 

@@ -3,6 +3,8 @@
 
 CTrackedController::CTrackedController(ETrackedControllerRole role, std::string displayName, CServerDriver *pServer) : CTrackedDevice(displayName, pServer)
 {
+	m_ExposedComponents = ExposedComponent::Controller;
+
 	DriverLog(__FUNCTION__);
 	m_Role = role;
 

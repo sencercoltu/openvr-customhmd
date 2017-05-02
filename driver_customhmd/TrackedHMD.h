@@ -8,10 +8,19 @@
 
 using namespace vr;
 
+enum DisplayMode
+{
+	SteamDirect,
+	SteamExtended,
+	DirectVirtual,
+	Virtual
+};
+
 class CTrackedHMD : 
 	public IVRDisplayComponent,
 	public IVRCameraComponent,
-	public IVRDriverDirectModeComponent,
+	//public IVRDriverDirectModeComponent, //cant co-exist with ivrvirtualdisplay
+	public IVRVirtualDisplay,
 	public CTrackedDevice
 {
 	friend struct DirectModeStreamer;	
@@ -20,6 +29,9 @@ private:
 	HMDData m_HMDData;		
 	CameraData m_Camera;
 	DirectModeStreamer m_DMS;
+	DisplayMode m_DisplayMode;
+
+
 public:
 	CTrackedHMD(std::string displayName, CServerDriver *pServer);
 	~CTrackedHMD();
@@ -66,6 +78,7 @@ public: //IVRCameraComponent
 	bool GetCameraIntrinsics(EVRTrackedCameraFrameType eFrameType, HmdVector2_t *pFocalLength, HmdVector2_t *pCenter) override;
 
 
+/* //cant co-exist with ivrvirtualdisplay
 public: //IVRDriverDirectModeComponent
 	void CreateSwapTextureSet(uint32_t unPid, uint32_t unFormat, uint32_t unWidth, uint32_t unHeight, vr::SharedTextureHandle_t(*pSharedTextureHandles)[3]) override;
 	void DestroySwapTextureSet(vr::SharedTextureHandle_t sharedTextureHandle) override;
@@ -73,7 +86,12 @@ public: //IVRDriverDirectModeComponent
 	void GetNextSwapTextureSetIndex(vr::SharedTextureHandle_t sharedTextureHandles[2], uint32_t(*pIndices)[2]) override;
 	void SubmitLayer(vr::SharedTextureHandle_t sharedTextureHandles[2], const vr::VRTextureBounds_t(&bounds)[2], const vr::HmdMatrix34_t *pPose) override;
 	void Present(vr::SharedTextureHandle_t syncTexture) override;
+*/
 
+public:  //IVRVirtualDisplay
+	void Present(vr::SharedTextureHandle_t backbufferTextureHandle) override;
+	void WaitForPresent() override;
+	bool GetTimeSinceLastVsync(float *pfSecondsSinceLastVsync, uint64_t *pulFrameCounter) override;
 
 protected: //CTrackedDevice
 	void PacketReceived(USBPacket *pPacket, HmdVector3d_t *pCenterEuler, HmdVector3d_t *pRelativePos) override;
@@ -84,8 +102,6 @@ private:
 	static void CameraFrameUpdateCallback(CCaptureDevice *pCaptureDevice, void *pUserData);
 	void OnCameraFrameUpdate();	
 	static BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData);
-
-
 
 protected:
 	void SetDefaultProperties() override;
@@ -130,8 +146,7 @@ protected:
 	int32_t DisplayMCImageWidth;
 	int32_t DisplayMCImageHeight;
 	int32_t DisplayMCImageNumChannels;
-	void *DisplayMCImageData;
-	bool UsesDriverDirectMode;
+	void *DisplayMCImageData;	
 };
 
 #endif // TrackedHMD_H

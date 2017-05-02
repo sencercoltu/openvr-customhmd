@@ -97,18 +97,11 @@
 
 void DirectModeStreamer::Init(CTrackedHMD *pHmd)
 {
-
 	HRESULT hr = CoInitializeEx(nullptr, COINITBASE_MULTITHREADED);
 
-
-
 	pHMD = pHmd;
-
-	m_FrameTime = (1.0f / pHmd->m_HMDData.Frequency) * 1000.0f;
-
-
-	m_hBufferLock = CreateMutex(nullptr, FALSE, L"BufferLock");
-	m_hTextureMapLock = CreateMutex(nullptr, FALSE, L"TextureMapLock");
+	m_FrameTime = 1000.0f / pHmd->m_HMDData.Frequency;
+	m_FrameCount = 0;
 
 	D3D_FEATURE_LEVEL levels[] =
 	{
@@ -126,7 +119,13 @@ void DirectModeStreamer::Init(CTrackedHMD *pHmd)
 		&m_pDevice,
 		&m_FeatureLevel,
 		&m_pContext);
-	EXIT_IF_FAILED;	
+	EXIT_IF_FAILED;
+
+	//DirectMode disabled
+	/*
+	m_hBufferLock = CreateMutex(nullptr, FALSE, L"BufferLock");
+	m_hTextureMapLock = CreateMutex(nullptr, FALSE, L"TextureMapLock");
+
 	
 	D3D11_TEXTURE2D_DESC textureDesc;
 	ZeroMemory(&textureDesc, sizeof(textureDesc));
@@ -160,68 +159,8 @@ void DirectModeStreamer::Init(CTrackedHMD *pHmd)
 	EXIT_IF_FAILED;
 
 
-	//D3D11_RENDER_TARGET_VIEW_DESC renderTargetViewDesc;
-	//ZeroMemory(&renderTargetViewDesc, sizeof(renderTargetViewDesc));
-	//renderTargetViewDesc.Format = textureDesc.Format;
-	//renderTargetViewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
-	//renderTargetViewDesc.Texture2D.MipSlice = 0;	
-
-	hr = m_pDevice->CreateRenderTargetView(m_pRTTex, /*&renderTargetViewDesc*/ nullptr, &m_pRTView);
+	hr = m_pDevice->CreateRenderTargetView(m_pRTTex, nullptr, &m_pRTView);
 	EXIT_IF_FAILED;
-
-
-	//D3D11_BUFFER_DESC bufDesc = {};
-	//bufDesc.Usage = D3D11_USAGE_STAGING;
-	//bufDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-	//bufDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
-	//bufDesc.StructureByteStride = 1;
-	//bufDesc.ByteWidth = pHMD->m_HMDData.ScreenWidth * pHMD->m_HMDData.ScreenHeight * sizeof(float);
-	//hr = m_pDevice->CreateBuffer(&bufDesc, nullptr, &m_pTexBuffer);
-	//EXIT_IF_FAILED;
-	//
-/*
-	ID2D1Factory* m_pDirect2dFactory;
-	hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_MULTI_THREADED, &m_pDirect2dFactory);
-	EXIT_IF_FAILED;
-
-	IDXGISurface2 *pSurface;
-	hr = m_pRTTex->QueryInterface(__uuidof(IDXGISurface2), (void**)&pSurface);
-	EXIT_IF_FAILED;
-
-	D2D1_RENDER_TARGET_PROPERTIES props = {};
-	props.type = D2D1_RENDER_TARGET_TYPE_HARDWARE;
-	props.pixelFormat.format = textureDesc.Format;
-	props.pixelFormat.alphaMode = D2D1_ALPHA_MODE_IGNORE;
-	props.usage = D2D1_RENDER_TARGET_USAGE_NONE;
-	props.minLevel = D2D1_FEATURE_LEVEL_DEFAULT;
-
-
-	ID2D1RenderTarget *pTarget;
-	hr = m_pDirect2dFactory->CreateDxgiSurfaceRenderTarget(pSurface, props, &pTarget);
-*/
-
-/*
-	hr = m_pInputSample->RemoveAllBuffers();
-		
-	IMFMediaBuffer *pBuffer = nullptr;
-	hr = MFCreateDXGISurfaceBuffer(__uuidof(ID3D11Texture2D), m_pRTTex, 0, FALSE, &pBuffer);
-	EXIT_IF_FAILED;	
-
-	hr = m_pInputSample->AddBuffer(pBuffer);
-	pBuffer->Release();
-	EXIT_IF_FAILED;
-*/
-
-
-
-	//IDXGIDevice *pDxgiDevice = nullptr;
-	//hr = m_pDevice->QueryInterface(__uuidof(IDXGIDevice), (void **)&pDxgiDevice);
-
-
-	//hr = MFCreateDXGISurfaceBuffer(__uuidof(ID3D11Texture2D), m_pRTTex, 0, FALSE, &m_pMediaBuffer);
-	//EXIT_IF_FAILED;
-
-
 
 	D3D11_RASTERIZER_DESC cmdesc;
 	ZeroMemory(&cmdesc, sizeof(D3D11_RASTERIZER_DESC));
@@ -377,7 +316,7 @@ void DirectModeStreamer::Init(CTrackedHMD *pHmd)
 	m_pContext->PSSetShader(m_pPS, 0, 0);
 	m_pContext->PSSetSamplers(0, 1, &m_pSamplerState);
 	m_pContext->RSSetState(m_pCWcullMode);
-
+	*/
 
 	m_hDisplayThread = reinterpret_cast<HANDLE>(_beginthreadex(nullptr, 0, RemoteDisplayThread, this, CREATE_SUSPENDED, nullptr));
 	if (m_hDisplayThread)
@@ -385,25 +324,37 @@ void DirectModeStreamer::Init(CTrackedHMD *pHmd)
 		m_IsRunning = true;
 		ResumeThread(m_hDisplayThread);
 	}
-
 }
+
+void DirectModeStreamer::TextureFromHandle(SharedTextureHandle_t handle)
+{
+	m_pSurfaceTex = nullptr;
+	SAFE_RELEASE(m_pVirtualTexture);
+	HRESULT hr = m_pDevice->OpenSharedResource((HANDLE)pHMD->m_HMDData.hVirtualTexture, __uuidof(ID3D11Texture2D), (void **)&m_pVirtualTexture);
+	if (m_pVirtualTexture)
+	{
+		AMF_RESULT res = m_pEncderContext->CreateSurfaceFromDX11Native(m_pVirtualTexture, &m_pSurfaceTex, this);
+	}
+}
+
 
 void DirectModeStreamer::Destroy()
 {
 	m_IsRunning = false;
 
 	SAFE_THREADCLOSE(m_hDisplayThread);
-	SAFE_RELEASE(m_pSyncTexture);
 	SAFE_RELEASE(m_pContext);
 	SAFE_RELEASE(m_pDevice);
+	SAFE_RELEASE(m_pVirtualTexture);	
+	//DirectMode disabled
+	/*
+	SAFE_RELEASE(m_pSyncTexture);
 	SAFE_CLOSE(m_hTextureMapLock);
 	SAFE_CLOSE(m_hBufferLock);
 
 	SAFE_RELEASE(m_pRTView);
 	SAFE_RELEASE(m_pRTTex);
 	SAFE_RELEASE(m_pTexSync);
-
-	//SAFE_RELEASE(m_pMediaBuffer);
 
 	SAFE_RELEASE(m_pSquareIndexBuffer);
 	SAFE_RELEASE(m_pSquareVertBuffer);
@@ -416,14 +367,18 @@ void DirectModeStreamer::Destroy()
 	SAFE_RELEASE(m_pSamplerState);
 	SAFE_RELEASE(m_pConstantBuffer);
 	SAFE_RELEASE(m_pCWcullMode);
-
+	*/
+	
+	//MFT disabled
+	//SAFE_RELEASE(m_pMediaBuffer);
 	//SAFE_RELEASE(m_pInputSample);
-
 	CoUninitialize();
 
 	pHMD = nullptr;
 }
 
+//DirectMode disabled
+/*
 void DirectModeStreamer::CombineEyes()
 {
 	if (!m_FrameTime || !m_pTexSync) return;
@@ -475,7 +430,7 @@ void DirectModeStreamer::CombineEyes()
 	}
 	
 }
-
+*/
 
 unsigned int WINAPI DirectModeStreamer::RemoteDisplayThread(void *p)
 {
@@ -494,10 +449,8 @@ void DirectModeStreamer::RunRemoteDisplay()
 
 	CTCPServer *pServer = new CTCPServer(1974, TcpPacketReceive, this);
 	//UdpClientServer::CUdpClient *pUdpClient = new UdpClientServer::CUdpClient(m_HMDData.DirectStreamURL, 1974);
-
-	//m_DirectScreen.Init(pHMD->m_HMDData.ScreenWidth, pHMD->m_HMDData.ScreenHeight, pHMD->m_HMDData.Frequency, pHMD->m_HMDData.DirectStreamURL);
-	//InitMFT();
 	InitEncoder();
+
 #ifdef _DEBUG
 	//fopen_s(&m_FileDump, "D:\\OUT\\xx.h264", "wb");
 #endif //_DEBUG
@@ -512,19 +465,10 @@ void DirectModeStreamer::RunRemoteDisplay()
 
 	unsigned char *pFrameBuffer = (unsigned char *) malloc(8192*1024);	
 	int counter = 0;
-	//CMFTEventReceiver *pEventReceiver = nullptr;
-	//if (m_pEventGenerator)
-	//{
-	//	pEventReceiver = new CMFTEventReceiver(this);
-	//	hr = m_pEventGenerator->BeginGetEvent(pEventReceiver, pEventReceiver);
-	//}
-	//wchar_t szDebug[256];
-	FILE *fp = nullptr;
-	//fopen_s(&fp, "D:\\test.h264", "wb");	
 	while (m_IsRunning)
 	{
 		Sleep(1);
-		if (/*m_Streamer.pPixelBuffer[0] && */pServer->IsReady())
+		if (pServer->IsReady())
 		{
 			switch (m_DisplayState)
 			{
@@ -538,25 +482,23 @@ void DirectModeStreamer::RunRemoteDisplay()
 				m_DisplayState = pServer->IsConnected() ? m_DisplayState + 1 : 0;
 				continue;
 			case 2:
-				//pServer->SendBuffer((const char*)m_DirectScreen.pCodecContext->extradata, m_DirectScreen.pCodecContext->extradata_size);
-				//if (fp) fwrite((const char*)m_DirectScreen.pCodecContext->extradata, 1, m_DirectScreen.pCodecContext->extradata_size, fp);
 				m_pEncoder->ReInit(pHMD->m_HMDData.ScreenWidth, pHMD->m_HMDData.ScreenHeight);
 				m_DisplayState = pServer->IsConnected() ? m_DisplayState + 1 : 0;
 				continue;
 			case 3:
 				m_DisplayState = pServer->IsConnected() ? m_DisplayState : 0;
 
-				if (pServer->IsReady() && m_FrameReady)
+				if (pServer->IsReady() && m_FrameReady && m_pSurfaceTex)
 				{	
 					AMF_RESULT res;
 					ULONGLONG start_time = GetTickCount64();
-					if (SUCCEEDED(m_pTexSync->AcquireSync(0, 100)))
-					{						
+					//if (SUCCEEDED(pHMD->m_HMDData.pVirtualTexture->AcquireSync(0, 100)))
+					//{						
 						res = m_pEncoder->SubmitInput(m_pSurfaceTex);						
 						m_FrameReady = false;
-						m_pTexSync->ReleaseSync(0);
-					}
-					//res = m_pEncoder->Drain();
+					//	m_pTexSync->ReleaseSync(0);
+					//}
+					
 					amf::AMFDataPtr data;
 					while (true)
 					{						
@@ -572,10 +514,8 @@ void DirectModeStreamer::RunRemoteDisplay()
 						if (m_FileDump) fwrite(pFrameBuffer, 1, len, m_FileDump);						
 					}
 					counter++;
-					
-					//wsprintf(szDebug, L"Elapsed %d: %ull\n", counter, GetTickCount64() - start_time);
-					//OutputDebugString(szDebug);
-					OutputDebugString(L"Sent\n");
+
+					//MFT disabled
 					//add raw frame to encoder and send encoded 
 					//auto pEvent = GetEvent();
 					//if (pEvent)
@@ -584,36 +524,6 @@ void DirectModeStreamer::RunRemoteDisplay()
 					//	pEvent->Release();
 					//}
 				}
-
-
-
-				//if (WAIT_OBJECT_0 == WaitForSingleObject(m_hTextureMapLock, 10))
-				//{
-				//	pitch += UpdateBuffer(&m_Streamer.Left);
-				//	pitch += UpdateBuffer(&m_Streamer.Right);
-				//	ReleaseMutex(m_hTextureMapLock);
-				//}
-
-				//if (!pitch ||
-				//	m_Streamer.Left.Desc.Width != m_Streamer.Right.Desc.Width || //left and right res should be same
-				//	m_Streamer.Left.Desc.Height != m_Streamer.Right.Desc.Height ||
-				//	m_Streamer.Left.Desc.Format != m_Streamer.Right.Desc.Format)
-				//{
-				//	Sleep(1);
-				//	continue;
-				//}
-
-				//if (!m_DirectScreen.ProcessFrame(pitch))
-				//{
-				//	//while (auto pPacket = m_DirectScreen.GetPacket())
-				//	//{
-				//	//	auto remSize = pPacket->size;
-				//	//	auto *pData = (const char *)pPacket->data;
-				//	//	//pUdpClient->send((const char*)pData, remSize);
-				//	//	pServer->SendBuffer(pData, remSize);
-				//	//	if (fp) fwrite(pData, 1, remSize, fp);
-				//	//}
-				//}
 			}
 			Sleep(1);
 		}
@@ -623,9 +533,6 @@ void DirectModeStreamer::RunRemoteDisplay()
 
 	DestroyEncoder();
 
-	if (fp) fclose(fp);
-	fp = nullptr;
-
 	delete pServer;
 	pServer = nullptr;
 
@@ -633,18 +540,14 @@ void DirectModeStreamer::RunRemoteDisplay()
 		fclose(m_FileDump);
 	m_FileDump = nullptr;
 
-	//if (pEventReceiver)
-	//{
-	//	pEventReceiver->Release();
-	//	pEventReceiver = nullptr;
-	//}
-
 	if (pFrameBuffer)
 		free(pFrameBuffer);
 	pFrameBuffer = nullptr;
 
-	//delete pUdpClient;
+	//if (pUdpClient)
+	//	delete pUdpClient;
 	//pUdpClient = nullptr;
+
 	WSACleanup();
 }
 
@@ -765,44 +668,6 @@ void DirectModeStreamer::TcpPacketReceive(void *dst, const char *pData, int len)
 	pDM->m_LastPacketReceive = GetTickCount();
 }
 
-//int DirectModeStreamer::UpdateBuffer(DirectEyeData *pEyeData)
-//{
-//	return 0;
-//	//if (!pEyeData)
-//	//	return 0;
-//	//if (!pEyeData->pData)
-//	//	return 0;
-//
-//	//D3D11_MAPPED_SUBRESOURCE mappedResource;
-//
-//	//int width = 0, height = 0, srcStride = 0, dstStride = 0;
-//	//int fmt = 0;
-//
-//	//if (SUCCEEDED(m_pContext->Map(pEyeData->pData->pCPUResource, 0, D3D11_MAP_READ, 0, &mappedResource)))
-//	//{
-//	//	pEyeData->pData->pCPUTexture->GetDesc(&pEyeData->Desc);
-//	//	width = pEyeData->Desc.Width;
-//	//	height = pEyeData->Desc.Height;
-//	//	srcStride = mappedResource.RowPitch;
-//	//	dstStride = srcStride * 2;
-//
-//	//	//copy eye to pixel buffer. always assume 32 bit pixel				
-//	//	auto srcPos = (unsigned char *)mappedResource.pData;
-//	//	auto dstPos = m_DirectScreen.pPixelBuffer[0] + (pEyeData->Eye == EVREye::Eye_Right ? srcStride : 0);
-//
-//	//	//copy left eye to left, right eye to right
-//	//	for (unsigned int y = 0; y < pEyeData->Desc.Height; y++)
-//	//	{
-//	//		memcpy(dstPos, srcPos, srcStride);
-//	//		dstPos += dstStride;
-//	//		srcPos += srcStride;
-//	//	}
-//	//	m_pContext->Unmap(pEyeData->pData->pCPUResource, 0);
-//	//}
-//	//pEyeData->pData = nullptr;
-//	//return srcStride;
-//}
-
 void DirectModeStreamer::ProcessRemotePacket(USBPacket *pPacket)
 {
 	pHMD->m_pServer->ProcessUSBPacket(pPacket);
@@ -818,7 +683,8 @@ bool DirectModeStreamer::InitEncoder()
 		return false;
 	
 	amf_increase_timer_precision();
-//#ifdef _DEBUG
+
+	//#ifdef _DEBUG
 //	amf::AMFTraceEnableWriter(AMF_TRACE_WRITER_DEBUG_OUTPUT, true);
 //#endif //_DEBUG
 
@@ -847,9 +713,6 @@ bool DirectModeStreamer::InitEncoder()
 	
 
 	res = m_pEncoder->Init(amf::AMF_SURFACE_RGBA, pHMD->m_HMDData.ScreenWidth, pHMD->m_HMDData.ScreenHeight);
-	EXIT_AND_DESTROY;
-
-	res = m_pEncderContext->CreateSurfaceFromDX11Native(m_pRTTex, &m_pSurfaceTex, this);
 	EXIT_AND_DESTROY;
 
 	return true;
