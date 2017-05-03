@@ -35,9 +35,6 @@
             this.tabSources = new System.Windows.Forms.TabControl();
             this.tabDefault = new System.Windows.Forms.TabPage();
             this.btnResetRotation = new System.Windows.Forms.Button();
-            this.chkDiff = new System.Windows.Forms.CheckBox();
-            this.chkPreview = new System.Windows.Forms.CheckBox();
-            this.pbScreen = new System.Windows.Forms.PictureBox();
             this.chkWatchDog = new System.Windows.Forms.CheckBox();
             this.trayMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.mnuDebug = new System.Windows.Forms.ToolStripMenuItem();
@@ -45,7 +42,6 @@
             this.frameTimer = new System.Windows.Forms.Timer(this.components);
             this.tabSources.SuspendLayout();
             this.tabDefault.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.pbScreen)).BeginInit();
             this.trayMenu.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -82,9 +78,6 @@
             // tabDefault
             // 
             this.tabDefault.Controls.Add(this.btnResetRotation);
-            this.tabDefault.Controls.Add(this.chkDiff);
-            this.tabDefault.Controls.Add(this.chkPreview);
-            this.tabDefault.Controls.Add(this.pbScreen);
             this.tabDefault.Controls.Add(this.chkWatchDog);
             this.tabDefault.Location = new System.Drawing.Point(4, 22);
             this.tabDefault.Name = "tabDefault";
@@ -96,48 +89,18 @@
             // 
             // btnResetRotation
             // 
-            this.btnResetRotation.Location = new System.Drawing.Point(140, 6);
+            this.btnResetRotation.Location = new System.Drawing.Point(8, 29);
             this.btnResetRotation.Name = "btnResetRotation";
-            this.btnResetRotation.Size = new System.Drawing.Size(75, 40);
+            this.btnResetRotation.Size = new System.Drawing.Size(114, 40);
             this.btnResetRotation.TabIndex = 6;
-            this.btnResetRotation.Text = "Reset Rotation";
+            this.btnResetRotation.Text = "Send Identity Rotation";
             this.btnResetRotation.UseVisualStyleBackColor = true;
             this.btnResetRotation.Click += new System.EventHandler(this.btnResetRotation_Click);
-            // 
-            // chkDiff
-            // 
-            this.chkDiff.AutoSize = true;
-            this.chkDiff.Location = new System.Drawing.Point(8, 29);
-            this.chkDiff.Name = "chkDiff";
-            this.chkDiff.Size = new System.Drawing.Size(75, 17);
-            this.chkDiff.TabIndex = 5;
-            this.chkDiff.Text = "Difference";
-            this.chkDiff.UseVisualStyleBackColor = true;
-            // 
-            // chkPreview
-            // 
-            this.chkPreview.AutoSize = true;
-            this.chkPreview.Location = new System.Drawing.Point(8, 6);
-            this.chkPreview.Name = "chkPreview";
-            this.chkPreview.Size = new System.Drawing.Size(104, 17);
-            this.chkPreview.TabIndex = 4;
-            this.chkPreview.Text = "Preview Remote";
-            this.chkPreview.UseVisualStyleBackColor = true;
-            // 
-            // pbScreen
-            // 
-            this.pbScreen.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None;
-            this.pbScreen.Location = new System.Drawing.Point(8, 52);
-            this.pbScreen.Name = "pbScreen";
-            this.pbScreen.Size = new System.Drawing.Size(480, 270);
-            this.pbScreen.TabIndex = 2;
-            this.pbScreen.TabStop = false;
-            this.pbScreen.Paint += new System.Windows.Forms.PaintEventHandler(this.pbScreen_Paint);
             // 
             // chkWatchDog
             // 
             this.chkWatchDog.AutoSize = true;
-            this.chkWatchDog.Location = new System.Drawing.Point(248, 6);
+            this.chkWatchDog.Location = new System.Drawing.Point(8, 6);
             this.chkWatchDog.Name = "chkWatchDog";
             this.chkWatchDog.Size = new System.Drawing.Size(114, 17);
             this.chkWatchDog.TabIndex = 0;
@@ -189,7 +152,6 @@
             this.tabSources.ResumeLayout(false);
             this.tabDefault.ResumeLayout(false);
             this.tabDefault.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.pbScreen)).EndInit();
             this.trayMenu.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -206,10 +168,7 @@
         private System.Windows.Forms.ToolStripMenuItem mnuExit;
         private System.Windows.Forms.TabPage tabDefault;
         private System.Windows.Forms.CheckBox chkWatchDog;
-        private System.Windows.Forms.CheckBox chkPreview;
-        private System.Windows.Forms.CheckBox chkDiff;
         private System.Windows.Forms.Button btnResetRotation;
-        private System.Windows.Forms.PictureBox pbScreen;
         private System.Windows.Forms.Timer frameTimer;
     }
 }

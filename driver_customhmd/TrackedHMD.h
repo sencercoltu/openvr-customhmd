@@ -23,8 +23,6 @@ class CDriverVirtualDisplayComponentFix;
 class CTrackedHMD : 
 	public IVRDisplayComponent, 
 	public IVRCameraComponent,
-//	public CDriverVirtualDisplayComponentFix,
-//	public CDriverDirectModeComponentFix,
 	public CTrackedDevice
 {
 	friend struct VirtualStreamer;

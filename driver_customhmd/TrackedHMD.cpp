@@ -116,7 +116,7 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 	m_HMDData.ScreenHeight = 1470;
 	m_HMDData.AspectRatio = ((float)(m_HMDData.ScreenHeight - 30) / 2.0f) / (float)m_HMDData.ScreenWidth;
 	m_HMDData.Frequency = 60;
-	m_HMDData.IsConnected = true;
+	m_HMDData.IsConnected = false;
 	m_HMDData.FakePackDetected = true;
 	m_HMDData.SuperSample = 1.0f;
 
@@ -160,6 +160,7 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 		m_pSettings->GetString("driver_customhmd", "virtualResolution", value, sizeof(value));
 		if (value[0])
 		{
+			//dirty way...
 			//use given resolution and refresh rate
 			auto pos = strchr(value, 'x');
 			if (pos)
@@ -191,6 +192,7 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 	}
 	else if (m_DisplayMode == DisplayMode::DirectMode)
 	{
+		//dirty and lazy
 		m_HMDData.ScreenWidth = 960;
 		m_HMDData.ScreenHeight = 540;
 		m_HMDData.IsConnected = true; //set initial as connected
@@ -246,6 +248,7 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 
 		if (m_DisplayMode = DisplayMode::SteamExtended)
 		{
+			IsOnDesktop = true;
 			//get monitor name for position and resolution detection, not needed for directMode
 			value[0] = 0;
 			m_pSettings->GetString("driver_customhmd", "monitor", value, sizeof(value));
@@ -259,6 +262,20 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 				EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, (LPARAM)&m_HMDData);
 				DriverLog("Monitor detection finished.");
 			}
+			else
+			{
+				//no monitor specified, output to window
+				m_HMDData.PosX = m_HMDData.PosY = 0;
+				m_HMDData.ScreenWidth = 480;
+				m_HMDData.ScreenHeight = 270;
+				m_HMDData.Windowed = true;
+				m_HMDData.FakePackDetected = false;
+				m_HMDData.IsConnected = true;
+				m_HMDData.DirectMode = false;				
+				//EdidVendorID = 0;
+				//EdidProductID = 0;					
+			}
+
 			//if any value is set tread as windowed, else fullscreen
 			error = VRSettingsError_None; int x = m_pSettings->GetInt32("driver_customhmd", "windowX", &error);
 			if (error == VRSettingsError_None) { m_HMDData.PosX = x; m_HMDData.Windowed = true; }
@@ -268,6 +285,8 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 			if (error == VRSettingsError_None) { m_HMDData.ScreenWidth = w; m_HMDData.Windowed = true; }
 			error = VRSettingsError_None; int h = m_pSettings->GetInt32("driver_customhmd", "windowH", &error);
 			if (error == VRSettingsError_None) { m_HMDData.ScreenHeight = h; m_HMDData.Windowed = true; }
+
+			if (m_HMDData.Windowed) m_HMDData.IsConnected = true;
 		}
 		else if (m_DisplayMode == DisplayMode::SteamDirect)
 		{
@@ -309,8 +328,28 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 		m_ExposedComponents &= ~ExposedComponent::Camera;
 	}
 
+	
+	switch (m_DisplayMode)
+	{
+	case DisplayMode::DirectMode:
+		IsOnDesktop = false;
+		break;
+	case DisplayMode::SteamDirect:
+		IsOnDesktop = false;
+		break;
+	case DisplayMode::SteamExtended:
+		IsOnDesktop = !m_HMDData.Windowed; //prevent compositor fullscreen error
+		break;
+	case DisplayMode::Virtual:
+		IsOnDesktop = false;
+		break;
+	}
+	
+
+
 	if (IsConnected())
 	{
+		m_HMDData.PoseUpdated = true; //send initial pose to avoid gray screen
 		m_pDriverHost->TrackedDeviceAdded(SerialNumber.c_str(), vr::TrackedDeviceClass_HMD, this);
 
 		if (m_DisplayMode == DisplayMode::Virtual) //start virtual display thread
@@ -323,7 +362,11 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 bool CTrackedHMD::IsConnected()
 {
 	CShMem mem;
-	if (((mem.GetState() != Disconnected) || m_DisplayMode == DisplayMode::Virtual || m_DisplayMode == DisplayMode::DirectMode) && m_HMDData.IsConnected)  //m_HMDData.IsConnected is always set for virtual modes
+	if ((  (mem.GetState() != Disconnected) || 
+			m_DisplayMode == DisplayMode::Virtual || 
+			m_DisplayMode == DisplayMode::DirectMode || 
+			(m_DisplayMode == DisplayMode::SteamExtended && m_HMDData.Windowed)) && 
+		m_HMDData.IsConnected)  //m_HMDData.IsConnected is always set for virtual modes
 		return true;
 	return false;
 }
@@ -419,6 +462,7 @@ void CTrackedHMD::SetDefaultProperties()
 void CTrackedHMD::Deactivate()
 {
 	DriverLog(__FUNCTION__);
+	m_DirectOutput.Destroy();
 	m_VirtualDisplay.Destroy();
 	m_Camera.Destroy();
 	m_unObjectId = k_unTrackedDeviceIndexInvalid;
@@ -478,20 +522,51 @@ void CTrackedHMD::GetWindowBounds(int32_t * pnX, int32_t * pnY, uint32_t * pnWid
 
 bool CTrackedHMD::IsDisplayOnDesktop()
 {
-	DriverLog(__FUNCTION__" returning %d", !m_HMDData.DirectMode);
-	return !m_HMDData.DirectMode;
+	bool res = true;
+	switch (m_DisplayMode)
+	{
+	case DisplayMode::DirectMode:
+		res = false;
+		break;
+	case DisplayMode::SteamDirect:
+		res = false;
+		break;
+	case DisplayMode::SteamExtended:
+		res = true;
+		break;
+	case DisplayMode::Virtual:
+		res = false;
+		break;
+	}		
+	DriverLog(__FUNCTION__" returning %d", res);
+	return res;
 }
 
 bool CTrackedHMD::IsDisplayRealDisplay()
 {
-	bool ret = (m_DisplayMode == DisplayMode::SteamDirect || m_DisplayMode == DisplayMode::SteamExtended);
-	DriverLog(__FUNCTION__" returning %d", ret);
-	return ret;
+	bool res = true;
+	switch (m_DisplayMode)
+	{
+	case DisplayMode::DirectMode:
+		res = false;
+		break;
+	case DisplayMode::SteamDirect:
+		res = true;
+		break;
+	case DisplayMode::SteamExtended:
+		res = !m_HMDData.Windowed;		
+		break;
+	case DisplayMode::Virtual:
+		res = false;
+		break;
+	}
+	DriverLog(__FUNCTION__" returning %d", res);
+	return res;
 }
 
 void CTrackedHMD::GetRecommendedRenderTargetSize(uint32_t * pnWidth, uint32_t * pnHeight)
 {
-	*pnWidth = uint32_t((m_HMDData.DirectStreamURL[0] ? m_HMDData.EyeWidth : m_HMDData.ScreenWidth) * m_HMDData.SuperSample);
+	*pnWidth = uint32_t((!m_HMDData.FakePackDetected ? m_HMDData.EyeWidth : m_HMDData.ScreenWidth) * m_HMDData.SuperSample);
 	*pnHeight = uint32_t((m_HMDData.FakePackDetected ? (m_HMDData.ScreenHeight - 30) / 2 : m_HMDData.ScreenHeight) * m_HMDData.SuperSample);
 	DriverLog(__FUNCTION__" w: %d, h: %d", *pnWidth, *pnHeight);
 }

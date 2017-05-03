@@ -74,14 +74,16 @@ public:
 		m_IsRunning = false;
 		m_hWnd = nullptr;
 
+		m_pContext = nullptr;
+		m_pDevice = nullptr;
+
 		ZeroMemory(&m_TlLeft, sizeof(m_TlLeft));
 		ZeroMemory(&m_TlRight, sizeof(m_TlRight));
 		ZeroMemory(&Ep, sizeof(Ep));
 		m_SyncTexture = 0;
 		m_pSyncTexture = nullptr;
 		m_hTextureMapLock = nullptr;
-		m_pRTView = nullptr;
-		//m_pRTTex = nullptr;
+		m_pRTView = nullptr;		
 		m_pSwapChain = nullptr;
 		m_pSquareIndexBuffer = nullptr;
 		m_pSquareVertBuffer = nullptr;
