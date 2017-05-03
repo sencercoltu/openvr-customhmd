@@ -7,28 +7,28 @@
 
 CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTrackedDevice(displayName, pServer)
 {
+	m_pVDF = new CDriverVirtualDisplayComponentFix(this);
+	m_pDMF = new CDriverDirectModeComponentFix(this);
+
 	m_ExposedComponents = ExposedComponent::Display;
 	m_DisplayMode = DisplayMode::SteamExtended; //initial is extended
 
 	vr::EVRSettingsError error;
 
-	if (m_pSettings)
+	char value[256] = {};
+	m_pSettings->GetString("driver_customhmd", "displayMode", value, sizeof(value));
+	if (!strcmp(value, "steam"))
 	{
-		char value[256] = {};
-		m_pSettings->GetString("driver_customhmd", "displayMode", value, sizeof(value));
-		if (!strcmp(value, "steam"))
-		{
-			//dont expose direct or virtual, decide later
-			
-		}
-		else if (!strcmp(value, "virtual"))
-		{
-			m_DisplayMode = DisplayMode::Virtual; //stream by vireual component
-		}
-		else if (!strcmp(value, "direct"))
-		{
-			m_DisplayMode = DisplayMode::DirectVirtual; //stream by directmode component
-		}
+		//dont expose direct or virtual, decide later
+
+	}
+	else if (!strcmp(value, "virtual"))
+	{
+		m_DisplayMode = DisplayMode::Virtual; //stream by vireual component
+	}
+	else if (!strcmp(value, "direct"))
+	{
+		m_DisplayMode = DisplayMode::DirectMode; //directmode component for reference
 	}
 
 	//too lazy to make icons, copied from vive
@@ -101,7 +101,7 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 	DisplayMCImageWidth = 0;
 	DisplayMCImageHeight = 0;
 	DisplayMCImageNumChannels = 0;
-	DisplayMCImageData = nullptr;	
+	DisplayMCImageData = nullptr;
 
 	ZeroMemory(&m_HMDData, sizeof(m_HMDData));
 	m_HMDData.pHMDDriver = this;
@@ -122,7 +122,7 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 
 	m_HMDData.PoseUpdated = false;
 	m_HMDData.hPoseLock = CreateMutex(NULL, FALSE, L"PoseLock");
-		
+
 	wcscpy_s(m_HMDData.Model, L"");
 
 	m_HMDData.Pose.willDriftInYaw = false;
@@ -137,122 +137,163 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 	m_HMDData.Pose.vecDriverFromHeadTranslation[2] = -0.15;
 	m_HMDData.Pose.poseTimeOffset = -0.032f;
 
-	if (m_pSettings && (m_DisplayMode == DisplayMode::DirectVirtual || m_DisplayMode == DisplayMode::Virtual))
+	if (m_DisplayMode == DisplayMode::Virtual)
 	{
-		//check for 
-		char value[256] = {};
+		value[0] = 0;
 		m_pSettings->GetString("driver_customhmd", "virtualDisplay", value, sizeof(value));
+		if (!value[0])
+		{
+			//missing virtualdisplay setting
+			return;
+		}
+
+		//TODO: add port instead fixed 1974			
+		strcpy_s(m_HMDData.DirectStreamURL, value);
+		m_HMDData.ScreenWidth = 1920;
+		m_HMDData.ScreenHeight = 1080;
+		m_HMDData.IsConnected = true; //set initial as connected
+		m_HMDData.FakePackDetected = false; //
+		m_HMDData.Frequency = 60;
+		DriverLog("Using remote display %s...", value);
+
+		value[0] = 0;
+		m_pSettings->GetString("driver_customhmd", "virtualResolution", value, sizeof(value));
 		if (value[0])
 		{
-			//TODO: add port instead fixed 1974			
-			strcpy_s(m_HMDData.DirectStreamURL, value);
-			m_HMDData.ScreenWidth = 1920;
-			m_HMDData.ScreenHeight = 1080;
-			m_HMDData.IsConnected = true; //set initial as connected
-			m_HMDData.FakePackDetected = false; //
-			m_HMDData.Frequency = 60;
-			DriverLog("Using remote display %s...", value);
-
-			value[0] = 0;
-			m_pSettings->GetString("driver_customhmd", "virtualResolution", value, sizeof(value));
-			if (value[0])
+			//use given resolution and refresh rate
+			auto pos = strchr(value, 'x');
+			if (pos)
 			{
-				//use given resolution and refresh rate
-				auto pos = strchr(value, 'x');
+				*pos = 0;
+				float fps;
+				int width = atoi(value);
+				pos++;
+				char *h = pos;
+				pos++;
+				pos = strchr(pos, '@');
 				if (pos)
 				{
-					*pos = 0;
-					float fps;
-					int width = atoi(value);
+					pos[0] = 0;
 					pos++;
-					char *h = pos;
-					pos++;
-					pos = strchr(pos, '@');
-					if (pos)
-					{
-						pos[0] = 0;
-						pos++;
-						fps = (float)atof(pos);
-						if (fps)
-							m_HMDData.Frequency = fps;
-					}
-					int height = atoi(h);
-					if (width && height)
-					{
-						m_HMDData.ScreenWidth = width;
-						m_HMDData.ScreenHeight = height;
-						m_HMDData.EyeWidth = m_HMDData.ScreenWidth / 2; 
-					}
+					fps = (float)atof(pos);
+					if (fps)
+						m_HMDData.Frequency = fps;
 				}
-			}
-		}
-		else
-		{
-			m_HMDData.DirectMode = m_pSettings->GetBool("steamvr", "directMode", &error);
-			if (error != VRSettingsError_None) m_HMDData.DirectMode = false;
-			
-			if (m_HMDData.DirectMode)
-				m_DisplayMode = DisplayMode::SteamDirect;
-
-
-			//we cannot put monitor into directmode (no API for mortals like us :( )
-			//so we cannot use direct mode if it's not enabled in steamvr settings. maybe set m_HMDData.DirectMode directly from steamvr's settings...
-			//m_HMDData.DirectMode = m_pSettings->GetBool("driver_customhmd", "directMode", &error);
-			//if (error != VRSettingsError_None) m_HMDData.DirectMode = false;
-
-			if (m_DisplayMode = DisplayMode::SteamExtended)
-			{
-				//get monitor name for position and resolution detection, not needed for directMode
-				value[0] = 0;
-				m_pSettings->GetString("driver_customhmd", "monitor", value, sizeof(value));
-				if (value[0])
+				int height = atoi(h);
+				if (width && height)
 				{
-					std::string basic_string(value);
-					std::wstring wchar_value(basic_string.begin(), basic_string.end());
-					wcscpy_s(m_HMDData.Model, wchar_value.c_str());
-					DriverLog("Using model %S for detection...", m_HMDData.Model);
-					DriverLog("Enumerating monitors...");
-					EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, (LPARAM)&m_HMDData);
-					DriverLog("Monitor detection finished.");
+					m_HMDData.ScreenWidth = width;
+					m_HMDData.ScreenHeight = height;
+					m_HMDData.EyeWidth = m_HMDData.ScreenWidth / 2;
 				}
-				//if any value is set tread as windowed, else fullscreen
-				error = VRSettingsError_None; int x = m_pSettings->GetInt32("driver_customhmd", "windowX", &error);
-				if (error == VRSettingsError_None) { m_HMDData.PosX = x; m_HMDData.Windowed = true; }
-				error = VRSettingsError_None; int y = m_pSettings->GetInt32("driver_customhmd", "windowY", &error);
-				if (error == VRSettingsError_None) { m_HMDData.PosY = x; m_HMDData.Windowed = true; }
-				error = VRSettingsError_None; int w = m_pSettings->GetInt32("driver_customhmd", "windowW", &error);
-				if (error == VRSettingsError_None) { m_HMDData.ScreenWidth = w; m_HMDData.Windowed = true; }
-				error = VRSettingsError_None; int h = m_pSettings->GetInt32("driver_customhmd", "windowH", &error);
-				if (error == VRSettingsError_None) { m_HMDData.ScreenHeight = h; m_HMDData.Windowed = true; }
 			}
-			else if (m_DisplayMode == DisplayMode::SteamDirect)
-			{
-				//check if monitor is connected (AMD card liquidVR non documented rev-engineered check)				
-				//may add NVIDIA detection and auto-whitelist later
-				m_HMDData.IsConnected = IsD2DConnected(EdidVendorID);
-			}
-
-			m_HMDData.EyeWidth = m_HMDData.ScreenWidth;
-			//detect SBS / FramePacked and set eyeWidth 
-			if (!m_HMDData.FakePackDetected)
-				m_HMDData.EyeWidth /= 2;		
-				
-
 		}
-		m_HMDData.SuperSample = m_pSettings->GetFloat("driver_customhmd", "supersample");
 	}
+	else if (m_DisplayMode == DisplayMode::DirectMode)
+	{
+		m_HMDData.ScreenWidth = 960;
+		m_HMDData.ScreenHeight = 540;
+		m_HMDData.IsConnected = true; //set initial as connected
+		m_HMDData.FakePackDetected = false; //
+		m_HMDData.Frequency = 30;
+		value[0] = 0;
+		m_HMDData.DirectMode = true;		
+		m_pSettings->GetString("driver_customhmd", "directResolution", value, sizeof(value));
+		if (value[0])
+		{
+			//use given resolution and refresh rate
+			auto pos = strchr(value, 'x');
+			if (pos)
+			{
+				*pos = 0;
+				float fps;
+				int width = atoi(value);
+				pos++;
+				char *h = pos;
+				pos++;
+				pos = strchr(pos, '@');
+				if (pos)
+				{
+					pos[0] = 0;
+					pos++;
+					fps = (float)atof(pos);
+					if (fps)
+						m_HMDData.Frequency = fps;
+				}
+				int height = atoi(h);
+				if (width && height)
+				{
+					m_HMDData.ScreenWidth = width;
+					m_HMDData.ScreenHeight = height;
+					m_HMDData.EyeWidth = m_HMDData.ScreenWidth / 2;
+				}
+			}
+		}
+	}
+	else
+	{		
+		m_HMDData.DirectMode = m_pSettings->GetBool("steamvr", "directMode", &error);
+		if (error != VRSettingsError_None) m_HMDData.DirectMode = false;
 
+		if (m_HMDData.DirectMode)
+			m_DisplayMode = DisplayMode::SteamDirect;
+
+
+		//we cannot put monitor into directmode (no API for mortals like us :( )
+		//so we cannot use direct mode if it's not enabled in steamvr settings. maybe set m_HMDData.DirectMode directly from steamvr's settings...
+		//m_HMDData.DirectMode = m_pSettings->GetBool("driver_customhmd", "directMode", &error);
+		//if (error != VRSettingsError_None) m_HMDData.DirectMode = false;
+
+		if (m_DisplayMode = DisplayMode::SteamExtended)
+		{
+			//get monitor name for position and resolution detection, not needed for directMode
+			value[0] = 0;
+			m_pSettings->GetString("driver_customhmd", "monitor", value, sizeof(value));
+			if (value[0])
+			{
+				std::string basic_string(value);
+				std::wstring wchar_value(basic_string.begin(), basic_string.end());
+				wcscpy_s(m_HMDData.Model, wchar_value.c_str());
+				DriverLog("Using model %S for detection...", m_HMDData.Model);
+				DriverLog("Enumerating monitors...");
+				EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, (LPARAM)&m_HMDData);
+				DriverLog("Monitor detection finished.");
+			}
+			//if any value is set tread as windowed, else fullscreen
+			error = VRSettingsError_None; int x = m_pSettings->GetInt32("driver_customhmd", "windowX", &error);
+			if (error == VRSettingsError_None) { m_HMDData.PosX = x; m_HMDData.Windowed = true; }
+			error = VRSettingsError_None; int y = m_pSettings->GetInt32("driver_customhmd", "windowY", &error);
+			if (error == VRSettingsError_None) { m_HMDData.PosY = x; m_HMDData.Windowed = true; }
+			error = VRSettingsError_None; int w = m_pSettings->GetInt32("driver_customhmd", "windowW", &error);
+			if (error == VRSettingsError_None) { m_HMDData.ScreenWidth = w; m_HMDData.Windowed = true; }
+			error = VRSettingsError_None; int h = m_pSettings->GetInt32("driver_customhmd", "windowH", &error);
+			if (error == VRSettingsError_None) { m_HMDData.ScreenHeight = h; m_HMDData.Windowed = true; }
+		}
+		else if (m_DisplayMode == DisplayMode::SteamDirect)
+		{
+			//check if monitor is connected (AMD card liquidVR non documented rev-engineered check)				
+			//may add NVIDIA detection and auto-whitelist later
+			m_HMDData.IsConnected = IsD2DConnected(EdidVendorID);
+		}
+
+		m_HMDData.EyeWidth = m_HMDData.ScreenWidth;
+		//detect SBS / FramePacked and set eyeWidth 
+		if (!m_HMDData.FakePackDetected)
+			m_HMDData.EyeWidth /= 2;
+	}
 	DisplayFrequency = m_HMDData.Frequency; //last override
 
+	m_HMDData.SuperSample = m_pSettings->GetFloat("driver_customhmd", "supersample");
+
 	ZeroMemory(&m_Camera, sizeof(m_Camera));
-	char desiredCamera[128] = { 0 };
-	m_pSettings->GetString("driver_customhmd", "camera", desiredCamera, sizeof(desiredCamera));
-	if (desiredCamera[0])
-	{		
+	value[0] = 0;
+	m_pSettings->GetString("driver_customhmd", "camera", value, sizeof(value));
+	if (value[0])
+	{
 		HasCamera = true;
 		m_ExposedComponents |= ExposedComponent::Camera;
 		m_Camera.hLock = CreateMutex(nullptr, FALSE, L"CameraLock");
-		m_Camera.Options.Name = desiredCamera;
+		m_Camera.Options.Name = value;
 		m_Camera.Options.Width = 320;
 		m_Camera.Options.Height = 240;
 		m_Camera.Options.MediaFormat = MFVideoFormat_NV12;
@@ -272,23 +313,33 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 	{
 		m_pDriverHost->TrackedDeviceAdded(SerialNumber.c_str(), vr::TrackedDeviceClass_HMD, this);
 
-		if (m_DisplayMode == DisplayMode::Virtual || m_DisplayMode == DisplayMode::DirectVirtual) //start virtual display thread
-			m_DMS.Init(this);  
+		if (m_DisplayMode == DisplayMode::Virtual) //start virtual display thread
+			m_VirtualDisplay.Init(this);
+		else if (m_DisplayMode == DisplayMode::DirectMode)
+			m_DirectOutput.Init(this);
 	}
 }
 
 bool CTrackedHMD::IsConnected()
 {
 	CShMem mem;
-	if (((mem.GetState() != Disconnected) || m_DisplayMode == DisplayMode::DirectVirtual || m_DisplayMode == DisplayMode::Virtual) && m_HMDData.IsConnected)  //m_HMDData.IsConnected is always set for virtual modes
+	if (((mem.GetState() != Disconnected) || m_DisplayMode == DisplayMode::Virtual || m_DisplayMode == DisplayMode::DirectMode) && m_HMDData.IsConnected)  //m_HMDData.IsConnected is always set for virtual modes
 		return true;
 	return false;
 }
 
 CTrackedHMD::~CTrackedHMD()
 {
-	m_DMS.Destroy(); 
+	m_VirtualDisplay.Destroy();
+	m_DirectOutput.Destroy();
 	SAFE_CLOSE(m_HMDData.hPoseLock);
+	if (m_pVDF)
+		delete m_pVDF;
+	m_pVDF = nullptr;
+
+	if (m_pDMF)
+		delete m_pDMF;
+	m_pDMF = nullptr;
 }
 
 EVRInitError CTrackedHMD::Activate(uint32_t unObjectId)
@@ -368,7 +419,7 @@ void CTrackedHMD::SetDefaultProperties()
 void CTrackedHMD::Deactivate()
 {
 	DriverLog(__FUNCTION__);
-	m_DMS.Destroy();
+	m_VirtualDisplay.Destroy();
 	m_Camera.Destroy();
 	m_unObjectId = k_unTrackedDeviceIndexInvalid;
 	//	TRACE(__FUNCTIONW__);
@@ -400,15 +451,13 @@ void *CTrackedHMD::GetComponent(const char *pchComponentNameAndVersion)
 
 	if (!_stricmp(pchComponentNameAndVersion, IVRVirtualDisplay_Version) && (m_ExposedComponents & ExposedComponent::Display) && (m_DisplayMode == DisplayMode::Virtual))
 	{
-		return (IVRVirtualDisplay*)this;
+		return (IVRVirtualDisplay*)m_pVDF;
 	}
 
-
-	//DirectMode disabled
-	//if (!_stricmp(pchComponentNameAndVersion, IVRDriverDirectModeComponent_Version) && (m_DisplayMode == DisplayMode::DirectVirtual))
-	//{
-	//	return (IVRDriverDirectModeComponent*)this;
-	//}
+	if (!_stricmp(pchComponentNameAndVersion, IVRDriverDirectModeComponent_Version) && (m_ExposedComponents & ExposedComponent::Display) && (m_DisplayMode == DisplayMode::DirectMode))
+	{
+		return (IVRDriverDirectModeComponent*)m_pDMF;
+	}
 
 	return nullptr;
 }
@@ -435,8 +484,9 @@ bool CTrackedHMD::IsDisplayOnDesktop()
 
 bool CTrackedHMD::IsDisplayRealDisplay()
 {
-	DriverLog(__FUNCTION__" returning %d", !m_HMDData.Windowed && !m_HMDData.DirectStreamURL[0]);
-	return !m_HMDData.Windowed && !m_HMDData.DirectStreamURL[0];
+	bool ret = (m_DisplayMode == DisplayMode::SteamDirect || m_DisplayMode == DisplayMode::SteamExtended);
+	DriverLog(__FUNCTION__" returning %d", ret);
+	return ret;
 }
 
 void CTrackedHMD::GetRecommendedRenderTargetSize(uint32_t * pnWidth, uint32_t * pnHeight)
@@ -537,14 +587,13 @@ DriverPose_t CTrackedHMD::GetPose()
 
 
 
-/* //cant co-exist with ivrvirtualdisplay
 void CTrackedHMD::CreateSwapTextureSet(uint32_t unPid, uint32_t unFormat, uint32_t unWidth, uint32_t unHeight, vr::SharedTextureHandle_t(*pSharedTextureHandles)[3])
 {
 	DriverLog(__FUNCTION__" Create TexSwapSet %u: fmt(%u) size(%ux%u)", unPid, unFormat, unWidth, unHeight);
 
-	if (!m_DMS.m_pDevice)
+	if (!m_DirectOutput.m_pDevice)
 		return;
-	
+
 	auto set = new TextureSet;
 	ZeroMemory(set, sizeof(TextureSet));
 	set->Pid = unPid;
@@ -558,7 +607,7 @@ void CTrackedHMD::CreateSwapTextureSet(uint32_t unPid, uint32_t unFormat, uint32
 	desc.SampleDesc.Quality = 0;
 	desc.Format = (DXGI_FORMAT)unFormat;
 
-	if (WAIT_OBJECT_0 == WaitForSingleObject(m_DMS.m_hTextureMapLock, 10000))
+	if (WAIT_OBJECT_0 == WaitForSingleObject(m_DirectOutput.m_hTextureMapLock, 10000))
 	{
 		for (auto i = 0; i < 3; i++)
 		{
@@ -569,12 +618,12 @@ void CTrackedHMD::CreateSwapTextureSet(uint32_t unPid, uint32_t unFormat, uint32
 			desc.CPUAccessFlags = 0;
 			desc.MiscFlags = D3D11_RESOURCE_MISC_SHARED; // D3D11_RESOURCE_MISC_SHARED_KEYEDMUTEX | D3D11_RESOURCE_MISC_SHARED_NTHANDLE;
 
-			HRESULT hr = m_DMS.m_pDevice->CreateTexture2D(&desc, nullptr, &(set->Data[i].pGPUTexture));
+			HRESULT hr = m_DirectOutput.m_pDevice->CreateTexture2D(&desc, nullptr, &(set->Data[i].pGPUTexture));
 			if (hr == S_OK)
 			{
 				set->Data[i].Index = i;
 
-				ID3D11Resource *pResource = nullptr;				
+				ID3D11Resource *pResource = nullptr;
 				set->Data[i].pGPUTexture->QueryInterface(__uuidof(ID3D11Resource), (void**)&pResource);
 				if (pResource)
 				{
@@ -583,11 +632,11 @@ void CTrackedHMD::CreateSwapTextureSet(uint32_t unPid, uint32_t unFormat, uint32
 					shDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
 					shDesc.Texture2D.MostDetailedMip = 0;
 					shDesc.Texture2D.MipLevels = 1;
-					
-					m_DMS.m_pDevice->CreateShaderResourceView(pResource, &shDesc, &(set->Data[i].pShaderResourceView));
+
+					m_DirectOutput.m_pDevice->CreateShaderResourceView(pResource, &shDesc, &(set->Data[i].pShaderResourceView));
 					pResource->Release();
 				}
-							
+
 
 				//set->Data[i].pGPUResource->QueryInterface(__uuidof(IDXGISurface), (void**)&set->Data[i].pGPUSurface);
 				//MFCreateVideoSampleFromSurface(set->Data[i].pGPUSurface, &set->Data[i].pVideoSample);
@@ -603,7 +652,7 @@ void CTrackedHMD::CreateSwapTextureSet(uint32_t unPid, uint32_t unFormat, uint32
 				TextureLink tl = {};
 				tl.pData = &set->Data[i];
 				tl.pSet = set;
-				m_DMS.m_TextureMap[(SharedTextureHandle_t)set->Data[i].hSharedHandle] = tl;
+				m_DirectOutput.m_TextureMap[(SharedTextureHandle_t)set->Data[i].hSharedHandle] = tl;
 			}
 
 			//create CPU texture
@@ -614,26 +663,26 @@ void CTrackedHMD::CreateSwapTextureSet(uint32_t unPid, uint32_t unFormat, uint32
 			//desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE | D3D11_CPU_ACCESS_READ;
 			//desc.MiscFlags = 0;
 
-			//if (SUCCEEDED(m_DMS.m_pDevice->CreateTexture2D(&desc, nullptr, &(set->Data[i].pCPUTexture))))
+			//if (SUCCEEDED(m_VirtualDisplay.m_pDevice->CreateTexture2D(&desc, nullptr, &(set->Data[i].pCPUTexture))))
 			//{
 			//	set->Data[i].pCPUTexture->QueryInterface(__uuidof(ID3D11Resource), (void**)&set->Data[i].pCPUResource);				
 			//}
 		}
 
-		m_DMS.m_TextureSets.push_back(set);
+		m_DirectOutput.m_TextureSets.push_back(set);
 
-		ReleaseMutex(m_DMS.m_hTextureMapLock);
+		ReleaseMutex(m_DirectOutput.m_hTextureMapLock);
 	}
 }
 
 void CTrackedHMD::DestroySwapTextureSet(SharedTextureHandle_t sharedTextureHandle)
 {
-	//DriverLog(__FUNCTION__" Handle: %lu", sharedTextureHandle);
+	DriverLog(__FUNCTION__" Handle: %lu", sharedTextureHandle);
 	if (sharedTextureHandle)
 	{
-		if (WAIT_OBJECT_0 == WaitForSingleObject(m_DMS.m_hTextureMapLock, 10000))
+		if (WAIT_OBJECT_0 == WaitForSingleObject(m_DirectOutput.m_hTextureMapLock, 10000))
 		{
-			for (auto iter = m_DMS.m_TextureSets.begin(); iter != m_DMS.m_TextureSets.end(); iter++)
+			for (auto iter = m_DirectOutput.m_TextureSets.begin(); iter != m_DirectOutput.m_TextureSets.end(); iter++)
 			{
 				auto pSet = (TextureSet *)*iter;
 				{
@@ -642,7 +691,7 @@ void CTrackedHMD::DestroySwapTextureSet(SharedTextureHandle_t sharedTextureHandl
 						for (auto i = 0; i < 3; i++)
 						{
 							//if (pSet->Data[i].hSharedHandle) CloseHandle(pSet->Data[i].hSharedHandle); //already closed by openvr?
-							m_DMS.m_TextureMap.erase((SharedTextureHandle_t)pSet->Data[i].hSharedHandle);
+							m_DirectOutput.m_TextureMap.erase((SharedTextureHandle_t)pSet->Data[i].hSharedHandle);
 							pSet->Data[i].hSharedHandle = nullptr;
 							//SAFE_RELEASE(pSet->Data[i].pGPUResource);
 							SAFE_RELEASE(pSet->Data[i].pGPUTexture);
@@ -656,22 +705,22 @@ void CTrackedHMD::DestroySwapTextureSet(SharedTextureHandle_t sharedTextureHandl
 						}
 						delete pSet;
 						pSet = nullptr;
-						m_DMS.m_TextureSets.erase(iter);
+						m_DirectOutput.m_TextureSets.erase(iter);
 						break;
 					}
 				}
 			}
-			ReleaseMutex(m_DMS.m_hTextureMapLock);
+			ReleaseMutex(m_DirectOutput.m_hTextureMapLock);
 		}
 	}
 }
 
 void CTrackedHMD::DestroyAllSwapTextureSets(uint32_t unPid)
 {
-	if (WAIT_OBJECT_0 == WaitForSingleObject(m_DMS.m_hTextureMapLock, 10000))
+	if (WAIT_OBJECT_0 == WaitForSingleObject(m_DirectOutput.m_hTextureMapLock, 10000))
 	{
 		//DriverLog(__FUNCTION__" PID: %u", unPid);
-		for (auto iter = m_DMS.m_TextureSets.begin(); iter != m_DMS.m_TextureSets.end(); iter++)
+		for (auto iter = m_DirectOutput.m_TextureSets.begin(); iter != m_DirectOutput.m_TextureSets.end(); iter++)
 		{
 			auto pSet = (TextureSet *)*iter;
 			if (pSet->Pid == unPid)
@@ -680,7 +729,7 @@ void CTrackedHMD::DestroyAllSwapTextureSets(uint32_t unPid)
 				{
 
 					//if (pSet->Data[i].hSharedHandle) CloseHandle(pSet->Data[i].hSharedHandle);
-					m_DMS.m_TextureMap.erase((SharedTextureHandle_t)pSet->Data[i].hSharedHandle);
+					m_DirectOutput.m_TextureMap.erase((SharedTextureHandle_t)pSet->Data[i].hSharedHandle);
 					pSet->Data[i].hSharedHandle = nullptr;
 					//SAFE_RELEASE(pSet->Data[i].pGPUResource);
 					SAFE_RELEASE(pSet->Data[i].pGPUTexture);
@@ -694,103 +743,104 @@ void CTrackedHMD::DestroyAllSwapTextureSets(uint32_t unPid)
 				}
 				delete pSet;
 				pSet = nullptr;
-				m_DMS.m_TextureSets.erase(iter);
+				m_DirectOutput.m_TextureSets.erase(iter);
 				break;
 			}
 		}
-		ReleaseMutex(m_DMS.m_hTextureMapLock);
+		ReleaseMutex(m_DirectOutput.m_hTextureMapLock);
 	}
 }
 
 void CTrackedHMD::GetNextSwapTextureSetIndex(vr::SharedTextureHandle_t sharedTextureHandles[2], uint32_t(*pIndices)[2])
 {
 	//DriverLog(__FUNCTION__" hTex1: %lu, hTex2: %lu, pIndices: %p", sharedTextureHandles[0], sharedTextureHandles[1], pIndices);
-	if (WAIT_OBJECT_0 == WaitForSingleObject(m_DMS.m_hTextureMapLock, 10000))
+	if (WAIT_OBJECT_0 == WaitForSingleObject(m_DirectOutput.m_hTextureMapLock, 10000))
 	{
 		for (auto i = 0; i < 2; i++)
 		{
-			auto iter = m_DMS.m_TextureMap.find(sharedTextureHandles[i]);
-			if (iter == m_DMS.m_TextureMap.end())
+			auto iter = m_DirectOutput.m_TextureMap.find(sharedTextureHandles[i]);
+			if (iter == m_DirectOutput.m_TextureMap.end())
 				continue;
 			auto tl = iter->second;
 			//(*pIndices)[i] = tl.pData->Index;
 			(*pIndices)[i] = (tl.pData->Index + 1) % 3; //@LoSealL
 		}
-		ReleaseMutex(m_DMS.m_hTextureMapLock);
+		ReleaseMutex(m_DirectOutput.m_hTextureMapLock);
 	}
 }
 
 void CTrackedHMD::SubmitLayer(vr::SharedTextureHandle_t sharedTextureHandles[2], const vr::VRTextureBounds_t(&bounds)[2], const vr::HmdMatrix34_t *pPose)
-{	
+{
 	//DriverLog(__FUNCTION__" hTex1: %lu, hTex2: %lu", sharedTextureHandles[0], sharedTextureHandles[1]);
-	if (WAIT_OBJECT_0 == WaitForSingleObject(m_DMS.m_hTextureMapLock, 10))
+	if (WAIT_OBJECT_0 == WaitForSingleObject(m_DirectOutput.m_hTextureMapLock, 10))
 	{
 		if (sharedTextureHandles[0])
 		{
-			auto iterLeft = m_DMS.m_TextureMap.find(sharedTextureHandles[0]);
-			if (iterLeft != m_DMS.m_TextureMap.end())
-				m_DMS.m_TlLeft = iterLeft->second;
+			auto iterLeft = m_DirectOutput.m_TextureMap.find(sharedTextureHandles[0]);
+			if (iterLeft != m_DirectOutput.m_TextureMap.end())
+				m_DirectOutput.m_TlLeft = iterLeft->second;
 		}
 
 		if (sharedTextureHandles[1])
 		{
-			auto iterRight = m_DMS.m_TextureMap.find(sharedTextureHandles[1]);
-			if (iterRight != m_DMS.m_TextureMap.end())
-				m_DMS.m_TlRight = iterRight->second;
+			auto iterRight = m_DirectOutput.m_TextureMap.find(sharedTextureHandles[1]);
+			if (iterRight != m_DirectOutput.m_TextureMap.end())
+				m_DirectOutput.m_TlRight = iterRight->second;
 		}
-		ReleaseMutex(m_DMS.m_hTextureMapLock);
+		ReleaseMutex(m_DirectOutput.m_hTextureMapLock);
 	}
 }
 
-void CTrackedHMD::Present(vr::SharedTextureHandle_t syncTexture)
+void CTrackedHMD::DirectPresent(vr::SharedTextureHandle_t syncTexture)
 {
-	//DriverLog(__FUNCTION__" syncTexture: %lu", syncTexture);
+	////DriverLog(__FUNCTION__" syncTexture: %lu", syncTexture);
 
-	if (m_DMS.m_SyncTexture != syncTexture)
+	if (m_DirectOutput.m_SyncTexture != syncTexture)
 	{
-		m_DMS.m_SyncTexture = syncTexture;
+		m_DirectOutput.m_SyncTexture = syncTexture;
 
-		if (m_DMS.m_pSyncTexture)
+		if (m_DirectOutput.m_pSyncTexture)
 		{
-			m_DMS.m_pSyncTexture->Release();
-			m_DMS.m_pSyncTexture = nullptr;
+			m_DirectOutput.m_pSyncTexture->Release();
+			m_DirectOutput.m_pSyncTexture = nullptr;
 		}
 
-		if (m_DMS.m_SyncTexture)
-			m_DMS.m_pDevice->OpenSharedResource((HANDLE)m_DMS.m_SyncTexture, __uuidof(ID3D11Texture2D), (void **)&m_DMS.m_pSyncTexture);
+		if (m_DirectOutput.m_SyncTexture)
+			m_DirectOutput.m_pDevice->OpenSharedResource((HANDLE)m_DirectOutput.m_SyncTexture, __uuidof(ID3D11Texture2D), (void **)&m_DirectOutput.m_pSyncTexture);
 	}
 
-	
+
 	if (!syncTexture)
 	{
 		//OutputDebugString(L"PresentNoSync\n");
-		m_DMS.CombineEyes();
+		m_DirectOutput.RenderOutput();
 		return;
-	}	
+	}
 
 	IDXGIKeyedMutex *pSyncMutex = nullptr;
-	if (m_DMS.m_pSyncTexture != nullptr && SUCCEEDED(m_DMS.m_pSyncTexture->QueryInterface(__uuidof(IDXGIKeyedMutex), (void **)&pSyncMutex)))
+	if (m_DirectOutput.m_pSyncTexture != nullptr && SUCCEEDED(m_DirectOutput.m_pSyncTexture->QueryInterface(__uuidof(IDXGIKeyedMutex), (void **)&pSyncMutex)))
 	{
 		if (SUCCEEDED(pSyncMutex->AcquireSync(0, 100)))
-		{			
+		{
 			//OutputDebugString(L"PresentSync\n");
-			m_DMS.CombineEyes();
+			m_DirectOutput.RenderOutput();
 			pSyncMutex->ReleaseSync(0);
 		}
 		pSyncMutex->Release();
 	}
 }
-*/
 
-void CTrackedHMD::Present(vr::SharedTextureHandle_t backbufferTextureHandle)
+
+
+void CTrackedHMD::VirtualPresent(vr::SharedTextureHandle_t backbufferTextureHandle)
 {
 	if (!backbufferTextureHandle)
 	{
-		m_DMS.m_FrameReady = false;
+		m_VirtualDisplay.m_FrameReady = false;
 		return;
 	}
-	m_DMS.TextureFromHandle(backbufferTextureHandle);
-	m_DMS.m_FrameReady = true;
+	m_VirtualDisplay.TextureFromHandle(backbufferTextureHandle);
+	m_VirtualDisplay.m_FrameReady = true;
 }
 
 void CTrackedHMD::WaitForPresent()
@@ -800,15 +850,10 @@ void CTrackedHMD::WaitForPresent()
 
 bool CTrackedHMD::GetTimeSinceLastVsync(float *pfSecondsSinceLastVsync, uint64_t *pulFrameCounter)
 {
-	*pfSecondsSinceLastVsync = m_DMS.m_FrameTime;
-	*pulFrameCounter = m_DMS.m_FrameCount;
+	*pfSecondsSinceLastVsync = m_VirtualDisplay.m_FrameTime;
+	*pulFrameCounter = m_VirtualDisplay.m_FrameCount;
 	return true;
 }
-
-
-
-
-
 
 
 

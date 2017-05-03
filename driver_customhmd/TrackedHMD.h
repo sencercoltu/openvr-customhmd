@@ -4,7 +4,8 @@
 #define TrackedHMD_H
 
 #include "TrackedDevice.h" 
-#include "DirectModeStreamer.h" 
+#include "VirtualStreamer.h" 
+#include "DirectModeOutput.h" 
 
 using namespace vr;
 
@@ -12,25 +13,32 @@ enum DisplayMode
 {
 	SteamDirect,
 	SteamExtended,
-	DirectVirtual,
+	DirectMode,
 	Virtual
 };
 
+class CDriverDirectModeComponentFix;
+class CDriverVirtualDisplayComponentFix;
+
 class CTrackedHMD : 
-	public IVRDisplayComponent,
+	public IVRDisplayComponent, 
 	public IVRCameraComponent,
-	//public IVRDriverDirectModeComponent, //cant co-exist with ivrvirtualdisplay
-	public IVRVirtualDisplay,
+//	public CDriverVirtualDisplayComponentFix,
+//	public CDriverDirectModeComponentFix,
 	public CTrackedDevice
 {
-	friend struct DirectModeStreamer;	
+	friend struct VirtualStreamer;
+	friend struct DirectModeOutput;
 
 private:	
 	HMDData m_HMDData;		
 	CameraData m_Camera;
-	DirectModeStreamer m_DMS;
+	VirtualStreamer m_VirtualDisplay;
+	DirectModeOutput m_DirectOutput;
 	DisplayMode m_DisplayMode;
-
+	
+	CDriverVirtualDisplayComponentFix *m_pVDF;
+	CDriverDirectModeComponentFix *m_pDMF;
 
 public:
 	CTrackedHMD(std::string displayName, CServerDriver *pServer);
@@ -78,20 +86,18 @@ public: //IVRCameraComponent
 	bool GetCameraIntrinsics(EVRTrackedCameraFrameType eFrameType, HmdVector2_t *pFocalLength, HmdVector2_t *pCenter) override;
 
 
-/* //cant co-exist with ivrvirtualdisplay
 public: //IVRDriverDirectModeComponent
-	void CreateSwapTextureSet(uint32_t unPid, uint32_t unFormat, uint32_t unWidth, uint32_t unHeight, vr::SharedTextureHandle_t(*pSharedTextureHandles)[3]) override;
-	void DestroySwapTextureSet(vr::SharedTextureHandle_t sharedTextureHandle) override;
-	void DestroyAllSwapTextureSets(uint32_t unPid) override;
-	void GetNextSwapTextureSetIndex(vr::SharedTextureHandle_t sharedTextureHandles[2], uint32_t(*pIndices)[2]) override;
-	void SubmitLayer(vr::SharedTextureHandle_t sharedTextureHandles[2], const vr::VRTextureBounds_t(&bounds)[2], const vr::HmdMatrix34_t *pPose) override;
-	void Present(vr::SharedTextureHandle_t syncTexture) override;
-*/
+	void CreateSwapTextureSet(uint32_t unPid, uint32_t unFormat, uint32_t unWidth, uint32_t unHeight, vr::SharedTextureHandle_t(*pSharedTextureHandles)[3]);
+	void DestroySwapTextureSet(vr::SharedTextureHandle_t sharedTextureHandle);
+	void DestroyAllSwapTextureSets(uint32_t unPid);
+	void GetNextSwapTextureSetIndex(vr::SharedTextureHandle_t sharedTextureHandles[2], uint32_t(*pIndices)[2]);
+	void SubmitLayer(vr::SharedTextureHandle_t sharedTextureHandles[2], const vr::VRTextureBounds_t(&bounds)[2], const vr::HmdMatrix34_t *pPose);
+	void DirectPresent(vr::SharedTextureHandle_t syncTexture);
 
-public:  //IVRVirtualDisplay
-	void Present(vr::SharedTextureHandle_t backbufferTextureHandle) override;
-	void WaitForPresent() override;
-	bool GetTimeSinceLastVsync(float *pfSecondsSinceLastVsync, uint64_t *pulFrameCounter) override;
+public:  //IVRVirtualDisplay 
+	void VirtualPresent(vr::SharedTextureHandle_t backbufferTextureHandle);
+	void WaitForPresent();
+	bool GetTimeSinceLastVsync(float *pfSecondsSinceLastVsync, uint64_t *pulFrameCounter);
 
 protected: //CTrackedDevice
 	void PacketReceived(USBPacket *pPacket, HmdVector3d_t *pCenterEuler, HmdVector3d_t *pRelativePos) override;
@@ -148,5 +154,31 @@ protected:
 	int32_t DisplayMCImageNumChannels;
 	void *DisplayMCImageData;	
 };
+
+class CDriverDirectModeComponentFix : public IVRDriverDirectModeComponent
+{
+private:
+	CTrackedHMD *m_pHMD;
+public:
+	CDriverDirectModeComponentFix(CTrackedHMD *pHmd) { m_pHMD = pHmd; }
+	void CreateSwapTextureSet(uint32_t unPid, uint32_t unFormat, uint32_t unWidth, uint32_t unHeight, vr::SharedTextureHandle_t(*pSharedTextureHandles)[3]) override { m_pHMD->CreateSwapTextureSet(unPid, unFormat, unWidth, unHeight, pSharedTextureHandles); }
+	void DestroySwapTextureSet(vr::SharedTextureHandle_t sharedTextureHandle) override { m_pHMD->DestroySwapTextureSet(sharedTextureHandle); }
+	void DestroyAllSwapTextureSets(uint32_t unPid) override { m_pHMD->DestroyAllSwapTextureSets(unPid); }
+	void GetNextSwapTextureSetIndex(vr::SharedTextureHandle_t sharedTextureHandles[2], uint32_t(*pIndices)[2]) override { m_pHMD->GetNextSwapTextureSetIndex(sharedTextureHandles, pIndices); }
+	void SubmitLayer(vr::SharedTextureHandle_t sharedTextureHandles[2], const vr::VRTextureBounds_t(&bounds)[2], const vr::HmdMatrix34_t *pPose) override { m_pHMD->SubmitLayer(sharedTextureHandles, bounds, pPose); }
+	void Present(vr::SharedTextureHandle_t syncTexture) override { m_pHMD->DirectPresent(syncTexture); }
+};
+
+class CDriverVirtualDisplayComponentFix : public IVRVirtualDisplay
+{
+private:
+	CTrackedHMD *m_pHMD;
+public:
+	CDriverVirtualDisplayComponentFix(CTrackedHMD *pHmd) { m_pHMD = pHmd; }
+	void WaitForPresent() override { m_pHMD->WaitForPresent(); }
+	bool GetTimeSinceLastVsync(float *pfSecondsSinceLastVsync, uint64_t *pulFrameCounter) override { return m_pHMD->GetTimeSinceLastVsync(pfSecondsSinceLastVsync, pulFrameCounter); }
+	void Present(vr::SharedTextureHandle_t backbufferTextureHandle) override { m_pHMD->VirtualPresent(backbufferTextureHandle); }
+};
+
 
 #endif // TrackedHMD_H

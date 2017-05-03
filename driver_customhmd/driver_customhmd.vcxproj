@@ -194,8 +194,9 @@
     <ClCompile Include="AMDEnc\public\common\TraceAdapter.cpp" />
     <ClCompile Include="AMDEnc\public\common\Windows\ThreadWindows.cpp" />
     <ClCompile Include="capturedevice.cpp" />
+    <ClCompile Include="DirectModeOutput.cpp" />
     <ClCompile Include="memmem.c" />
-    <ClCompile Include="DirectModeStreamer.cpp" />
+    <ClCompile Include="VirtualStreamer.cpp" />
     <ClCompile Include="driver_customhmd.cpp" />
     <ClCompile Include="liquidvr_hack.cpp" />
     <ClCompile Include="Quaternion.cpp" />
@@ -225,7 +226,8 @@
     <ClInclude Include="AMDEnc\public\common\Thread.h" />
     <ClInclude Include="AMDEnc\public\common\TraceAdapter.h" />
     <ClInclude Include="capturedevice.h" />
-    <ClInclude Include="DirectModeStreamer.h" />
+    <ClInclude Include="DirectModeOutput.h" />
+    <ClInclude Include="VirtualStreamer.h" />
     <ClInclude Include="memmem.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="TCPServer.h" />

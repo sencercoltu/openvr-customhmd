@@ -1,25 +1,12 @@
-#include "DirectModeStreamer.h"
+#include "VirtualStreamer.h"
 #include "TrackedHMD.h"
-
-//#define ENABLE_COMBINED_SS
 
 
 #pragma comment(lib, "ws2_32.lib")
-//#pragma comment(lib, "D2d1.lib")
 #pragma comment(lib, "D3D11.lib")
 #pragma comment(lib, "Dxgi.lib")
-#pragma comment(lib, "D3DCompiler.lib")
-//#pragma comment(lib, "Evr.lib")
 
 
-#ifdef ENABLE_COMBINED_SS
-#include "C:\Program Files (x86)\Microsoft SDKs\DirectX\Include\D3DX11tex.h"
-#ifdef _WIN64
-#pragma comment(lib,"C:\\Program Files (x86)\\Microsoft SDKs\\DirectX\\Lib\\x64\\D3DX11.lib")
-#else
-#pragma comment(lib,"C:\\Program Files (x86)\\Microsoft SDKs\\DirectX\\Lib\\x86\\D3DX11.lib")
-#endif
-#endif //ENABLE_COMBINED_SS
 //
 //HRESULT CMFTEventReceiver::QueryInterface(REFIID riid, void ** ppvObject)
 //{
@@ -95,7 +82,7 @@
 
 #define EXIT_IF_FAILED if (FAILED(hr)) { Destroy(); return; }
 
-void DirectModeStreamer::Init(CTrackedHMD *pHmd)
+void VirtualStreamer::Init(CTrackedHMD *pHmd)
 {
 	HRESULT hr = CoInitializeEx(nullptr, COINITBASE_MULTITHREADED);
 
@@ -326,7 +313,7 @@ void DirectModeStreamer::Init(CTrackedHMD *pHmd)
 	}
 }
 
-void DirectModeStreamer::TextureFromHandle(SharedTextureHandle_t handle)
+void VirtualStreamer::TextureFromHandle(SharedTextureHandle_t handle)
 {	
 	ID3D11Texture2D *pTexture;	
 	//assume 3 buffers
@@ -338,7 +325,7 @@ void DirectModeStreamer::TextureFromHandle(SharedTextureHandle_t handle)
 			HRESULT hr = m_pDevice->OpenSharedResource((HANDLE)handle, __uuidof(ID3D11Texture2D), (void **)&pTexture);
 			if (pTexture)
 			{
-				AMF_RESULT res = m_pEncderContext->CreateSurfaceFromDX11Native(pTexture, &m_TextureCache[i].m_pSurfaceTex, this);
+				AMF_RESULT res = m_pEncoderContext->CreateSurfaceFromDX11Native(pTexture, &m_TextureCache[i].m_pSurfaceTex, this);
 				if (res == AMF_OK)
 				{
 					if (SUCCEEDED(pTexture->QueryInterface(__uuidof(IDXGIKeyedMutex), (void **)&m_TextureCache[i].m_pTexSync)))
@@ -362,7 +349,7 @@ void DirectModeStreamer::TextureFromHandle(SharedTextureHandle_t handle)
 	}
 }
 
-void DirectModeStreamer::Destroy()
+void VirtualStreamer::Destroy()
 {
 	m_IsRunning = false;
 
@@ -401,71 +388,17 @@ void DirectModeStreamer::Destroy()
 	pHMD = nullptr;
 }
 
-//DirectMode disabled
-/*
-void DirectModeStreamer::CombineEyes()
+
+unsigned int WINAPI VirtualStreamer::RemoteDisplayThread(void *p)
 {
-	if (!m_FrameTime || !m_pTexSync) return;
-	DWORD now = GetTickCount(); //limit framerate to display
-	if (now - m_LastFrameTime < m_FrameTime)
-		return;
-	m_LastFrameTime = now;
-
-	ID3D11ShaderResourceView *pEmptyTexture[1] = { nullptr };
-	if (SUCCEEDED(m_pTexSync->AcquireSync(0, 100)))
-	{
-		m_pContext->OMSetRenderTargets(1, &m_pRTView, nullptr);
-
-		//draw left texture to combined texture
-		if (m_TlLeft.pData)
-		{
-			Ep.SHIFT = XMMatrixTranspose(XMMatrixTranslation(0.0f, 0.0f, 0.0f));
-			m_pContext->PSSetShaderResources(0, 1, &m_TlLeft.pData->pShaderResourceView);
-			m_pContext->UpdateSubresource(m_pConstantBuffer, 0, nullptr, &Ep, 0, 0);
-			m_pContext->DrawIndexed(6, 0, 0);
-			m_pContext->PSSetShaderResources(0, 1, pEmptyTexture);
-			m_TlLeft.pData = nullptr;
-		}
-
-		//draw right texture to combined texture
-		if (m_TlRight.pData)
-		{
-			Ep.SHIFT = XMMatrixTranspose(XMMatrixTranslation(1.0f, 0.0f, 0.0f));
-			m_pContext->PSSetShaderResources(0, 1, &m_TlRight.pData->pShaderResourceView);
-			m_pContext->UpdateSubresource(m_pConstantBuffer, 0, nullptr, &Ep, 0, 0);
-			m_pContext->DrawIndexed(6, 0, 0);
-			m_pContext->PSSetShaderResources(0, 1, pEmptyTexture);
-			m_TlRight.pData = nullptr;
-		}
-
-
-#ifdef ENABLE_COMBINED_SS
-		ID3D11Resource *pTexRes = nullptr;
-		m_pRTTex->QueryInterface(__uuidof(ID3D11Resource), (void**)&pTexRes);
-		if (!pTexRes)
-			return;
-		D3DX11SaveTextureToFile(m_pContext, pTexRes, D3DX11_IFF_JPG, L"D:\\OUT\\IMG\\file.jpg");
-		pTexRes->Release();
-#endif //ENABLE_COMBINED_SS
-
-		m_FrameReady = true;
-		//OutputDebugString(L"Combine\n");
-		m_pTexSync->ReleaseSync(0);		
-	}
-	
-}
-*/
-
-unsigned int WINAPI DirectModeStreamer::RemoteDisplayThread(void *p)
-{
-	auto dmd = static_cast<DirectModeStreamer *>(p);
+	auto dmd = static_cast<VirtualStreamer *>(p);
 	if (dmd)
 		dmd->RunRemoteDisplay();
 	_endthreadex(0);
 	return 0;
 }
 
-void DirectModeStreamer::RunRemoteDisplay()
+void VirtualStreamer::RunRemoteDisplay()
 {
 	//HRESULT hr;
 	WSADATA wsaData;
@@ -474,10 +407,6 @@ void DirectModeStreamer::RunRemoteDisplay()
 	CTCPServer *pServer = new CTCPServer(1974, TcpPacketReceive, this);
 	//UdpClientServer::CUdpClient *pUdpClient = new UdpClientServer::CUdpClient(m_HMDData.DirectStreamURL, 1974);
 	InitEncoder();
-
-#ifdef _DEBUG
-	//fopen_s(&m_FileDump, "D:\\OUT\\xx.h264", "wb");
-#endif //_DEBUG
 
 	InfoPacket infoPacket = {};
 	infoPacket.H = 'H';
@@ -554,7 +483,6 @@ void DirectModeStreamer::RunRemoteDisplay()
 							*((int *)pFrameBuffer) = len;
 							memcpy(&pFrameBuffer[4], pData, len);
 							pServer->SendBuffer((const char *)pFrameBuffer, len + 4);
-							if (m_FileDump) fwrite(&pFrameBuffer[4], 1, len - 4, m_FileDump);
 						}
 					}
 					else
@@ -584,10 +512,6 @@ void DirectModeStreamer::RunRemoteDisplay()
 	delete pServer;
 	pServer = nullptr;
 
-	if (m_FileDump)
-		fclose(m_FileDump);
-	m_FileDump = nullptr;
-
 	if (pFrameBuffer)
 		free(pFrameBuffer);
 	pFrameBuffer = nullptr;
@@ -600,7 +524,7 @@ void DirectModeStreamer::RunRemoteDisplay()
 }
 
 /*
-void DirectModeStreamer::ProcessEvent(IMFMediaEvent *pEvent, CTCPServer *pServer)
+void VirtualStreamer::ProcessEvent(IMFMediaEvent *pEvent, CTCPServer *pServer)
 {
 	HRESULT hr;
 	MediaEventType type;
@@ -700,9 +624,9 @@ void DirectModeStreamer::ProcessEvent(IMFMediaEvent *pEvent, CTCPServer *pServer
 */
 
 
-void DirectModeStreamer::TcpPacketReceive(void *dst, const char *pData, int len)
+void VirtualStreamer::TcpPacketReceive(void *dst, const char *pData, int len)
 {
-	DirectModeStreamer *pDM = (DirectModeStreamer *)dst;
+	VirtualStreamer *pDM = (VirtualStreamer *)dst;
 	if (pData == nullptr)
 	{
 		pDM->m_DisplayState = 0;
@@ -716,14 +640,14 @@ void DirectModeStreamer::TcpPacketReceive(void *dst, const char *pData, int len)
 	pDM->m_LastPacketReceive = GetTickCount();
 }
 
-void DirectModeStreamer::ProcessRemotePacket(USBPacket *pPacket)
+void VirtualStreamer::ProcessRemotePacket(USBPacket *pPacket)
 {
 	pHMD->m_pServer->ProcessUSBPacket(pPacket);
 }
 
 #define EXIT_AND_DESTROY if (res != AMF_OK) { DestroyEncoder(); return false;}
 
-bool DirectModeStreamer::InitEncoder()
+bool VirtualStreamer::InitEncoder()
 {
 	AMF_RESULT res = AMF_OK;
 	res = g_AMFFactory.Init();
@@ -736,13 +660,13 @@ bool DirectModeStreamer::InitEncoder()
 //	amf::AMFTraceEnableWriter(AMF_TRACE_WRITER_DEBUG_OUTPUT, true);
 //#endif //_DEBUG
 
-	res = g_AMFFactory.GetFactory()->CreateContext(&m_pEncderContext);
+	res = g_AMFFactory.GetFactory()->CreateContext(&m_pEncoderContext);
 	EXIT_AND_DESTROY;
 
-	res = m_pEncderContext->InitDX11(m_pDevice, amf::AMF_DX11_1); // can be DX11 device
+	res = m_pEncoderContext->InitDX11(m_pDevice, amf::AMF_DX11_1); // can be DX11 device
 	EXIT_AND_DESTROY;
 
-	res = g_AMFFactory.GetFactory()->CreateComponent(m_pEncderContext, AMFVideoEncoderVCE_AVC, &m_pEncoder);
+	res = g_AMFFactory.GetFactory()->CreateComponent(m_pEncoderContext, AMFVideoEncoderVCE_AVC, &m_pEncoder);
 	EXIT_AND_DESTROY;
 
 	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_USAGE, AMF_VIDEO_ENCODER_USAGE_ULTRA_LOW_LATENCY);
@@ -774,7 +698,7 @@ bool DirectModeStreamer::InitEncoder()
 	return true;
 }
 
-void DirectModeStreamer::DestroyEncoder()
+void VirtualStreamer::DestroyEncoder()
 {
 	//if (m_pSurfaceIn)
 	//	m_pSurfaceIn->Release();
@@ -791,9 +715,9 @@ void DirectModeStreamer::DestroyEncoder()
 		m_pEncoder->Terminate();
 	m_pEncoder = nullptr;
 
-	if (m_pEncderContext)
-		m_pEncderContext->Terminate();
-	m_pEncderContext = nullptr;
+	if (m_pEncoderContext)
+		m_pEncoderContext->Terminate();
+	m_pEncoderContext = nullptr;
 //#ifdef _DEBUG
 //	amf::AMFTraceEnableWriter(AMF_TRACE_WRITER_DEBUG_OUTPUT, false);
 //#endif //_DEBUG
@@ -805,7 +729,7 @@ void DirectModeStreamer::DestroyEncoder()
 /*
 #define EXIT_IF_FAILED_MFT if (FAILED(hr)) { DestroyMFT(); return false; }
 
-bool DirectModeStreamer::InitMFT()
+bool VirtualStreamer::InitMFT()
 {
 	m_pEventGenerator = nullptr;
 	m_pTransform = nullptr;
@@ -1042,7 +966,7 @@ bool DirectModeStreamer::InitMFT()
 	return true;
 }
 
-void DirectModeStreamer::DestroyMFT()
+void VirtualStreamer::DestroyMFT()
 {
 	//if (m_pEventGenerator)
 	//	m_pEventGenerator->EndGetEvent(this, nullptr);
@@ -1067,7 +991,7 @@ void DirectModeStreamer::DestroyMFT()
 	m_FileDump = nullptr;
 }
 
-IMFMediaEvent *DirectModeStreamer::GetEvent()
+IMFMediaEvent *VirtualStreamer::GetEvent()
 {
 	if (!m_pEventGenerator) return nullptr;
 	IMFMediaEvent *pEvent = nullptr;
