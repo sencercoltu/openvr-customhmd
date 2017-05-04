@@ -137,7 +137,7 @@ void CTCPServer::Run()
 				break;
 
 			timeout.tv_sec = 0;
-			timeout.tv_usec = 1;
+			timeout.tv_usec = 1000;
 			FD_ZERO(&rd);
 			FD_ZERO(&wr);
 			FD_SET(m_ClientSocket, &rd);
@@ -219,7 +219,7 @@ void CTCPServer::Run()
 
 bool CTCPServer::IsReady()
 {
-	return m_DataSize == 0 && m_IsConnected;
+	return (m_DataSize == 0) && m_IsConnected;
 }
 
 bool CTCPServer::IsConnected()

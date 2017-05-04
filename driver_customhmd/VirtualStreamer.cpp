@@ -415,9 +415,7 @@ void VirtualStreamer::RunRemoteDisplay()
 	infoPacket.D2 = 'D';
 	infoPacket.Width = pHMD->m_HMDData.ScreenWidth;
 	infoPacket.Height = pHMD->m_HMDData.ScreenHeight;
-
-	amf_pts lastSPSPPS = 0;
-
+	bool setHeaders = false;
 	unsigned char *pFrameBuffer = (unsigned char *) malloc(8192*1024);	
 	int counter = 0;
 	while (m_IsRunning)
@@ -438,7 +436,7 @@ void VirtualStreamer::RunRemoteDisplay()
 				continue;
 			case 2:
 				m_pEncoder->ReInit(pHMD->m_HMDData.ScreenWidth, pHMD->m_HMDData.ScreenHeight);
-				lastSPSPPS = amf_high_precision_clock();
+				setHeaders = true;
 				m_DisplayState = pServer->IsConnected() ? m_DisplayState + 1 : 0;
 				continue;
 			case 3:
@@ -448,12 +446,12 @@ void VirtualStreamer::RunRemoteDisplay()
 					continue;			
 
 				if (pServer->IsReady() && m_FrameReady && m_TexIndex > 0)
-				{						
+				{
 					AMF_RESULT res;
 					amf_pts start_time;
-					
-					if (SUCCEEDED(m_TextureCache[m_TexIndex].m_pTexSync->AcquireSync(0, 10)))
-					{		
+					TextureCache *pCache = &m_TextureCache[m_TexIndex];
+					if (SUCCEEDED(pCache->m_pTexSync->AcquireSync(0, 100)))
+					{
 						//if ((amf_high_precision_clock() - lastSPSPPS) / 10000000 >= 10)
 						//{
 						//	m_pEncoder->ReInit(pHMD->m_HMDData.ScreenWidth, pHMD->m_HMDData.ScreenHeight);
@@ -463,12 +461,19 @@ void VirtualStreamer::RunRemoteDisplay()
 						//}
 						m_LastFrameTime = now;
 						start_time = amf_high_precision_clock();
-						res = m_pEncoder->SubmitInput(m_TextureCache[m_TexIndex].m_pSurfaceTex);
-						m_EndcodeElapsed +=  amf_high_precision_clock() - start_time;
+						if (setHeaders)
+						{
+							setHeaders = false;
+							pCache->m_pSurfaceTex->SetProperty(AMF_VIDEO_ENCODER_INSERT_AUD, true);
+							pCache->m_pSurfaceTex->SetProperty(AMF_VIDEO_ENCODER_INSERT_SPS, true);
+							pCache->m_pSurfaceTex->SetProperty(AMF_VIDEO_ENCODER_INSERT_PPS, true);
+						}
+						res = m_pEncoder->SubmitInput(pCache->m_pSurfaceTex);
+						m_EndcodeElapsed += amf_high_precision_clock() - start_time;
 						m_FrameReady = false;
-						m_TextureCache[m_TexIndex].m_pTexSync->ReleaseSync(0);
+						pCache->m_pTexSync->ReleaseSync(0);
 					}
-					
+
 					amf::AMFDataPtr data;
 					start_time = amf_high_precision_clock();
 					res = m_pEncoder->QueryOutput(&data);
@@ -479,17 +484,16 @@ void VirtualStreamer::RunRemoteDisplay()
 						unsigned char *pData = (unsigned char *)buffer->GetNative();
 						int len = (int)buffer->GetSize();
 						if (len > 0)
-						{
-							*((int *)pFrameBuffer) = len;
-							memcpy(&pFrameBuffer[4], pData, len);
+						{							
+							memcpy(pFrameBuffer, pData, len);
 							pServer->SendBuffer((const char *)pFrameBuffer, len + 4);
+							OutputDebugString(L"sent\n");
 						}
 					}
 					else
 					{
 						counter++;
 					}
-					
 
 					//MFT disabled
 					//add raw frame to encoder and send encoded 
@@ -500,11 +504,12 @@ void VirtualStreamer::RunRemoteDisplay()
 					//	pEvent->Release();
 					//}
 				}
+				else
+				{
+					OutputDebugString(m_FrameReady? L"Server Not ready!\n" : L"Frame Not ready!\n");
+				}
 			}
-			Sleep(1);
 		}
-		else
-			Sleep(100);
 	}
 
 	DestroyEncoder();
