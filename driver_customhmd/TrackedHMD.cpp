@@ -914,8 +914,7 @@ void CTrackedHMD::VirtualPresent(vr::SharedTextureHandle_t backbufferTextureHand
 		m_VirtualDisplay.m_FrameReady = false;
 		return;
 	}
-	m_VirtualDisplay.TextureFromHandle(backbufferTextureHandle);
-	m_VirtualDisplay.m_FrameReady = true;
+	m_VirtualDisplay.TextureFromHandle(backbufferTextureHandle);	
 }
 
 void CTrackedHMD::WaitForPresent()

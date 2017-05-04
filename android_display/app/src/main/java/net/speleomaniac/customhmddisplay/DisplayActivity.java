@@ -2,10 +2,16 @@ package net.speleomaniac.customhmddisplay;
 
 import android.app.Activity;
 import android.content.pm.ActivityInfo;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.media.MediaCodec;
 import android.media.MediaFormat;
+import android.opengl.Matrix;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Display;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -13,7 +19,9 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 
-import com.google.vr.sdk.base.HeadTransform;
+//import com.google.vr.sdk.base.HeadTransform; - too slow
+//import com.google.vr.sdk.base.sensors.HeadTracker;
+
 import com.google.vr.sdk.base.sensors.HeadTracker;
 
 import java.nio.ByteBuffer;
@@ -22,21 +30,32 @@ import java.nio.ByteOrder;
 public class DisplayActivity
         extends Activity
         implements SurfaceHolder.Callback,
-                   TcpClient.PacketReceiveListener
-                   //SensorEventListener
-{
+                   TcpClient.PacketReceiveListener,
+        SensorEventListener {
 
     private TcpClient tcpClient = null;
     private MediaCodec codec;
     private Surface surface;
 
-    //private SensorManager sensorManager;
+    private SensorManager sensorManager;
     private UsbPacket usbPacket = new UsbPacket();
 
     //private HeadTransform headTransform = new HeadTransform();
-    private HeadTracker headTracker;
-    private Thread trackerThread;
+    //private HeadTracker headTracker;
+    //private Thread trackerThread;
 
+
+    float Q[] = new float[4];
+    float m_RotMatrix[] = new float[16];
+    float m_SensorToDisplay[] = new float[16];
+    float m_EkfToHeadTracker[] = new float[16];
+    //float m_NeckModelTranslation[] = new float[16];
+    float m_TmpHeadView[] = new float[16];
+    //float m_TmpHeadView2[] = new float[16];
+
+    float m_LastRotation = Float.NaN;
+
+    private Display m_Display;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,8 +73,14 @@ public class DisplayActivity
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         setContentView(sv);
 
+        m_Display = getWindowManager().getDefaultDisplay();
+        Matrix.setIdentityM(m_SensorToDisplay, 0);
 
+
+/*
         headTracker = HeadTracker.createFromContext(this);
+        headTracker.setNeckModelEnabled(true);
+
         trackerThread = new Thread(){
             @Override
             public void run() {
@@ -83,16 +108,16 @@ public class DisplayActivity
                             FrameTime = System.currentTimeMillis();
                             Log.d("FPS", "In: " + inFps + " Out: " + outFps);
                         }
-                        Thread.sleep(50);
+                        Thread.sleep(10);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
                 }
             }
         };
-
+*/
         usbPacket.Header.Type = (byte)(UsbPacket.HMD_SOURCE | UsbPacket.ROTATION_DATA);
-        //sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+        sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
     }
 
     @Override
@@ -109,45 +134,131 @@ public class DisplayActivity
     public void surfaceDestroyed(SurfaceHolder holder) {
     }
 
-//    float Q[] = new float[4];
-//    @Override
-//    public void onSensorChanged(SensorEvent event) {
-//        if (State == 0)
-//            return;
-//        if (event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
-//
-//            SensorManager.getQuaternionFromVector(Q, event.values);
-//
-//            usbPacket.Rotation.w = Q[0];
-//            usbPacket.Rotation.x = Q[2];
-//            usbPacket.Rotation.y = Q[1];
-//            usbPacket.Rotation.z = Q[3];
-//            if (tcpClient != null && tcpClient.IsConnected) {
-//                usbPacket.buildRotationPacket();
-//                tcpClient.sendPacket(usbPacket);
-//            }
-//        }
-//    }
-//
-//    @Override
-//    public void onAccuracyChanged(Sensor sensor, int accuracy) {
-//
-//    }
+    public void getQuaternion(final float[] quaternion, final float[] m) {
 
-    public boolean isTrackerRunning = false;
+        final float t = m[0] + m[5] + m[10];
+        float w;
+        float x;
+        float y;
+        float z;
+        if (t >= 0.0f) {
+            float s = (float)Math.sqrt(t + 1.0f);
+            w = 0.5f * s;
+            s = 0.5f / s;
+            x = (m[9] - m[6]) * s;
+            y = (m[2] - m[8]) * s;
+            z = (m[4] - m[1]) * s;
+        }
+        else if (m[0] > m[5] && m[0] > m[10]) {
+            float s = (float)Math.sqrt(1.0f + m[0] - m[5] - m[10]);
+            x = s * 0.5f;
+            s = 0.5f / s;
+            y = (m[4] + m[1]) * s;
+            z = (m[2] + m[8]) * s;
+            w = (m[9] - m[6]) * s;
+        }
+        else if (m[5] > m[10]) {
+            float s = (float)Math.sqrt(1.0f + m[5] - m[0] - m[10]);
+            y = s * 0.5f;
+            s = 0.5f / s;
+            x = (m[4] + m[1]) * s;
+            z = (m[9] + m[6]) * s;
+            w = (m[2] - m[8]) * s;
+        }
+        else {
+            float s = (float)Math.sqrt(1.0f + m[10] - m[0] - m[5]);
+            z = s * 0.5f;
+            s = 0.5f / s;
+            x = (m[2] + m[8]) * s;
+            y = (m[9] + m[6]) * s;
+            w = (m[4] - m[1]) * s;
+        }
+        quaternion[0] = w;
+        quaternion[1] = x;
+        quaternion[2] = y;
+        quaternion[3] = z;
+    }
+
+
+    long m_LastPoseTime = 0;
+    float m_PosePeriod = 1000.0f / 60.0f;
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if (State == 0)
+            return;
+
+        long now = System.currentTimeMillis();
+        if (now - m_LastPoseTime < m_PosePeriod)
+            return;
+        m_LastPoseTime = now;
+        //send max 60 times per second
+
+        if (event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
+
+            SensorManager.getRotationMatrixFromVector(m_RotMatrix, event.values);
+
+            float rotation = 0.0f;
+            switch (m_Display.getRotation()) {
+                case 0: {
+                    rotation = 0.0f;
+                    break;
+                }
+                case 1: {
+                    rotation = 90.0f;
+                    break;
+                }
+                case 2: {
+                    rotation = 180.0f;
+                    break;
+                }
+                case 3: {
+                    rotation = 270.0f;
+                    break;
+                }
+            }
+
+            if (rotation != m_LastRotation ) {
+                m_LastRotation = rotation;
+                Matrix.setRotateEulerM(m_SensorToDisplay, 0, 0.0f, 0.0f, -rotation);
+                Matrix.setRotateEulerM(m_EkfToHeadTracker, 0, -90.0f, 0.0f, rotation);
+            }
+
+            Matrix.multiplyMM(m_TmpHeadView, 0, m_SensorToDisplay, 0, m_RotMatrix, 0);
+            Matrix.multiplyMM(m_RotMatrix, 0, m_TmpHeadView, 0, m_EkfToHeadTracker, 0);
+
+            getQuaternion(Q, m_RotMatrix);
+
+            usbPacket.Rotation.w = Q[0];
+            usbPacket.Rotation.x = Q[1];
+            usbPacket.Rotation.y = Q[2];
+            usbPacket.Rotation.z = Q[3];
+            if (tcpClient != null && tcpClient.IsConnected) {
+                usbPacket.buildRotationPacket();
+                tcpClient.sendPacket(usbPacket);
+            }
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
+    }
+
+    //public boolean isTrackerRunning = false;
 
     @Override
     protected void onPause() {
-        headTracker.stopTracking();
-        if (isTrackerRunning) {
-            isTrackerRunning = false;
-            try {
-                trackerThread.join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        //sensorManager.unregisterListener(this);
+//        headTracker.stopTracking();
+//        if (isTrackerRunning) {
+//            isTrackerRunning = false;
+//            try {
+//                trackerThread.join();
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+//        }
+        sensorManager.unregisterListener(this);
         if (tcpClient != null) {
             tcpClient.disconnect();
             tcpClient = null;
@@ -161,19 +272,19 @@ public class DisplayActivity
     protected void onResume() {
         super.onResume();
         if (tcpClient == null) {
-            //tcpClient = new TcpClient(this, "127.0.0.1", 1974);
-            tcpClient = new TcpClient(this, "192.168.0.10", 1974);
+            tcpClient = new TcpClient(this, "127.0.0.1", 1974);
+            //tcpClient = new TcpClient(this, "192.168.0.10", 1974);
             tcpClient.start();
         }
         //setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-        //sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR), SensorManager.SENSOR_DELAY_FASTEST);
-        if (!isTrackerRunning) {
-            isTrackerRunning = true;
-            trackerThread.start();
-        }
-        headTracker.startTracking();
+        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR), SensorManager.SENSOR_DELAY_FASTEST);
+//        if (!isTrackerRunning) {
+//            isTrackerRunning = true;
+//            trackerThread.start();
+//        }
+//        headTracker.startTracking();
 
     }
 
@@ -276,9 +387,6 @@ public class DisplayActivity
                             codec.queueInputBuffer(inIndex, 0, len, 1, 0);
                         }
                     }
-
-
-
                     break;
                 }
             }

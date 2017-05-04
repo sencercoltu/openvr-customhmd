@@ -45,6 +45,7 @@ public:
 
 	VirtualStreamer()
 	{
+		m_SequenceCounter = 0;
 		m_pEncoderContext = nullptr;
 		m_pEncoder = nullptr;
 		m_TexIndex = -1;
@@ -80,7 +81,7 @@ public:
 
 	CTrackedHMD *pHMD;
 
-	DWORD m_LastFrameTime;
+	amf_pts m_LastFrameTime;
 	DWORD m_LastPacketReceive;
 	float m_FrameTime;
 
@@ -88,7 +89,7 @@ public:
 
 	void Init(CTrackedHMD *pHmd);
 	void Destroy();
-	void TextureFromHandle(SharedTextureHandle_t handle);
+	void TextureFromHandle(SharedTextureHandle_t handlei);
 
 	
 	HANDLE m_hDisplayThread;
@@ -111,8 +112,10 @@ public:
 		ID3D11Texture2D *m_pVirtualTexture;
 		amf::AMFSurfacePtr m_pSurfaceTex;
 		IDXGIKeyedMutex *m_pTexSync;
+		uint64_t m_Sequence;
 	};
-	int m_TexIndex;
+	int m_TexIndex;	
+	uint64_t m_SequenceCounter;
 
 	TextureCache m_TextureCache[3];
 

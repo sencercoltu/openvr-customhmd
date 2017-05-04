@@ -6,6 +6,16 @@
 #pragma comment(lib, "D3D11.lib")
 #pragma comment(lib, "Dxgi.lib")
 
+//#define ENABLE_TEXTURE_SS
+
+#ifdef ENABLE_TEXTURE_SS
+#include "C:\Program Files (x86)\Microsoft SDKs\DirectX\Include\D3DX11tex.h"
+#ifdef _WIN64
+#pragma comment(lib,"C:\\Program Files (x86)\\Microsoft SDKs\\DirectX\\Lib\\x64\\D3DX11.lib")
+#else
+#pragma comment(lib,"C:\\Program Files (x86)\\Microsoft SDKs\\DirectX\\Lib\\x86\\D3DX11.lib")
+#endif
+#endif //ENABLE_TEXTURE_SS
 
 //
 //HRESULT CMFTEventReceiver::QueryInterface(REFIID riid, void ** ppvObject)
@@ -316,34 +326,60 @@ void VirtualStreamer::Init(CTrackedHMD *pHmd)
 void VirtualStreamer::TextureFromHandle(SharedTextureHandle_t handle)
 {	
 	ID3D11Texture2D *pTexture;	
+
+#ifdef ENABLE_TEXTURE_SS
+	HRESULT hr = m_pDevice->OpenSharedResource((HANDLE)handle, __uuidof(ID3D11Texture2D), (void **)&pTexture);
+	if (pTexture != nullptr)
+	{
+		IDXGIKeyedMutex *pMutex;
+		if (SUCCEEDED(pTexture->QueryInterface(__uuidof(IDXGIKeyedMutex), (void **)&pMutex)))
+		{
+			if (SUCCEEDED(pMutex->AcquireSync(0, 10)))
+			{
+				D3DX11SaveTextureToFile(m_pContext, pTexture, D3DX11_IFF_JPG, L"D:\\OUT\\IMG\\texture.jpg");
+				pMutex->ReleaseSync(0);
+			}
+			pMutex->Release();
+		}
+		pTexture->Release();
+	}
+#endif //ENABLE_TEXTURE_SS
+
 	//assume 3 buffers
+	m_SequenceCounter++;
+
 	for (int i = 0; i < 3; i++)
 	{
-		if (!m_TextureCache[i].m_hVirtualTexture)
+		TextureCache *pCache = &m_TextureCache[i];
+		if (!pCache->m_hVirtualTexture)
 		{
 			//empty slot
 			HRESULT hr = m_pDevice->OpenSharedResource((HANDLE)handle, __uuidof(ID3D11Texture2D), (void **)&pTexture);
 			if (pTexture)
 			{
-				AMF_RESULT res = m_pEncoderContext->CreateSurfaceFromDX11Native(pTexture, &m_TextureCache[i].m_pSurfaceTex, this);
+				AMF_RESULT res = m_pEncoderContext->CreateSurfaceFromDX11Native(pTexture, &pCache->m_pSurfaceTex, this);
 				if (res == AMF_OK)
 				{
-					if (SUCCEEDED(pTexture->QueryInterface(__uuidof(IDXGIKeyedMutex), (void **)&m_TextureCache[i].m_pTexSync)))
+					if (SUCCEEDED(pTexture->QueryInterface(__uuidof(IDXGIKeyedMutex), (void **)&pCache->m_pTexSync)))
 					{
-						m_TextureCache[i].m_pVirtualTexture = pTexture;
-						m_TextureCache[i].m_hVirtualTexture = handle;
-						m_TexIndex = i;
+						pCache->m_pVirtualTexture = pTexture;
+						pCache->m_hVirtualTexture = handle;
+						pCache->m_Sequence = m_SequenceCounter;
+						m_TexIndex = i;						
+						m_FrameReady = true;
 						return;
 					}
 				}
-				m_TextureCache[i].m_pSurfaceTex = nullptr;
+				pCache->m_pSurfaceTex = nullptr;
 				pTexture->Release();
 				return;
 			}
 		}
-		else if (m_TextureCache[i].m_hVirtualTexture == handle)
+		else if (pCache->m_hVirtualTexture == handle)
 		{
+			pCache->m_Sequence = m_SequenceCounter;
 			m_TexIndex = i;
+			m_FrameReady = true;
 			return;
 		}
 	}
@@ -441,15 +477,22 @@ void VirtualStreamer::RunRemoteDisplay()
 				continue;
 			case 3:
 				m_DisplayState = pServer->IsConnected() ? m_DisplayState : 0;
-				DWORD now = GetTickCount(); //limit framerate to display
-				if ((now - m_LastFrameTime) < m_FrameTime)
-					continue;			
+				amf_pts now = amf_high_precision_clock();
+				if (((now - m_LastFrameTime) / 10000) < m_FrameTime)
+				{
+					OutputDebugString(L"FrameSkip\n");
+					continue;
+				}
 
-				if (pServer->IsReady() && m_FrameReady && m_TexIndex > -1)
+				if (m_FrameReady && pServer->IsReady())
 				{
 					AMF_RESULT res;
-					amf_pts start_time;
+					//amf_pts start_time;
 					TextureCache *pCache = &m_TextureCache[m_TexIndex];
+					if (pCache->m_Sequence != m_SequenceCounter)
+					{
+						OutputDebugString(L"Missed frame?\n");
+					}
 					if (SUCCEEDED(pCache->m_pTexSync->AcquireSync(0, 10)))
 					{
 						//if ((amf_high_precision_clock() - lastSPSPPS) / 10000000 >= 10)
@@ -460,7 +503,7 @@ void VirtualStreamer::RunRemoteDisplay()
 						//	lastSPSPPS = amf_high_precision_clock();
 						//}
 						m_LastFrameTime = now;
-						start_time = amf_high_precision_clock();
+						//start_time = amf_high_precision_clock();
 						if (setHeaders)
 						{
 							setHeaders = false;
@@ -469,17 +512,17 @@ void VirtualStreamer::RunRemoteDisplay()
 							pCache->m_pSurfaceTex->SetProperty(AMF_VIDEO_ENCODER_INSERT_PPS, true);
 						}
 						res = m_pEncoder->SubmitInput(pCache->m_pSurfaceTex);
-						m_EndcodeElapsed += amf_high_precision_clock() - start_time;
-						m_FrameReady = false;
+						//m_EndcodeElapsed += amf_high_precision_clock() - start_time;
+						m_FrameReady = false;						
 						pCache->m_pTexSync->ReleaseSync(0);
 					}
 					else
 						OutputDebugString(L"NoLock \n");
 
 					amf::AMFDataPtr data;
-					start_time = amf_high_precision_clock();
+					//start_time = amf_high_precision_clock();
 					res = m_pEncoder->QueryOutput(&data);
-					m_EndcodeElapsed += amf_high_precision_clock() - start_time;
+					//m_EndcodeElapsed += amf_high_precision_clock() - start_time;
 					if (res == AMF_OK && data)
 					{
 						amf::AMFBufferPtr buffer(data);
