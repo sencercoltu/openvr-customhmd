@@ -735,7 +735,8 @@ bool VirtualStreamer::InitEncoder()
 	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_SLICES_PER_FRAME, 4);
 	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_VBV_BUFFER_SIZE, 1024 * 100);
 	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_MIN_QP, 5);
-	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_MAX_QP, 30);
+	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_MAX_QP, 20);
+	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_QP_I, 10);
 	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_QP_I, 50);
 	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_INITIAL_VBV_BUFFER_FULLNESS, 16);
 	
