@@ -38,6 +38,53 @@ private:
 	CDriverVirtualDisplayComponentFix *m_pVDF;
 	CDriverDirectModeComponentFix *m_pDMF;
 
+	void ReloadDistortionMap();
+
+	class CDistortionMap
+	{
+	private:
+		int Width;
+		int Height;
+		unsigned char *pData;
+	public:
+		CDistortionMap(int width, int height, unsigned char *data)
+		{
+			Height = height;
+			Width = width;			
+			pData = data;
+		}
+		~CDistortionMap()
+		{
+			if (pData)
+				free(pData);
+			pData = nullptr;
+			Width = Height = 0;
+		}
+		void FillUV(float fU, float fV, DistortionCoordinates_t *pCoords)
+		{
+			if (!pData)
+				return;
+			int x = (int)((Width - 1) * fU);
+			int y = (int)((Height - 1) * fU);
+			
+			int pos = (Width * 3) * y + x;
+			float u = ((float)pData[pos++]) / 256.0f;
+			float v = ((float)pData[pos++]) / 256.0f;
+			//float b = ((float)pData[pos]) / 256.0f;
+
+			pCoords->rfRed[0] = fU * u;
+			pCoords->rfRed[1] = fV * v;
+
+			pCoords->rfGreen[0] = fU * u;
+			pCoords->rfGreen[1] = fV * v;
+
+			pCoords->rfBlue[0] = fU * u;
+			pCoords->rfBlue[1] = fV * v;
+		}
+	};
+
+	CDistortionMap *m_pDistortionMap;
+
 public:
 	CTrackedHMD(std::string displayName, CServerDriver *pServer);
 	~CTrackedHMD();

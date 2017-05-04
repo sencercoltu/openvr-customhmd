@@ -7,6 +7,7 @@ void CreateDefaultSettings(HINSTANCE hm);
 CServerDriver g_ServerDriver;
 CWatchDogDriver g_WatchDogDriver;
 
+char g_DriverPath[MAX_PATH] = { 0 };
 HMODULE g_hModule = nullptr;
 
 BOOL WINAPI DllMain(_In_ HINSTANCE hinstDLL, _In_ DWORD fdwReason, _In_ LPVOID lpvReserved)
@@ -18,11 +19,11 @@ BOOL WINAPI DllMain(_In_ HINSTANCE hinstDLL, _In_ DWORD fdwReason, _In_ LPVOID l
 			g_hModule = hinstDLL;
 			CreateDefaultSettings(hinstDLL);
 
-			char DllPath[MAX_PATH] = { 0 };
-			GetModuleFileNameA(g_hModule, DllPath, _countof(DllPath));
+			
+			GetModuleFileNameA(g_hModule, g_DriverPath, _countof(g_DriverPath));
 			//remove file
-			while (DllPath[strlen(DllPath) - 1] != '\\')
-				DllPath[strlen(DllPath) - 1] = 0;
+			while (g_DriverPath[strlen(g_DriverPath) - 1] != '\\')
+				g_DriverPath[strlen(g_DriverPath) - 1] = 0;
 
 			char *platform =
 #ifdef _WIN64
@@ -31,8 +32,8 @@ BOOL WINAPI DllMain(_In_ HINSTANCE hinstDLL, _In_ DWORD fdwReason, _In_ LPVOID l
 				"win32";
 #endif
 			char buff[1024];
-			_snprintf_s(buff, sizeof(buff), "%s..\\..\\resources\\%s", DllPath, platform);
-			SetDllDirectoryA(buff);
+			_snprintf_s(buff, sizeof(buff), "%s..\\..\\resources\\%s", g_DriverPath, platform);
+			SetDllDirectoryA(buff);			
 		}
 			break;
 		case DLL_THREAD_ATTACH:

@@ -32,7 +32,7 @@
 
 #define SAFE_THREADCLOSE(a) if (a) 	{ WaitForSingleObject(a, INFINITE); CloseHandle(a); a = nullptr; }
 
-
+extern char g_DriverPath[MAX_PATH];
 extern bool IsD2DConnected(uint16_t edid);
 
 //#define _LOG(f, ...) m_pLog->Log(f, __VA_ARGS__)

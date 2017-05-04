@@ -7,6 +7,7 @@
 
 CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTrackedDevice(displayName, pServer)
 {
+	m_pDistortionMap = nullptr;
 	m_pVDF = new CDriverVirtualDisplayComponentFix(this);
 	m_pDMF = new CDriverDirectModeComponentFix(this);
 
@@ -199,7 +200,7 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 		m_HMDData.FakePackDetected = false; //
 		m_HMDData.Frequency = 30;
 		value[0] = 0;
-		m_HMDData.DirectMode = true;		
+		m_HMDData.DirectMode = true;
 		m_pSettings->GetString("driver_customhmd", "directResolution", value, sizeof(value));
 		if (value[0])
 		{
@@ -233,7 +234,7 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 		}
 	}
 	else
-	{		
+	{
 		m_HMDData.DirectMode = m_pSettings->GetBool("steamvr", "directMode", &error);
 		if (error != VRSettingsError_None) m_HMDData.DirectMode = false;
 
@@ -271,7 +272,7 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 				m_HMDData.Windowed = true;
 				m_HMDData.FakePackDetected = false;
 				m_HMDData.IsConnected = true;
-				m_HMDData.DirectMode = false;				
+				m_HMDData.DirectMode = false;
 				//EdidVendorID = 0;
 				//EdidProductID = 0;					
 			}
@@ -328,7 +329,7 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 		m_ExposedComponents &= ~ExposedComponent::Camera;
 	}
 
-	
+
 	switch (m_DisplayMode)
 	{
 	case DisplayMode::DirectMode:
@@ -344,11 +345,12 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 		IsOnDesktop = false;
 		break;
 	}
-	
+
 
 
 	if (IsConnected())
 	{
+		ReloadDistortionMap();
 		m_HMDData.PoseUpdated = true; //send initial pose to avoid gray screen
 		m_pDriverHost->TrackedDeviceAdded(SerialNumber.c_str(), vr::TrackedDeviceClass_HMD, this);
 
@@ -362,10 +364,10 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 bool CTrackedHMD::IsConnected()
 {
 	CShMem mem;
-	if ((  (mem.GetState() != Disconnected) || 
-			m_DisplayMode == DisplayMode::Virtual || 
-			m_DisplayMode == DisplayMode::DirectMode || 
-			(m_DisplayMode == DisplayMode::SteamExtended && m_HMDData.Windowed)) && 
+	if (((mem.GetState() != Disconnected) ||
+		m_DisplayMode == DisplayMode::Virtual ||
+		m_DisplayMode == DisplayMode::DirectMode ||
+		(m_DisplayMode == DisplayMode::SteamExtended && m_HMDData.Windowed)) &&
 		m_HMDData.IsConnected)  //m_HMDData.IsConnected is always set for virtual modes
 		return true;
 	return false;
@@ -383,6 +385,10 @@ CTrackedHMD::~CTrackedHMD()
 	if (m_pDMF)
 		delete m_pDMF;
 	m_pDMF = nullptr;
+
+	if (m_pDistortionMap)
+		delete m_pDistortionMap;
+	m_pDistortionMap = nullptr;
 }
 
 EVRInitError CTrackedHMD::Activate(uint32_t unObjectId)
@@ -537,7 +543,7 @@ bool CTrackedHMD::IsDisplayOnDesktop()
 	case DisplayMode::Virtual:
 		res = false;
 		break;
-	}		
+	}
 	DriverLog(__FUNCTION__" returning %d", res);
 	return res;
 }
@@ -554,7 +560,7 @@ bool CTrackedHMD::IsDisplayRealDisplay()
 		res = true;
 		break;
 	case DisplayMode::SteamExtended:
-		res = !m_HMDData.Windowed;		
+		res = !m_HMDData.Windowed;
 		break;
 	case DisplayMode::Virtual:
 		res = false;
@@ -638,12 +644,42 @@ DistortionCoordinates_t CTrackedHMD::ComputeDistortion(EVREye eEye, float fU, fl
 {
 	//DriverLog(__FUNCTION__" Eye: %d, fU: %f, fV: %f", eEye, fU, fV);
 	DistortionCoordinates_t coords = {};
-	coords.rfRed[0] = fU;
-	coords.rfRed[1] = fV;
-	coords.rfBlue[0] = fU;
-	coords.rfBlue[1] = fV;
-	coords.rfGreen[0] = fU;
-	coords.rfGreen[1] = fV;
+	if (m_pDistortionMap)
+	{
+		//just a stupid function for loading UV map from bitmap
+		//does funny things, don't forget to rename DistortionMap.bmp file in resources directory
+		m_pDistortionMap->FillUV(fU, fV, &coords);
+	}
+	else
+	{
+		float hX;
+		float hY;
+		float rr;
+		float r2;
+		float theta;
+
+		rr = (fU - 0.5f)*(fU - 0.5f) + (fV - 0.5f)*(fV - 0.5f);
+		r2 = sqrtf(rr) * (1 + 0.95f*(rr*rr) + 0.97f*(rr));
+		theta = atan2f(fU - 0.5f, fV - 0.5f);
+		hX = sinf(theta)*r2*0.90f;
+		hY = cosf(theta)*r2*0.90f;
+
+		
+		coords.rfBlue[0] = hX + 0.5f;
+		coords.rfBlue[1] = hY + 0.5f;
+		coords.rfGreen[0] = hX + 0.5f;
+		coords.rfGreen[1] = hY + 0.5f;
+		coords.rfRed[0] = hX + 0.5f;
+		coords.rfRed[1] = hY + 0.5f;
+		
+
+		//coords.rfRed[0] = fU;
+		//coords.rfRed[1] = fV;
+		//coords.rfGreen[0] = fU;
+		//coords.rfGreen[1] = fV;
+		//coords.rfBlue[0] = fU;
+		//coords.rfBlue[1] = fV;
+	}
 	return coords;
 }
 
@@ -658,6 +694,42 @@ DriverPose_t CTrackedHMD::GetPose()
 	else
 		return m_HMDData.Pose;
 	return pose;
+}
+
+void CTrackedHMD::ReloadDistortionMap()
+{
+	if (m_pDistortionMap)
+		delete m_pDistortionMap;
+	m_pDistortionMap = nullptr;
+
+	char path[MAX_PATH];
+	sprintf(path, "%s..\\..\\resources\\settings\\DistortionMap.bmp", g_DriverPath);
+
+	int i;
+	FILE* f = nullptr;
+	fopen_s(&f, path, "rb");
+	if (f)
+	{
+		unsigned char info[54];
+		// read the 54-byte header
+		fread(info, sizeof(unsigned char), 54, f);
+		// extract image height and width from header
+		int width = *(int*)&info[18];
+		int height = *(int*)&info[22];
+		int size = 3 * width * height;
+		// allocate 3 bytes per pixel
+		unsigned char* data = (unsigned char*)malloc(size);
+		// read the rest of the data at once
+		fread(data, sizeof(unsigned char), size, f); 
+		for (i = 0; i < size; i += 3)
+		{
+			unsigned char tmp = data[i];
+			data[i] = data[i + 2];
+			data[i + 2] = tmp;
+		}
+		m_pDistortionMap = new CDistortionMap(width, height, data);
+		fclose(f);
+	}
 }
 
 
@@ -914,7 +986,7 @@ void CTrackedHMD::VirtualPresent(vr::SharedTextureHandle_t backbufferTextureHand
 		m_VirtualDisplay.m_FrameReady = false;
 		return;
 	}
-	m_VirtualDisplay.TextureFromHandle(backbufferTextureHandle);	
+	m_VirtualDisplay.TextureFromHandle(backbufferTextureHandle);
 }
 
 void CTrackedHMD::WaitForPresent()
@@ -1107,10 +1179,21 @@ void CTrackedHMD::PacketReceived(USBPacket *pPacket, HmdVector3d_t *pCenterEuler
 		}
 		break;
 		case COMMAND_DATA:
-			if (pPacket->Command.Command == CMD_IPD)
+			switch (pPacket->Command.Command)
 			{
+			case CMD_IPD:
 				UserIpdMeters += 0.001f * ((float)pPacket->Command.Data.IPD.Direction);
 				SET_PROP(Float, UserIpdMeters, );
+				break;
+			case CMD_DISTORTION:
+				if (pPacket->Command.Data.Distortion.Reload)
+				{
+					//reload map and trigger change		
+					ReloadDistortionMap();
+					VREvent_Data_t data = { 0, 0 };
+					m_pServer->m_pDriverHost->VendorSpecificEvent(m_unObjectId, vr::VREvent_LensDistortionChanged, data, 0);
+				}
+			break;
 			}
 
 			break;

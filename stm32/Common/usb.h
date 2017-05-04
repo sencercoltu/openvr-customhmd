@@ -84,6 +84,7 @@ extern "C" {
 #define CMD_RAW_DATA		(uint8_t)0x04
 #define CMD_STATUS			(uint8_t)0x05
 #define CMD_IPD				(uint8_t)0x06
+#define CMD_DISTORTION		(uint8_t)0x07
 
 
 #define BUTTON_0 0x01
@@ -204,6 +205,11 @@ struct USBIPDData
 	int32_t Direction;
 };
 
+struct USBDistortionData
+{	
+	int32_t Reload;
+};
+
 union CommandData
 {
 	struct USBVibrationData Vibration;
@@ -212,6 +218,7 @@ union CommandData
 	struct USBRawData Raw;
 	struct USBStatusData Status;	
 	struct USBIPDData IPD;
+	struct USBDistortionData Distortion;
 };
 
 struct USBCommandData
@@ -232,7 +239,7 @@ struct USBDataCache //used at ps side/server only
 {
 	struct USBPositionData Position;
 	struct USBRotationData Rotation;
-	struct USBTriggerData Trigger;
+	struct USBTriggerData Trigger;	
 };
 
 struct USBPacket
