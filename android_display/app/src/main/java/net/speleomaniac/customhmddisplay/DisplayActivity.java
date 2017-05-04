@@ -239,7 +239,7 @@ public class DisplayActivity
                                     OutFrameCount = 0;
                                     MediaCodec.BufferInfo buffInfo = new MediaCodec.BufferInfo();
                                     while (isOutputRunning) {
-                                        int outIndex = codec.dequeueOutputBuffer(buffInfo, 100);
+                                        int outIndex = codec.dequeueOutputBuffer(buffInfo, 10000);
                                         switch (outIndex) {
                                             case MediaCodec.INFO_OUTPUT_FORMAT_CHANGED:
                                                 break;
@@ -267,7 +267,7 @@ public class DisplayActivity
                 break;
                 case 1: {
                     InFrameCount++;
-                    int inIndex = codec.dequeueInputBuffer(100000);
+                    int inIndex = codec.dequeueInputBuffer(10000);
                     if (inIndex >= 0) {
                         ByteBuffer inputBuffer = codec.getInputBuffer(inIndex);
                         if (inputBuffer != null) {

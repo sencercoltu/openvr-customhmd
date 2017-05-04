@@ -445,12 +445,12 @@ void VirtualStreamer::RunRemoteDisplay()
 				if ((now - m_LastFrameTime) < m_FrameTime)
 					continue;			
 
-				if (pServer->IsReady() && m_FrameReady && m_TexIndex > 0)
+				if (pServer->IsReady() && m_FrameReady && m_TexIndex > -1)
 				{
 					AMF_RESULT res;
 					amf_pts start_time;
 					TextureCache *pCache = &m_TextureCache[m_TexIndex];
-					if (SUCCEEDED(pCache->m_pTexSync->AcquireSync(0, 100)))
+					if (SUCCEEDED(pCache->m_pTexSync->AcquireSync(0, 10)))
 					{
 						//if ((amf_high_precision_clock() - lastSPSPPS) / 10000000 >= 10)
 						//{
@@ -473,6 +473,8 @@ void VirtualStreamer::RunRemoteDisplay()
 						m_FrameReady = false;
 						pCache->m_pTexSync->ReleaseSync(0);
 					}
+					else
+						OutputDebugString(L"NoLock \n");
 
 					amf::AMFDataPtr data;
 					start_time = amf_high_precision_clock();
@@ -486,8 +488,8 @@ void VirtualStreamer::RunRemoteDisplay()
 						if (len > 0)
 						{							
 							memcpy(pFrameBuffer, pData, len);
-							pServer->SendBuffer((const char *)pFrameBuffer, len + 4);
-							OutputDebugString(L"sent\n");
+							pServer->SendBuffer((const char *)pFrameBuffer, len);
+							//OutputDebugString(L"Start send\n");
 						}
 					}
 					else
@@ -505,7 +507,7 @@ void VirtualStreamer::RunRemoteDisplay()
 					//}
 				}
 				else
-				{
+				{					
 					OutputDebugString(m_FrameReady? L"Server Not ready!\n" : L"Frame Not ready!\n");
 				}
 			}

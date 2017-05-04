@@ -188,6 +188,7 @@ void CTCPServer::Run()
 						{
 							m_DataSize = 0;
 							m_DataToSend = nullptr;
+							//OutputDebugString(L"Send done\n");
 						}
 					}
 				}
