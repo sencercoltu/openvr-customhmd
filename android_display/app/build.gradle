@@ -25,5 +25,7 @@ dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     compile 'com.android.support:appcompat-v7:25.3.1'
     compile 'com.android.support:support-v4:25.3.1'
+    compile 'com.google.vr:sdk-audio:1.10.0'
+    compile 'com.google.vr:sdk-base:1.10.0'
 }
 

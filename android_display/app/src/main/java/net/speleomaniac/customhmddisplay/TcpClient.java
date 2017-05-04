@@ -27,6 +27,8 @@ class TcpClient extends Thread {
     private long LastPacketReceive = 0;
     public boolean IsConnected;
 
+    public boolean isTcpRunning = false;
+
     TcpClient(PacketReceiveListener listener, String server, int port) {
         IsConnected = false;
         Server = server;
@@ -67,15 +69,14 @@ class TcpClient extends Thread {
     }
 
     void disconnect() {
-        if (isInterrupted())
+        if (!isTcpRunning)
             return;
-        interrupt();
+        isTcpRunning = false;
         try {
             join();
         } catch (Exception e) {
             e.printStackTrace();
         }
-        //isRunning  = false;
         closeDriverSocket();
     }
 
@@ -83,10 +84,9 @@ class TcpClient extends Thread {
 
     @Override
     public synchronized void start() {
-        if (isAlive()) return;
-        //if (isRunning)
-        //   return;
-        //isRunning = true;
+        if (isTcpRunning)
+            return;
+        isTcpRunning = true;
         super.start();
     }
 
@@ -97,7 +97,7 @@ class TcpClient extends Thread {
         headerBuffer.order(ByteOrder.LITTLE_ENDIAN);
         byte[] buffer = new byte[1024 * 1024 * 10]; //10M
         byte[] outBuffer;
-        while (!Thread.interrupted()) {
+        while (isTcpRunning) {
             try {
                 _reconnect = false;
                 LastPacketReceive = System.currentTimeMillis();
@@ -107,7 +107,7 @@ class TcpClient extends Thread {
                 output = driverSocket.getOutputStream();
                 IsConnected = true;
 
-                while (!Thread.interrupted() && !_reconnect && IsConnected && driverSocket != null) {
+                while (isTcpRunning && !_reconnect && IsConnected && driverSocket != null) {
                     synchronized (socketLock) {
                         if (packetToSend != null) {
                             output.write(packetToSend.Buffer, 0, 32);
@@ -134,7 +134,7 @@ class TcpClient extends Thread {
 
                     int remain = size;
                     int pos = 0;
-                    while (!Thread.interrupted() && IsConnected && remain > 0) {
+                    while (isTcpRunning && IsConnected && remain > 0) {
                         avail = 0;
                         if (input == null)
                             break;
