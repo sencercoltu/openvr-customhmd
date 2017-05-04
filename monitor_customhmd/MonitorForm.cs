@@ -74,7 +74,7 @@ namespace monitor_customhmd
             //JPEGQuality.Param[0] = qualityParameter;
 
             InitializeComponent();
-
+            
             Icon = Properties.Resources.HeadSetActive;
 
             StateIcons = new Dictionary<CommState, Icon>()
@@ -632,6 +632,32 @@ namespace monitor_customhmd
         {
             FPS = _frameCount;
             _frameCount = 0;
+        }
+        
+        private void trackerUV_ValueChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private static ushort LastDistSeq = 0;
+        private void SendDistortion()
+        {
+            var distSeq = (ushort)(DateTime.Now.Ticks);
+            if (distSeq == LastDistSeq) distSeq++;
+            var distortionData = new USBDistortionData();
+            distortionData.Reload = 1;
+            LastDistSeq = distSeq;
+            var command = USBCommandData.Create(CMD_CALIBRATE, distortionData);
+            var packet = USBPacket.Create((byte)(COMMAND_DATA | HMD_SOURCE), distSeq, command);
+            var d = StructToBytes(packet);
+            SetPacketCrc(ref d);
+            _sharedMem.WriteIncomingPacket(d);
+            Debug.WriteLine("Sent distortion");
+        }
+
+        private void btnResetDistortion_Click(object sender, EventArgs e)
+        {
+            SendDistortion();
         }
 
         //public static HmdQuaternion_t CreateFromYawPitchRoll(float yaw, float pitch, float roll)

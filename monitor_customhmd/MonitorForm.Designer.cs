@@ -40,6 +40,7 @@
             this.mnuDebug = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuExit = new System.Windows.Forms.ToolStripMenuItem();
             this.frameTimer = new System.Windows.Forms.Timer(this.components);
+            this.btnReloadDistortion = new System.Windows.Forms.Button();
             this.tabSources.SuspendLayout();
             this.tabDefault.SuspendLayout();
             this.trayMenu.SuspendLayout();
@@ -77,6 +78,7 @@
             // 
             // tabDefault
             // 
+            this.tabDefault.Controls.Add(this.btnReloadDistortion);
             this.tabDefault.Controls.Add(this.btnResetRotation);
             this.tabDefault.Controls.Add(this.chkWatchDog);
             this.tabDefault.Location = new System.Drawing.Point(4, 22);
@@ -136,6 +138,16 @@
             this.frameTimer.Interval = 1000;
             this.frameTimer.Tick += new System.EventHandler(this.frameTimer_Tick);
             // 
+            // btnReloadDistortion
+            // 
+            this.btnReloadDistortion.Location = new System.Drawing.Point(8, 75);
+            this.btnReloadDistortion.Name = "btnReloadDistortion";
+            this.btnReloadDistortion.Size = new System.Drawing.Size(114, 37);
+            this.btnReloadDistortion.TabIndex = 9;
+            this.btnReloadDistortion.Text = "Reload Distortion Map";
+            this.btnReloadDistortion.UseVisualStyleBackColor = true;
+            this.btnReloadDistortion.Click += new System.EventHandler(this.btnResetDistortion_Click);
+            // 
             // MonitorForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -170,6 +182,7 @@
         private System.Windows.Forms.CheckBox chkWatchDog;
         private System.Windows.Forms.Button btnResetRotation;
         private System.Windows.Forms.Timer frameTimer;
+        private System.Windows.Forms.Button btnReloadDistortion;
     }
 }
 

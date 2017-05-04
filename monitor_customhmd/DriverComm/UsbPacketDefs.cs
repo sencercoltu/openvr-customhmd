@@ -39,6 +39,8 @@ namespace monitor_customhmd
         public const byte CMD_SYNC = 0x03;
         public const byte CMD_RAW_DATA = 0x04;
         public const byte CMD_STATUS = 0x05;
+        public const byte CMD_IPD = 0x06;
+        public const byte CMD_DISTORTION = 0x07;
 
         public const byte CALIB_SET = 0x00;
         public const byte CALIB_GET = 0x01;
@@ -173,6 +175,22 @@ namespace monitor_customhmd
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
+        public struct USBIPDData : IUSBData
+        {
+            public static int Size { get { return Marshal.SizeOf(typeof(USBIPDData)); } }
+            public Int32 Direction;
+        }
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
+        public struct USBDistortionData : IUSBData
+        {            
+            public static int Size { get { return Marshal.SizeOf(typeof(USBDistortionData)); } }
+            public Int32 Reload;
+        }
+
+
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
         public struct USBCommandData : IUSBData
         {
             public static int Size { get { return 26; } }
@@ -211,6 +229,12 @@ namespace monitor_customhmd
                     case CMD_STATUS:
                         Status = StructFromBytes<USBStatusData>(Data);
                         break;
+                    case CMD_IPD:
+                        IPD = StructFromBytes<USBIPDData>(Data);
+                        break;
+                    case CMD_DISTORTION:
+                        Distortion = StructFromBytes<USBDistortionData>(Data);
+                        break;
                 }
             }
 
@@ -219,6 +243,8 @@ namespace monitor_customhmd
             public USBCalibrationData Calibration;
             public USBRawData Raw;
             public USBStatusData Status;
+            public USBIPDData IPD;
+            public USBDistortionData Distortion;
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
