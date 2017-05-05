@@ -1,7 +1,10 @@
 package net.speleomaniac.customhmddisplay;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
+import android.graphics.SurfaceTexture;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -10,57 +13,57 @@ import android.media.MediaCodec;
 import android.media.MediaFormat;
 import android.opengl.Matrix;
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 import android.view.Display;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.TextureView;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 
-//import com.google.vr.sdk.base.HeadTransform; - too slow
-//import com.google.vr.sdk.base.sensors.HeadTracker;
-
-import com.google.vr.sdk.base.sensors.HeadTracker;
-
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+
+//import com.google.vr.sdk.base.HeadTransform; - too slow
+//import com.google.vr.sdk.base.sensors.HeadTracker;
 
 public class DisplayActivity
         extends Activity
         implements SurfaceHolder.Callback,
                    TcpClient.PacketReceiveListener,
-        SensorEventListener {
+                   SensorEventListener {
 
     private TcpClient tcpClient = null;
-    private MediaCodec codec;
-    private Surface surface;
+    private MediaCodec codec = null;
+    private Surface surface = null;
 
     private SensorManager sensorManager;
     private UsbPacket usbPacket = new UsbPacket();
 
-    //private HeadTransform headTransform = new HeadTransform();
-    //private HeadTracker headTracker;
-    //private Thread trackerThread;
-
+    CameraGrabber camera = null;
 
     float Q[] = new float[4];
     float m_RotMatrix[] = new float[16];
     float m_SensorToDisplay[] = new float[16];
     float m_EkfToHeadTracker[] = new float[16];
-    //float m_NeckModelTranslation[] = new float[16];
     float m_TmpHeadView[] = new float[16];
-    //float m_TmpHeadView2[] = new float[16];
-
     float m_LastRotation = Float.NaN;
-
     private Display m_Display;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(DisplayActivity.this, new String[]{Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+        }
+
         super.onCreate(savedInstanceState);
         SurfaceView sv = new SurfaceView(this);
+
         this.requestWindowFeature(Window.FEATURE_NO_TITLE);
         sv.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE
                 | View.SYSTEM_UI_FLAG_FULLSCREEN
@@ -73,9 +76,11 @@ public class DisplayActivity
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         setContentView(sv);
 
+
         m_Display = getWindowManager().getDefaultDisplay();
         Matrix.setIdentityM(m_SensorToDisplay, 0);
 
+        camera = new CameraGrabber(this);
 
 /*
         headTracker = HeadTracker.createFromContext(this);
@@ -122,16 +127,19 @@ public class DisplayActivity
 
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
+        Log.d("1","b");
         surface = holder.getSurface();
     }
 
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+        Log.d("2","b");
         surface = holder.getSurface();
     }
 
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
+        Log.d("3","b");
     }
 
     public void getQuaternion(final float[] quaternion, final float[] m) {
@@ -258,6 +266,7 @@ public class DisplayActivity
 //                e.printStackTrace();
 //            }
 //        }
+        camera.disconnect();
         sensorManager.unregisterListener(this);
         if (tcpClient != null) {
             tcpClient.disconnect();
@@ -280,6 +289,7 @@ public class DisplayActivity
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR), SensorManager.SENSOR_DELAY_FASTEST);
+        camera.start();
 //        if (!isTrackerRunning) {
 //            isTrackerRunning = true;
 //            trackerThread.start();
