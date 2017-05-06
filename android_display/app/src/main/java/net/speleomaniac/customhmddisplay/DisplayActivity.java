@@ -4,7 +4,6 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
-import android.graphics.SurfaceTexture;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -19,22 +18,56 @@ import android.view.Display;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
-import android.view.TextureView;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.HashMap;
+import java.util.Map;
 
-//import com.google.vr.sdk.base.HeadTransform; - too slow
-//import com.google.vr.sdk.base.sensors.HeadTracker;
+import static net.speleomaniac.customhmddisplay.DisplayActivity.VirtualPacketTypes.*;
+
 
 public class DisplayActivity
         extends Activity
         implements SurfaceHolder.Callback,
                    TcpClient.PacketReceiveListener,
+                   CameraGrabber.CameraFrameReceiveListener,
                    SensorEventListener {
+
+    enum VirtualPacketTypes {
+        Invalid (0),
+        VrFrameInit (1),
+        VrFrame (2),
+        Rotation (3),
+        CameraFrameInit (4),
+        CameraFrame (5),
+        CameraAction (6)
+        ;
+
+
+        private int value;
+        private static Map map = new HashMap<>();
+        VirtualPacketTypes(int value) {
+            this.value = value;
+        }
+
+        static {
+            for (VirtualPacketTypes type : values()) {
+                map.put(type.value, type);
+            }
+        }
+
+        public static VirtualPacketTypes valueOf(int type) {
+            return (VirtualPacketTypes) map.get(type);
+        }
+
+        public int getValue() {
+            return value;
+        }
+    };
 
     private TcpClient tcpClient = null;
     private MediaCodec codec = null;
@@ -82,45 +115,7 @@ public class DisplayActivity
 
         camera = new CameraGrabber(this);
 
-/*
-        headTracker = HeadTracker.createFromContext(this);
-        headTracker.setNeckModelEnabled(true);
 
-        trackerThread = new Thread(){
-            @Override
-            public void run() {
-                float[] Q = new float[4];
-                HeadTransform ht = new HeadTransform();
-
-                while (isTrackerRunning){
-                    if (tcpClient != null && tcpClient.IsConnected) {
-                        headTracker.getLastHeadView(ht.getHeadView(), 0);
-                        ht.getQuaternion(Q, 0);
-                        usbPacket.Rotation.w = Q[3];
-                        usbPacket.Rotation.x = Q[0];
-                        usbPacket.Rotation.y = Q[1];
-                        usbPacket.Rotation.z = Q[2];
-                        usbPacket.buildRotationPacket();
-                        tcpClient.sendPacket(usbPacket);
-                    }
-                    try {
-                        long diff = System.currentTimeMillis() - FrameTime;
-                        if (diff >= 1000) {
-                            long inFps = (InFrameCount * 1000) / diff;
-                            long outFps = (OutFrameCount * 1000) / diff;
-                            InFrameCount = 0;
-                            OutFrameCount = 0;
-                            FrameTime = System.currentTimeMillis();
-                            Log.d("FPS", "In: " + inFps + " Out: " + outFps);
-                        }
-                        Thread.sleep(10);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        };
-*/
         usbPacket.Header.Type = (byte)(UsbPacket.HMD_SOURCE | UsbPacket.ROTATION_DATA);
         sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
     }
@@ -203,47 +198,46 @@ public class DisplayActivity
         //send max 60 times per second
 
         if (event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
-
-            SensorManager.getRotationMatrixFromVector(m_RotMatrix, event.values);
-
-            float rotation = 0.0f;
-            switch (m_Display.getRotation()) {
-                case 0: {
-                    rotation = 0.0f;
-                    break;
-                }
-                case 1: {
-                    rotation = 90.0f;
-                    break;
-                }
-                case 2: {
-                    rotation = 180.0f;
-                    break;
-                }
-                case 3: {
-                    rotation = 270.0f;
-                    break;
-                }
-            }
-
-            if (rotation != m_LastRotation ) {
-                m_LastRotation = rotation;
-                Matrix.setRotateEulerM(m_SensorToDisplay, 0, 0.0f, 0.0f, -rotation);
-                Matrix.setRotateEulerM(m_EkfToHeadTracker, 0, -90.0f, 0.0f, rotation);
-            }
-
-            Matrix.multiplyMM(m_TmpHeadView, 0, m_SensorToDisplay, 0, m_RotMatrix, 0);
-            Matrix.multiplyMM(m_RotMatrix, 0, m_TmpHeadView, 0, m_EkfToHeadTracker, 0);
-
-            getQuaternion(Q, m_RotMatrix);
-
-            usbPacket.Rotation.w = Q[0];
-            usbPacket.Rotation.x = Q[1];
-            usbPacket.Rotation.y = Q[2];
-            usbPacket.Rotation.z = Q[3];
             if (tcpClient != null && tcpClient.IsConnected) {
+                SensorManager.getRotationMatrixFromVector(m_RotMatrix, event.values);
+
+                float rotation = 0.0f;
+                switch (m_Display.getRotation()) {
+                    case 0: {
+                        rotation = 0.0f;
+                        break;
+                    }
+                    case 1: {
+                        rotation = 90.0f;
+                        break;
+                    }
+                    case 2: {
+                        rotation = 180.0f;
+                        break;
+                    }
+                    case 3: {
+                        rotation = 270.0f;
+                        break;
+                    }
+                }
+
+                if (rotation != m_LastRotation ) {
+                    m_LastRotation = rotation;
+                    Matrix.setRotateEulerM(m_SensorToDisplay, 0, 0.0f, 0.0f, -rotation);
+                    Matrix.setRotateEulerM(m_EkfToHeadTracker, 0, -90.0f, 0.0f, rotation);
+                }
+
+                Matrix.multiplyMM(m_TmpHeadView, 0, m_SensorToDisplay, 0, m_RotMatrix, 0);
+                Matrix.multiplyMM(m_RotMatrix, 0, m_TmpHeadView, 0, m_EkfToHeadTracker, 0);
+
+                getQuaternion(Q, m_RotMatrix);
+
+                usbPacket.Rotation.w = Q[0];
+                usbPacket.Rotation.x = Q[1];
+                usbPacket.Rotation.y = Q[2];
+                usbPacket.Rotation.z = Q[3];
                 usbPacket.buildRotationPacket();
-                tcpClient.sendPacket(usbPacket);
+                tcpClient.sendPacket(Rotation, usbPacket.Buffer, 32);
             }
         }
     }
@@ -253,19 +247,9 @@ public class DisplayActivity
 
     }
 
-    //public boolean isTrackerRunning = false;
 
     @Override
     protected void onPause() {
-//        headTracker.stopTracking();
-//        if (isTrackerRunning) {
-//            isTrackerRunning = false;
-//            try {
-//                trackerThread.join();
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
-//        }
         camera.disconnect();
         sensorManager.unregisterListener(this);
         if (tcpClient != null) {
@@ -289,16 +273,9 @@ public class DisplayActivity
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR), SensorManager.SENSOR_DELAY_FASTEST);
-        camera.start();
-//        if (!isTrackerRunning) {
-//            isTrackerRunning = true;
-//            trackerThread.start();
-//        }
-//        headTracker.startTracking();
-
     }
 
-    private byte[] InfoPacket = new byte[4 + 4 + 4]; //magic width height
+    private byte[] InfoPacket = new byte[4 + 4 + 4 + 4]; //magic width height freq
     private int State = 0;
     private Thread OutputRunner;
 
@@ -307,8 +284,10 @@ public class DisplayActivity
     private long FrameTime = 0;
     private boolean isOutputRunning = false;
 
+
+
     @Override
-    public void onPacketReceived(byte[] frameData, int len) {
+    public void onPacketReceived(VirtualPacketTypes type, byte[] frameData, int len) {
         try {
             if (surface == null || tcpClient == null || !tcpClient.IsConnected || frameData == null)
             {
@@ -319,7 +298,12 @@ public class DisplayActivity
             switch(State)
             {
                 case 0: {
-                    if (len == 12 && frameData[0] == 'H' && frameData[1] == 'M' && frameData[2] == 'D' && frameData[3] == 'D') {
+                    if (type == VrFrameInit &&
+                            len == 16 &&
+                            frameData[0] == 'H' &&
+                            frameData[1] == 'M' &&
+                            frameData[2] == 'D' &&
+                            frameData[3] == 'D') {
                         FrameTime = System.currentTimeMillis();
                         if (OutputRunner != null) {
                             isOutputRunning = false;
@@ -343,11 +327,13 @@ public class DisplayActivity
                         int magic = bb.getInt();
                         int width = bb.getInt();
                         int height = bb.getInt();
+                        int freq = bb.getInt();
 
                         if (width > 0 && height > 0) {
                             String codecName = "video/avc";
                             codec = MediaCodec.createDecoderByType(codecName);
                             MediaFormat format = MediaFormat.createVideoFormat(codecName, width, height);
+                            format.setInteger(MediaFormat.KEY_FRAME_RATE, freq);
                             format.setInteger(MediaFormat.KEY_MAX_WIDTH, width);
                             format.setInteger(MediaFormat.KEY_MAX_HEIGHT, height);
                             format.setInteger(MediaFormat.KEY_OPERATING_RATE, Short.MAX_VALUE);
@@ -387,14 +373,31 @@ public class DisplayActivity
                 }
                 break;
                 case 1: {
-                    InFrameCount++;
-                    int inIndex = codec.dequeueInputBuffer(10000);
-                    if (inIndex >= 0) {
-                        ByteBuffer inputBuffer = codec.getInputBuffer(inIndex);
-                        if (inputBuffer != null) {
-                            inputBuffer.clear();
-                            inputBuffer.put(frameData, 0, len);
-                            codec.queueInputBuffer(inIndex, 0, len, 1, 0);
+                    switch(type) {
+                        case VrFrame:
+                            {
+                                InFrameCount++;
+                                int inIndex = codec.dequeueInputBuffer(10);
+                                if (inIndex >= 0) {
+                                    ByteBuffer inputBuffer = codec.getInputBuffer(inIndex);
+                                    if (inputBuffer != null) {
+                                        inputBuffer.clear();
+                                        inputBuffer.put(frameData, 0, len);
+                                        codec.queueInputBuffer(inIndex, 0, len, 1, 0);
+                                    }
+                                }
+                             break;
+                            }
+                        case CameraAction:
+                        {
+                            boolean status = (frameData[0] != 0);
+                            if (camera != null) {
+                                if (status)
+                                    camera.start();
+                                else
+                                    camera.disconnect();
+                            }
+                            break;
                         }
                     }
                     break;
@@ -405,4 +408,8 @@ public class DisplayActivity
         }
     }
 
+    @Override
+    public void onCameraFrameReceived(byte[] data, int size) {
+        Log.i("Camera", "Frame");
+    }
 }

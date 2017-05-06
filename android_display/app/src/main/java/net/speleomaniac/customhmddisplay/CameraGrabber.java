@@ -1,49 +1,66 @@
 package net.speleomaniac.customhmddisplay;
 
 import android.content.Context;
-import android.hardware.camera2.CameraAccessException;
-import android.hardware.camera2.CameraCaptureSession;
-import android.hardware.camera2.CameraCharacteristics;
-import android.hardware.camera2.CameraDevice;
-import android.hardware.camera2.CameraManager;
-import android.hardware.camera2.CameraMetadata;
-import android.hardware.camera2.CaptureRequest;
+
+import android.graphics.ImageFormat;
+import android.hardware.Camera;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 import android.os.Handler;
-import android.support.annotation.NonNull;
 import android.view.Surface;
+import android.view.SurfaceHolder;
 import android.view.SurfaceView;
-import android.widget.FrameLayout;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Collections;
 
-/**
- * Created by Sencer Coltu on 05/05/2017.
- */
+import static android.media.MediaCodec.CONFIGURE_FLAG_ENCODE;
 
-public class CameraGrabber extends Thread
-        /*implements ImageReader.OnImageAvailableListener*/ {
+//use old camera api, new one pain in @ss
 
-    //private ImageReader imageReader = null;
+public class CameraGrabber extends Thread {
+
+    interface CameraFrameReceiveListener {
+        void onCameraFrameReceived(byte[] data, int size);
+    }
+
+    private CameraFrameReceiveListener cameraFrameReceiveListener = null;
     private boolean isCameraRunnig = false;
     private DisplayActivity mContext = null;
-    private SurfaceView surfaceView = null;
     private Surface mSurface;
-    
+    private Camera mCamera;
+    //private Handler mHandler = null;
+    private SurfaceView mSurfaceView = null;
+
 
     public CameraGrabber(DisplayActivity context) {
+        cameraFrameReceiveListener = context;
         mContext = context;
         //imageReader = ImageReader.newInstance(320, 240, ImageFormat.YUV_420_888, 1);
         //mSurface = imageReader.getSurface();
-        mHandler = new Handler(mContext.getMainLooper());
-        surfaceView = new SurfaceView(mContext);
-        mContext.addContentView(surfaceView, new FrameLayout.LayoutParams(320, 240));
-        surfaceView.getHolder().setFixedSize(320, 240);
-        mSurface = surfaceView.getHolder().getSurface();
+        //mHandler = new Handler(mContext.getMainLooper());
+        mSurfaceView = new SurfaceView(mContext);
+        mSurfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
+            @Override
+            public void surfaceCreated(SurfaceHolder holder) {
+                mSurface = holder.getSurface(); //.createPersistentInputSurface();
+            }
+
+            @Override
+            public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+                mSurface = holder.getSurface();
+                if (mCamera != null) {
+                    disconnect();
+                    start();
+                }
+            }
+
+            @Override
+            public void surfaceDestroyed(SurfaceHolder holder) {
+
+            }
+        });
     }
 
     @Override
@@ -65,113 +82,60 @@ public class CameraGrabber extends Thread
         }
     }
 
-    private CameraDevice mCameraDevice = null;
-    private CaptureRequest.Builder mPreviewBuilder = null;
-    private CameraCaptureSession mPreviewSession = null;
-    private Handler mHandler = null;
-
-    private CameraDevice.StateCallback mStateCallback = new CameraDevice.StateCallback() {
-
-        @Override
-        public void onOpened(@NonNull CameraDevice camera) {
-            mCameraDevice = camera;
-            synchronized (cameraCreateLock) {
-                cameraCreateLock.notify();
-            }
-
-            try {
-                mPreviewBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-            } catch (CameraAccessException e){
-                e.printStackTrace();
-            }
-
-            mPreviewBuilder.addTarget(mSurface);
-
-            try {
-                mCameraDevice.createCaptureSession(Collections.singletonList(mSurface), mPreviewStateCallback, mHandler);
-            } catch (CameraAccessException e) {
-                e.printStackTrace();
-            }
-        }
-
-        @Override
-        public void onError(@NonNull CameraDevice camera, int error) {
-            mCameraDevice = null;
-            camera.close();
-            cameraCreateLock.notify();
-        }
-
-        @Override
-        public void onDisconnected(@NonNull CameraDevice camera) {
-            mCameraDevice = null;
-            camera.close();
-            cameraCreateLock.notify();
-        }
-    };
-
-    private CameraCaptureSession.StateCallback mPreviewStateCallback = new CameraCaptureSession.StateCallback() {
-
-        @Override
-        public void onConfigured(@NonNull CameraCaptureSession session) {
-            mPreviewSession = session;
-
-            mPreviewBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
-            try {
-                mPreviewSession.setRepeatingRequest(mPreviewBuilder.build(), null, mHandler);
-            } catch (CameraAccessException e) {
-                e.printStackTrace();
-            }
-        }
-
-        @Override
-        public void onConfigureFailed(@NonNull CameraCaptureSession session) {
-            mPreviewSession = null;
-        }
-    };
 
     private final Object cameraCreateLock = new Object();
 
     private MediaCodec encoder = null;
 
+    private Camera.PreviewCallback previewCallback = new Camera.PreviewCallback() {
+        @Override
+        public void onPreviewFrame(byte[] data, Camera camera) {
+            if (encoder != null) {
+                int inIndex = encoder.dequeueInputBuffer(1);
+                if (inIndex >= 0) {
+                    ByteBuffer inputBuffer = encoder.getInputBuffer(inIndex);
+                    if (inputBuffer != null) {
+                        inputBuffer.clear();
+                        inputBuffer.put(data, 0, data.length);
+                        long ptsUsec = System.currentTimeMillis() * 1000;
+                        encoder.queueInputBuffer(inIndex, 0, data.length, ptsUsec, CONFIGURE_FLAG_ENCODE);
+                    }
+                }
+            }
+        }
+    };
+
     @Override
     public void run() {
-        CameraManager manager = (CameraManager) mContext.getSystemService(Context.CAMERA_SERVICE);
-        String cameras[] = null;
-        try {
-            cameras = manager.getCameraIdList();
-        } catch (CameraAccessException e) {
-            e.printStackTrace();
-            return;
-        }
-
-        if (cameras.length == 0)
-            return;
-
-        String cameraId = null;
-        for (String camera1 : cameras) {
-            CameraCharacteristics characteristics = null;
-            try {
-                characteristics = manager.getCameraCharacteristics(camera1);
-            } catch (CameraAccessException e) {
-                e.printStackTrace();
-            }
-            if (characteristics == null)
-                continue;
-
-            int facing = characteristics.get(CameraCharacteristics.LENS_FACING);
-            if (facing == CameraCharacteristics.LENS_FACING_BACK) {
-                //use this one
-                cameraId = camera1;
+        Camera.CameraInfo ci = new Camera.CameraInfo();
+        for (int i=0; i<Camera.getNumberOfCameras(); i++) {
+            Camera.getCameraInfo(i, ci);
+            if (ci.facing == Camera.CameraInfo.CAMERA_FACING_BACK) {
+                mCamera = Camera.open(i);
                 break;
             }
         }
 
-        if (cameraId == null)
+        if (mCamera == null)
             return;
+
+
+        try {
+            Camera.Parameters parameters = mCamera.getParameters();
+            parameters.setPreviewFormat(ImageFormat.NV21);
+            parameters.setPreviewSize(320, 240);
+            mCamera.setParameters(parameters);
+            mCamera.setPreviewDisplay(mSurfaceView.getHolder());
+            mCamera.setPreviewCallback(previewCallback);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
 
         MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
         MediaFormat format = MediaFormat.createVideoFormat("video/avc", 320, 240);
-        format.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
+        format.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible);
         format.setInteger(MediaFormat.KEY_BIT_RATE, 300000);
         format.setInteger(MediaFormat.KEY_FRAME_RATE, 30);
         format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1);
@@ -194,78 +158,49 @@ public class CameraGrabber extends Thread
 
 
 
-        encoder.configure(format, mSurface, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
+        encoder.configure(format, null, null, CONFIGURE_FLAG_ENCODE);
+        Surface surf = MediaCodec.createPersistentInputSurface();
         //encoder.setInputSurface(mSurface);
         encoder.start();
-
-        try {
-            manager.openCamera(cameraId, mStateCallback, mHandler);
-        } catch (CameraAccessException e) {
-            e.printStackTrace();
-        }
-
-        synchronized (cameraCreateLock) {
-            try {
-                cameraCreateLock.wait();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-
-        if (mCameraDevice != null) {
+        mCamera.startPreview();
+        if (mCamera != null) {
 
             while (isCameraRunnig) {
                 while (true) {
                     int encoderStatus = encoder.dequeueOutputBuffer(bufferInfo, 10);
-                    if (encoderStatus == MediaCodec.INFO_TRY_AGAIN_LATER) {
-
-                    } else if (encoderStatus == MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED) {
-                    } else if (encoderStatus == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
-                        MediaFormat newFormat = encoder.getOutputFormat();
-                    } else if (encoderStatus < 0) {
-                        // let's ignore it
-                    } else {
-                        ByteBuffer encodedData = encoder.getOutputBuffer(encoderStatus);
-                        if (encodedData == null) {
-                            throw new RuntimeException("encoderOutputBuffer " + encoderStatus + " was null");
-                        }
-
-                        if ((bufferInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
-                            // The codec config data was pulled out and fed to the muxer when we got
-                            // the INFO_OUTPUT_FORMAT_CHANGED status.  Ignore it.
-                            bufferInfo.size = 0;
-                        }
-
-                        if (bufferInfo.size != 0) {
-                            // adjust the ByteBuffer values to match BufferInfo (not needed?)
-                            encodedData.position(bufferInfo.offset);
-                            encodedData.limit(bufferInfo.offset + bufferInfo.size);
-                            //write to remote
-                        }
-
-                        encoder.releaseOutputBuffer(encoderStatus, false);
-
-                        if ((bufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
-                            break;      // out of while
-                        }
+                    switch (encoderStatus) {
+                        case MediaCodec.INFO_TRY_AGAIN_LATER:
+                            break;
+                        case MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED:
+                            break;
+                        case MediaCodec.INFO_OUTPUT_FORMAT_CHANGED:
+                            MediaFormat newFormat = encoder.getOutputFormat();
+                            break;
+                        default:
+                            if (encoderStatus < 0) //ignore
+                                break;
+                            ByteBuffer encodedData = encoder.getOutputBuffer(encoderStatus);
+                            if (encodedData == null) {
+                                throw new RuntimeException("encoderOutputBuffer " + encoderStatus + " was null");
+                            }
+                            byte[] bytes = new byte[encodedData.limit()];
+                            encodedData.position(0);
+                            encodedData.get(bytes);
+                            cameraFrameReceiveListener.onCameraFrameReceived(bytes, bytes.length);
+                            encoder.releaseOutputBuffer(encoderStatus, false);
+                            break;
                     }
                 }
             }
 
-            if (mPreviewSession != null)
-                mPreviewSession.close();
-            mPreviewSession = null;
-
-            mCameraDevice.close();
-            mCameraDevice = null;
+            mCamera.stopPreview();
+            mCamera.release();
+            mCamera = null;
         }
+
         encoder.stop();
         encoder.release();
         encoder = null;
-
-        if (mSurface != null)
-            mSurface.release();
-        mSurface =  null;
     }
 
     /*

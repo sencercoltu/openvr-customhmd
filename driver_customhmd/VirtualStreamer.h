@@ -22,14 +22,18 @@
 
 using namespace vr;
 
-struct InfoPacket {
+struct InfoPacket 
+{
 	char H;
 	char M;
 	char D1;
 	char D2;
 	int Width;
 	int Height;
+	int FrameRate;
 };
+
+
 
 struct VirtualStreamer;
 
@@ -45,6 +49,9 @@ public:
 
 	VirtualStreamer()
 	{
+		m_pServer = nullptr;
+
+		m_LastCameraStatus = false;
 		m_SequenceCounter = 0;
 		m_pEncoderContext = nullptr;
 		m_pEncoder = nullptr;
@@ -91,7 +98,8 @@ public:
 	void Destroy();
 	void TextureFromHandle(SharedTextureHandle_t handlei);
 
-	
+	CTCPServer *m_pServer;
+
 	HANDLE m_hDisplayThread;
 	int m_DisplayState;
 	bool m_IsRunning;
@@ -140,10 +148,12 @@ public:
 
 	unsigned int static WINAPI RemoteDisplayThread(void *p);
 	void RunRemoteDisplay();
-	static void TcpPacketReceive(void *dst, const char *pData, int len);
+	static void TcpPacketReceive(void *dst, VirtualPacketTypes type, const char *pData, int len);
 	void ProcessRemotePacket(USBPacket *pPacket);
 	//int UpdateBuffer(DirectEyeData *pEyeData);
 	
+	bool m_LastCameraStatus;
+	void EnableCamera(bool enable);
 
 };
 

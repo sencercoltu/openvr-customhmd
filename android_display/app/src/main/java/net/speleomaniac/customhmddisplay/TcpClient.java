@@ -13,7 +13,7 @@ import java.nio.ByteOrder;
 class TcpClient extends Thread {
 
     interface PacketReceiveListener {
-        void onPacketReceived(byte[] data, int size);
+        void onPacketReceived(DisplayActivity.VirtualPacketTypes type, byte[] data, int size);
     }
 
     private PacketReceiveListener packetReceiveListener = null;
@@ -24,36 +24,64 @@ class TcpClient extends Thread {
     private InputStream input = null;
     private OutputStream output = null;
 
-    private long LastPacketReceive = 0;
-    public boolean IsConnected;
+    boolean IsConnected;
 
-    public boolean isTcpRunning = false;
+    private boolean isTcpRunning = false;
+
+    private byte[] outHeader = null; //size and type only
+    private ByteBuffer outHeaderBuffer = null;
+
+    private byte[] inHeader = null; //size and type only
+    private ByteBuffer inHeaderBuffer = null;
+
+    private byte[] encodedBuffer = new byte[1024 * 1024 * 10]; //10M
+
+
 
     TcpClient(PacketReceiveListener listener, String server, int port) {
         IsConnected = false;
         Server = server;
         Port = port;
         packetReceiveListener = listener;
+
+        outHeader = new byte[8];
+        outHeaderBuffer = ByteBuffer.wrap(outHeader);
+        outHeaderBuffer.order(ByteOrder.LITTLE_ENDIAN);
+
+        inHeader = new byte[8];
+        inHeaderBuffer = ByteBuffer.wrap(inHeader);
+        inHeaderBuffer.order(ByteOrder.LITTLE_ENDIAN);
     }
 
-    private UsbPacket packetToSend = null;
+
     private final Object socketLock = new Object();
 
-    void sendPacket(UsbPacket usbPacket) {
-        synchronized (socketLock) {
-            packetToSend = usbPacket;
+
+
+    void sendPacket(DisplayActivity.VirtualPacketTypes type, byte[] data, int len) {
+        if (output == null) return;
+        try {
+            synchronized (socketLock) { //wait send finish before sending another packet
+                outHeaderBuffer.rewind();
+                outHeaderBuffer.putInt(len);
+                outHeaderBuffer.putInt(type.getValue());
+                output.write(outHeader, 0, 8);
+                output.write(data, 0, len);
+            }
+        } catch (IOException e) {
+            //e.printStackTrace();
         }
     }
 
     private void closeDriverSocket() {
         if (driverSocket != null) {
             try {
-                packetReceiveListener.onPacketReceived(null, 0);
+                packetReceiveListener.onPacketReceived(DisplayActivity.VirtualPacketTypes.Invalid, null, 0);
                 driverSocket.close();
                 input.close();
                 output.close();
             } catch (Exception e) {
-                e.printStackTrace();
+                //e.printStackTrace();
             }
         }
         driverSocket = null;
@@ -75,7 +103,7 @@ class TcpClient extends Thread {
         try {
             join();
         } catch (Exception e) {
-            e.printStackTrace();
+            //e.printStackTrace();
         }
         closeDriverSocket();
     }
@@ -92,15 +120,10 @@ class TcpClient extends Thread {
 
     @Override
     public void run() {
-        byte[] header = new byte[4]; //size only
-        ByteBuffer headerBuffer = ByteBuffer.wrap(header);
-        headerBuffer.order(ByteOrder.LITTLE_ENDIAN);
-        byte[] buffer = new byte[1024 * 1024 * 10]; //10M
-        byte[] outBuffer;
         while (isTcpRunning) {
             try {
                 _reconnect = false;
-                LastPacketReceive = System.currentTimeMillis();
+                long lastPacketReceive = System.currentTimeMillis();
                 InetAddress serverAddr = InetAddress.getByName(Server);
                 driverSocket = new Socket(serverAddr, Port);
                 input = driverSocket.getInputStream();
@@ -108,25 +131,20 @@ class TcpClient extends Thread {
                 IsConnected = true;
 
                 while (isTcpRunning && !_reconnect && IsConnected && driverSocket != null) {
-                    synchronized (socketLock) {
-                        if (packetToSend != null) {
-                            output.write(packetToSend.Buffer, 0, 32);
-                            packetToSend = null;
-                        }
-                    }
-
                     int size = 0;
+                    int type = 0;
                     int avail = 0;
                         avail = input.available();
-                    if (avail >= 4) {
-                        int read = input.read(header);
-                        headerBuffer.rewind();
-                        size = headerBuffer.getInt();
+                    if (avail >= 8) {
+                        int read = input.read(inHeader);
+                        inHeaderBuffer.rewind();
+                        size = inHeaderBuffer.getInt();
+                        type = inHeaderBuffer.getInt();
                     }
 
                     if (size == 0) {
                         //check disconnect (adb forward or reverse mode keeps connection )
-                        if (System.currentTimeMillis() - LastPacketReceive > 2000) {
+                        if (System.currentTimeMillis() - lastPacketReceive > 2000) {
                             closeDriverSocket();
                             continue;
                         }
@@ -142,7 +160,7 @@ class TcpClient extends Thread {
                         if (avail >= 0) {
                             avail = Math.min(remain, avail);
                             int read = 0;
-                            read = input.read(buffer, pos, avail);
+                            read = input.read(encodedBuffer, pos, avail);
                             if (read < 0) {
                                 closeDriverSocket();
                                 break;
@@ -150,8 +168,8 @@ class TcpClient extends Thread {
                             pos += read;
                             remain -= read;
                             if (remain == 0) {
-                                LastPacketReceive = System.currentTimeMillis();
-                                packetReceiveListener.onPacketReceived(buffer, size);
+                                lastPacketReceive = System.currentTimeMillis();
+                                packetReceiveListener.onPacketReceived(DisplayActivity.VirtualPacketTypes.valueOf(type), encodedBuffer, size);
                             }
                         } else {
                             try {
@@ -169,7 +187,7 @@ class TcpClient extends Thread {
             try {
                 Thread.sleep(1000);
             } catch (Exception e) {
-                e.printStackTrace();
+                //e.printStackTrace();
             }
         }
     }

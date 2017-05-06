@@ -306,22 +306,22 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 	m_HMDData.SuperSample = m_pSettings->GetFloat("driver_customhmd", "supersample");
 
 	ZeroMemory(&m_Camera, sizeof(m_Camera));
+
+	m_Camera.Options.Width = 320;
+	m_Camera.Options.Height = 240;
+	m_Camera.Options.MediaFormat = MFVideoFormat_NV12;
+	m_Camera.StreamFormat = CVS_FORMAT_NV12; //default	
+
 	value[0] = 0;
 	m_pSettings->GetString("driver_customhmd", "camera", value, sizeof(value));
-	if (value[0])
+	if (value[0] || m_DisplayMode == DisplayMode::Virtual) //use also android camera
 	{
 		HasCamera = true;
 		m_ExposedComponents |= ExposedComponent::Camera;
 		m_Camera.hLock = CreateMutex(nullptr, FALSE, L"CameraLock");
 		m_Camera.Options.Name = value;
-		m_Camera.Options.Width = 320;
-		m_Camera.Options.Height = 240;
-		m_Camera.Options.MediaFormat = MFVideoFormat_NV12;
-		m_Camera.StreamFormat = CVS_FORMAT_NV12; //default
 		m_Camera.Options.pfCallback = CameraFrameUpdateCallback;
 		m_Camera.Options.pUserData = this;
-		//one time setup to determine buffersize
-		m_Camera.Options.Setup();
 	}
 	else
 	{
@@ -329,6 +329,8 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 		m_ExposedComponents &= ~ExposedComponent::Camera;
 	}
 
+	//one time setup to determine buffersize
+	m_Camera.Options.Setup();
 
 	switch (m_DisplayMode)
 	{
@@ -341,7 +343,7 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 	case DisplayMode::SteamExtended:
 		IsOnDesktop = !m_HMDData.Windowed; //prevent compositor fullscreen error
 		break;
-	case DisplayMode::Virtual:
+	case DisplayMode::Virtual:		
 		IsOnDesktop = false;
 		break;
 	}
@@ -648,7 +650,7 @@ DistortionCoordinates_t CTrackedHMD::ComputeDistortion(EVREye eEye, float fU, fl
 	{
 		//just a stupid function for loading UV map from bitmap
 		//does funny things, don't forget to rename DistortionMap.bmp file in resources directory
-		m_pDistortionMap->FillUV(fU, fV, &coords);
+		m_pDistortionMap->FillUV(eEye, fU, fV, &coords);
 	}
 	else
 	{
@@ -1432,29 +1434,51 @@ bool CTrackedHMD::StartVideoStream()
 	DriverLog(__FUNCTION__);
 	if (!m_Camera.Options.Setup())
 		return false;
-	SetupCamera();
-	m_Camera.StartTime = m_Camera.LastFrameTime = GetTickCount();
-	if (m_Camera.pCaptureDevice)
-		return m_Camera.pCaptureDevice->Start();
+	if (m_DisplayMode == DisplayMode::Virtual)
+	{
+		m_VirtualDisplay.EnableCamera(true);
+	}
+	else
+	{
+		SetupCamera();
+		m_Camera.StartTime = m_Camera.LastFrameTime = GetTickCount();
+		if (m_Camera.pCaptureDevice)
+			return m_Camera.pCaptureDevice->Start();		
+	}	
 	return false;
 }
 
 void CTrackedHMD::StopVideoStream()
 {
 	DriverLog(__FUNCTION__);
-	if (m_Camera.pCaptureDevice)
-		m_Camera.pCaptureDevice->Stop();
+	if (m_DisplayMode == DisplayMode::Virtual)
+	{
+		m_VirtualDisplay.EnableCamera(false);
+	}
+	else
+	{
+		if (m_Camera.pCaptureDevice)
+			m_Camera.pCaptureDevice->Stop();
+	}
 }
 
 bool CTrackedHMD::IsVideoStreamActive(bool *pbPaused, float *pflElapsedTime)
 {
-	auto result = m_Camera.pCaptureDevice && (m_Camera.pCaptureDevice->m_Status != CCaptureDevice::Stopped);
-	DriverLog(__FUNCTION__" returning %d", result);
-	if (result && pbPaused)
-		*pbPaused = m_Camera.pCaptureDevice->m_Status == CCaptureDevice::Paused;
+	bool result = false;
+	if (m_DisplayMode == DisplayMode::Virtual)
+	{
+		result = m_VirtualDisplay.m_LastCameraStatus;
+	}
+	else
+	{
+		result = m_Camera.pCaptureDevice && (m_Camera.pCaptureDevice->m_Status != CCaptureDevice::Stopped);
+		DriverLog(__FUNCTION__" returning %d", result);
+		if (result && pbPaused)
+			*pbPaused = m_Camera.pCaptureDevice->m_Status == CCaptureDevice::Paused;
 
-	if (pflElapsedTime)
-		*pflElapsedTime = (float)(GetTickCount() - m_Camera.StartTime) / 1000.0f;
+		if (pflElapsedTime)
+			*pflElapsedTime = (float)(GetTickCount() - m_Camera.StartTime) / 1000.0f;
+	}
 	return result;
 }
 
@@ -1462,16 +1486,30 @@ bool CTrackedHMD::IsVideoStreamActive(bool *pbPaused, float *pflElapsedTime)
 bool CTrackedHMD::PauseVideoStream()
 {
 	DriverLog(__FUNCTION__);
-	if (m_Camera.pCaptureDevice)
-		return m_Camera.pCaptureDevice->Pause();
+	if (m_DisplayMode == DisplayMode::Virtual)
+	{
+		m_VirtualDisplay.EnableCamera(false);
+	}
+	else
+	{
+		if (m_Camera.pCaptureDevice)
+			return m_Camera.pCaptureDevice->Pause();
+	}
 	return false;
 }
 
 bool CTrackedHMD::ResumeVideoStream()
 {
 	DriverLog(__FUNCTION__);
-	if (m_Camera.pCaptureDevice)
-		return m_Camera.pCaptureDevice->Resume();
+	if (m_DisplayMode == DisplayMode::Virtual)
+	{
+		m_VirtualDisplay.EnableCamera(true);
+	}
+	else
+	{
+		if (m_Camera.pCaptureDevice)
+			return m_Camera.pCaptureDevice->Resume();
+	}
 	return false;
 }
 

@@ -315,6 +315,8 @@ void VirtualStreamer::Init(CTrackedHMD *pHmd)
 	m_pContext->RSSetState(m_pCWcullMode);
 	*/
 
+	m_pServer = new CTCPServer(1974, TcpPacketReceive, this);
+
 	m_hDisplayThread = reinterpret_cast<HANDLE>(_beginthreadex(nullptr, 0, RemoteDisplayThread, this, CREATE_SUSPENDED, nullptr));
 	if (m_hDisplayThread)
 	{
@@ -393,6 +395,10 @@ void VirtualStreamer::Destroy()
 	SAFE_RELEASE(m_pContext);
 	SAFE_RELEASE(m_pDevice);
 	
+	if (m_pServer)
+		delete m_pServer;
+	m_pServer = nullptr;	
+
 	//DirectMode disabled
 	/*
 	SAFE_RELEASE(m_pSyncTexture);
@@ -439,8 +445,7 @@ void VirtualStreamer::RunRemoteDisplay()
 	//HRESULT hr;
 	WSADATA wsaData;
 	WSAStartup(MAKEWORD(2, 2), &wsaData);
-
-	CTCPServer *pServer = new CTCPServer(1974, TcpPacketReceive, this);
+		
 	//UdpClientServer::CUdpClient *pUdpClient = new UdpClientServer::CUdpClient(m_HMDData.DirectStreamURL, 1974);
 	InitEncoder();
 
@@ -451,32 +456,33 @@ void VirtualStreamer::RunRemoteDisplay()
 	infoPacket.D2 = 'D';
 	infoPacket.Width = pHMD->m_HMDData.ScreenWidth;
 	infoPacket.Height = pHMD->m_HMDData.ScreenHeight;
+	infoPacket.FrameRate = (int) pHMD->m_HMDData.Frequency;
 	bool setHeaders = false;
 	unsigned char *pFrameBuffer = (unsigned char *) malloc(8192*1024);	
 	int counter = 0;
 	while (m_IsRunning)
 	{
 		Sleep(1); //failsafe
-		if (pServer->IsReady())
+		if (m_pServer->IsReady())
 		{
 			switch (m_DisplayState)
 			{
 			case 0:	//no connection				
 				m_LastPacketReceive = 0;
-				m_DisplayState = pServer->IsConnected() ? m_DisplayState + 1 : 0;
+				m_DisplayState = m_pServer->IsConnected() ? m_DisplayState + 1 : 0;
 				continue;
 			case 1: //new connected
-				pServer->SendBuffer((const char*)&infoPacket, sizeof(infoPacket));
+				m_pServer->SendBuffer(VirtualPacketTypes::VrFrameInit, (const char*)&infoPacket, sizeof(infoPacket));
 				Sleep(100);
-				m_DisplayState = pServer->IsConnected() ? m_DisplayState + 1 : 0;
+				m_DisplayState = m_pServer->IsConnected() ? m_DisplayState + 1 : 0;
 				continue;
 			case 2:
 				m_pEncoder->ReInit(pHMD->m_HMDData.ScreenWidth, pHMD->m_HMDData.ScreenHeight);
 				setHeaders = true;
-				m_DisplayState = pServer->IsConnected() ? m_DisplayState + 1 : 0;
+				m_DisplayState = m_pServer->IsConnected() ? m_DisplayState + 1 : 0;
 				continue;
 			case 3:
-				m_DisplayState = pServer->IsConnected() ? m_DisplayState : 0;
+				m_DisplayState = m_pServer->IsConnected() ? m_DisplayState : 0;
 				amf_pts now = amf_high_precision_clock();
 				if (((now - m_LastFrameTime) / 10000) < m_FrameTime)
 				{
@@ -484,7 +490,7 @@ void VirtualStreamer::RunRemoteDisplay()
 					continue;
 				}
 
-				if (m_FrameReady && pServer->IsReady())
+				if (m_FrameReady && m_pServer->IsReady())
 				{
 					AMF_RESULT res;
 					//amf_pts start_time;
@@ -531,7 +537,7 @@ void VirtualStreamer::RunRemoteDisplay()
 						if (len > 0)
 						{							
 							memcpy(pFrameBuffer, pData, len);
-							pServer->SendBuffer((const char *)pFrameBuffer, len);
+							m_pServer->SendBuffer(VirtualPacketTypes::VrFrame, (const char *)pFrameBuffer, len);
 							//OutputDebugString(L"Start send\n");
 						}
 					}
@@ -558,9 +564,6 @@ void VirtualStreamer::RunRemoteDisplay()
 	}
 
 	DestroyEncoder();
-
-	delete pServer;
-	pServer = nullptr;
 
 	if (pFrameBuffer)
 		free(pFrameBuffer);
@@ -674,7 +677,18 @@ void VirtualStreamer::ProcessEvent(IMFMediaEvent *pEvent, CTCPServer *pServer)
 */
 
 
-void VirtualStreamer::TcpPacketReceive(void *dst, const char *pData, int len)
+void VirtualStreamer::EnableCamera(bool enable)
+{
+	if (enable != m_LastCameraStatus)
+	{
+		m_LastCameraStatus = enable;
+		//do some shit
+		if (m_pServer)
+			m_pServer->SetCameraStatus(&m_LastCameraStatus);
+	}
+}
+
+void VirtualStreamer::TcpPacketReceive(void *dst, VirtualPacketTypes type, const char *pData, int len)
 {
 	VirtualStreamer *pDM = (VirtualStreamer *)dst;
 	if (pData == nullptr)
@@ -682,12 +696,14 @@ void VirtualStreamer::TcpPacketReceive(void *dst, const char *pData, int len)
 		pDM->m_DisplayState = 0;
 		return;
 	}
-	if (len != 32) return;
-	//read only last 32 bytes, discard others for now
-	USBPacket *pPacket = (USBPacket *)pData;
-	SetPacketCrc(pPacket);
-	pDM->ProcessRemotePacket(pPacket);
-	pDM->m_LastPacketReceive = GetTickCount();
+	if (type == 3)
+	{		
+
+		USBPacket *pPacket = (USBPacket *)pData;
+		SetPacketCrc(pPacket);
+		pDM->ProcessRemotePacket(pPacket);
+		pDM->m_LastPacketReceive = GetTickCount();
+	}
 }
 
 void VirtualStreamer::ProcessRemotePacket(USBPacket *pPacket)

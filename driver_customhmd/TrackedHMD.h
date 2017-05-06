@@ -60,8 +60,10 @@ private:
 			pData = nullptr;
 			Width = Height = 0;
 		}
-		void FillUV(float fU, float fV, DistortionCoordinates_t *pCoords)
+		void FillUV(EVREye eEye, float fU, float fV, DistortionCoordinates_t *pCoords)
 		{
+			//TODO: mirror for right eye
+
 			if (!pData)
 				return;
 			int x = (int)((Width - 1) * fU);

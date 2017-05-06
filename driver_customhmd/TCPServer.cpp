@@ -2,6 +2,7 @@
 
 CTCPServer::CTCPServer(int port, pfnTcpPacketReceiveCallback cb, void *dst)
 {
+	m_pLastCameraStatus = nullptr;
 	m_Dest = dst;
 	m_LastDataReceive = 0;
 	m_IsConnected = false;
@@ -19,7 +20,6 @@ CTCPServer::CTCPServer(int port, pfnTcpPacketReceiveCallback cb, void *dst)
 		ResumeThread(m_hThread);
 	}
 }
-
 
 CTCPServer::~CTCPServer()
 {
@@ -54,7 +54,7 @@ void CTCPServer::Run()
 	struct addrinfo hints;
 
 	int iResult;
-	char recvBuf[DEFAULT_BUFLEN];
+	char *recvBuf = (char *)malloc(1024 * 1024 * 10);
 	int bufPos = 0;
 
 	ZeroMemory(&hints, sizeof(hints));
@@ -63,7 +63,13 @@ void CTCPServer::Run()
 	hints.ai_protocol = IPPROTO_TCP;
 	hints.ai_flags = AI_PASSIVE;
 
-	
+	struct tPacketHeader
+	{
+		uint32_t Length;
+		uint32_t Type;
+	};
+
+	tPacketHeader *pHeader = (tPacketHeader *)recvBuf;
 
 	char szPort[64] = {};
 	sprintf_s(szPort, "%u", m_Port);
@@ -72,7 +78,7 @@ void CTCPServer::Run()
 	while (m_IsRunning)
 	{
 		if (pfPacketCallback)
-			pfPacketCallback(m_Dest, nullptr, 0);
+			pfPacketCallback(m_Dest, VirtualPacketTypes::Invalid, nullptr, 0);
 		m_IsConnected = false;
 		m_ServerSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
 		if (m_ServerSocket == INVALID_SOCKET)
@@ -150,46 +156,73 @@ void CTCPServer::Run()
 			{
 				if (FD_ISSET(m_ClientSocket, &rd))
 				{
-					res = recv(m_ClientSocket, &recvBuf[bufPos], DEFAULT_BUFLEN - bufPos, 0);
-					if (res > 0) //callback 
+					//receive first 8 bytes 
+					if (bufPos < sizeof(tPacketHeader))
 					{
-						bufPos += res;
-						if (bufPos == DEFAULT_BUFLEN)
+						res = recv(m_ClientSocket, &recvBuf[bufPos], 8 - bufPos, 0);
+						bufPos += 8;
+					}
+					else
+					{
+						//we have the header, so we know the remaining length
+						int totalLength = (8 + pHeader->Length);
+						res = recv(m_ClientSocket, &recvBuf[bufPos], totalLength - bufPos, 0);
+						if (res > 0) //callback 
 						{
-							if (pfPacketCallback)
-								pfPacketCallback(m_Dest, recvBuf, res);
-							m_LastDataReceive = GetTickCount();
-							bufPos = 0;
+							bufPos += res;
+							if (bufPos == totalLength)
+							{
+								if (pfPacketCallback)
+									pfPacketCallback(m_Dest, (VirtualPacketTypes) pHeader->Type, &recvBuf[sizeof(tPacketHeader)], pHeader->Length);
+								m_LastDataReceive = GetTickCount();
+								bufPos = 0;
+							}
+							else if (bufPos > totalLength)
+								break;
 						}
-						else if (bufPos > DEFAULT_BUFLEN)
+						else if (res == 0)
+							break;
+						else if (WSAGetLastError() != WSAEWOULDBLOCK)
 							break;
 					}
-					else if (res == 0)					
-						break;
-					else if (WSAGetLastError() != WSAEWOULDBLOCK)
-						break;
-						
 						
 				}
-				if (FD_ISSET(m_ClientSocket, &wr) && m_DataRemain)
+				
+				if (FD_ISSET(m_ClientSocket, &wr))
 				{
 					int res;
-					if (m_DataRemain == m_DataSize)
-						res = send(m_ClientSocket, (const char *)&m_DataSize, sizeof(int), 0);
-					int sz = min(m_DataRemain, MAX_SEND_SIZE);
-					res = send(m_ClientSocket, m_DataToSend, sz, 0);					
-					if (res == SOCKET_ERROR)
-						break;
-					if (res > 0)
+					if (m_DataRemain)
 					{
-						m_DataToSend += res;
-						m_DataRemain -= res;
-						if (m_DataRemain == 0) 
+						if (m_DataRemain == m_DataSize)
 						{
-							m_DataSize = 0;
-							m_DataToSend = nullptr;
-							//OutputDebugString(L"Send done\n");
+							res = send(m_ClientSocket, (const char *)&m_DataSize, sizeof(int), 0);
+							res = send(m_ClientSocket, (const char *)&m_DataType, sizeof(int), 0);
 						}
+						int sz = min(m_DataRemain, MAX_SEND_SIZE);
+						res = send(m_ClientSocket, m_DataToSend, sz, 0);
+						if (res == SOCKET_ERROR)
+							break;
+						if (res > 0)
+						{
+							m_DataToSend += res;
+							m_DataRemain -= res;
+							if (m_DataRemain == 0)
+							{
+								m_DataSize = 0;
+								m_DataToSend = nullptr;
+								//OutputDebugString(L"Send done\n");
+							}
+						}
+					}
+					else if (m_pLastCameraStatus)
+					{
+						int size = sizeof(int);
+						int status = (*m_pLastCameraStatus) ? 1 : 0;
+						m_pLastCameraStatus = nullptr;
+						int type = VirtualPacketTypes::CameraAction;
+						res = send(m_ClientSocket, (const char *)&size, sizeof(int), 0);
+						res = send(m_ClientSocket, (const char *)&type, sizeof(int), 0);
+						res = send(m_ClientSocket, (const char *)&status, sizeof(int), 0);
 					}
 				}
 			}
@@ -215,6 +248,10 @@ void CTCPServer::Run()
 
 	freeaddrinfo(result);
 
+	if (recvBuf)
+		free(recvBuf);
+	recvBuf = nullptr;
+
 	WSACleanup();
 }
 
@@ -228,9 +265,10 @@ bool CTCPServer::IsConnected()
 	return m_IsConnected;
 }
 
-void CTCPServer::SendBuffer(const char *pData, int len)
+void CTCPServer::SendBuffer(VirtualPacketTypes type, const char *pData, int len)
 {
 	if (!m_IsConnected) return;
+	m_DataType = type;
 	m_DataRemain = len;
 	m_DataSize = len;
 	m_DataToSend = (char *) pData;

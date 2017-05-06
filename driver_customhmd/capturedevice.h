@@ -30,22 +30,13 @@ public:
 		{
 			Initialized = false;			
 			BufferSize = 0;
+			int frame_pixels = Width * Height;
 			if (MediaFormat == MFVideoFormat_NV12)
-			{
-				int frame_pixels = Width * Height;
 				BufferSize = (frame_pixels * 3) / 2;
-			}
 			else if (MediaFormat == MFVideoFormat_RGB32)
-			{
-				int frame_pixels = Width * Height;
 				BufferSize = frame_pixels * 4;
-			}
 			else if (MediaFormat == MFVideoFormat_RGB24)
-			{
-				int frame_pixels = Width * Height;
 				BufferSize = frame_pixels * 3;
-			}
-			
 
 			if (BufferSize == 0)
 				return false;
