@@ -3,7 +3,7 @@ package net.speleomaniac.customhmddisplay;
 import android.util.FloatMath;
 
 class Quaternion {
-    public final float w, x, y, z;
+    public float w, x, y, z;
 
     // create a new object with the given components
     public Quaternion(float w, float x, float y, float z) {

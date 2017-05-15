@@ -56,8 +56,6 @@ class TcpClient extends Thread {
 
     private final Object socketLock = new Object();
 
-
-
     void sendPacket(DisplayActivity.VirtualPacketTypes type, byte[] data, int len) {
         if (output == null) return;
         try {

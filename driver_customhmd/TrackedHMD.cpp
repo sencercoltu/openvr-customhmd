@@ -1382,8 +1382,8 @@ bool CTrackedHMD::SetCameraCompatibilityMode(ECameraCompatibilityMode nCameraCom
 bool CTrackedHMD::GetCameraFrameBounds(EVRTrackedCameraFrameType eFrameType, uint32_t *pLeft, uint32_t *pTop, uint32_t *pWidth, uint32_t *pHeight)
 {
 	DriverLog(__FUNCTION__" ft: %d", eFrameType);
-	auto w = m_HMDData.ScreenWidth; // FRAME_WIDTH; // m_HMDData.ScreenWidth / 2;
-	auto h = (m_HMDData.ScreenHeight - 30) / 2; // FRAME_HEIGHT;//(m_HMDData.ScreenHeight - 30) / 4;
+	auto w = m_HMDData.EyeWidth; // FRAME_WIDTH; // m_HMDData.ScreenWidth / 2;
+	auto h = m_HMDData.FakePackDetected ? (m_HMDData.ScreenHeight - 30) / 2 : m_HMDData.ScreenHeight; // FRAME_HEIGHT;//(m_HMDData.ScreenHeight - 30) / 4;
 	if (pLeft) *pLeft = 0; // m_HMDData.PosX + (w / 2);
 	if (pTop) *pTop = 0; // m_HMDData.PosY + (h / 2);
 	if (pWidth) *pWidth = w;
@@ -1524,7 +1524,8 @@ void CTrackedHMD::OnCameraFrameUpdate()
 	//DriverLog(__FUNCTION__);
 	if (WAIT_OBJECT_0 == WaitForSingleObject(m_Camera.hLock, INFINITE))
 	{
-		if (m_Camera.pCaptureDevice->m_Status == CCaptureDevice::Started && m_Camera.pfCallback && m_Camera.pFrameBuffer)
+		auto ready = (m_DisplayMode == DisplayMode::Virtual) || (m_Camera.pCaptureDevice->m_Status == CCaptureDevice::Started && m_Camera.pfCallback && m_Camera.pFrameBuffer);
+		if (ready)
 		{
 			DWORD currTick = GetTickCount();
 			auto diff = currTick - m_Camera.LastFrameTime;
@@ -1546,7 +1547,7 @@ void CTrackedHMD::OnCameraFrameUpdate()
 			m_Camera.pFrameBuffer->m_StandingTrackedDevicePose.bDeviceIsConnected = true;
 			m_Camera.pFrameBuffer->m_StandingTrackedDevicePose.bPoseIsValid = true;
 			m_Camera.pFrameBuffer->m_StandingTrackedDevicePose.eTrackingResult = TrackingResult_Running_OK;
-			m_Camera.pFrameBuffer->m_StandingTrackedDevicePose.vAngularVelocity.v[0] = 2;
+			m_Camera.pFrameBuffer->m_StandingTrackedDevicePose.vAngularVelocity.v[0] = 2; //why is this here???
 
 			m_Camera.CallbackCount = 0;
 			m_Camera.LastFrameTime = currTick;

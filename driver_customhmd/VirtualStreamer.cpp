@@ -123,7 +123,7 @@ void VirtualStreamer::Init(CTrackedHMD *pHmd)
 	m_hBufferLock = CreateMutex(nullptr, FALSE, L"BufferLock");
 	m_hTextureMapLock = CreateMutex(nullptr, FALSE, L"TextureMapLock");
 
-	
+
 	D3D11_TEXTURE2D_DESC textureDesc;
 	ZeroMemory(&textureDesc, sizeof(textureDesc));
 	textureDesc.Width = pHMD->m_HMDData.ScreenWidth;
@@ -326,8 +326,8 @@ void VirtualStreamer::Init(CTrackedHMD *pHmd)
 }
 
 void VirtualStreamer::TextureFromHandle(SharedTextureHandle_t handle)
-{	
-	ID3D11Texture2D *pTexture;	
+{
+	ID3D11Texture2D *pTexture;
 
 #ifdef ENABLE_TEXTURE_SS
 	HRESULT hr = m_pDevice->OpenSharedResource((HANDLE)handle, __uuidof(ID3D11Texture2D), (void **)&pTexture);
@@ -349,42 +349,50 @@ void VirtualStreamer::TextureFromHandle(SharedTextureHandle_t handle)
 
 	//assume 3 buffers
 	m_SequenceCounter++;
+	TextureCache *pCache;
 
+	int freeIndex = -1;
 	for (int i = 0; i < 3; i++)
 	{
-		TextureCache *pCache = &m_TextureCache[i];
-		if (!pCache->m_hVirtualTexture)
-		{
-			//empty slot
-			HRESULT hr = m_pDevice->OpenSharedResource((HANDLE)handle, __uuidof(ID3D11Texture2D), (void **)&pTexture);
-			if (pTexture)
-			{
-				AMF_RESULT res = m_pEncoderContext->CreateSurfaceFromDX11Native(pTexture, &pCache->m_pSurfaceTex, this);
-				if (res == AMF_OK)
-				{
-					if (SUCCEEDED(pTexture->QueryInterface(__uuidof(IDXGIKeyedMutex), (void **)&pCache->m_pTexSync)))
-					{
-						pCache->m_pVirtualTexture = pTexture;
-						pCache->m_hVirtualTexture = handle;
-						pCache->m_Sequence = m_SequenceCounter;
-						m_TexIndex = i;						
-						m_FrameReady = true;
-						return;
-					}
-				}
-				pCache->m_pSurfaceTex = nullptr;
-				pTexture->Release();
-				return;
-			}
-		}
-		else if (pCache->m_hVirtualTexture == handle)
+		pCache = &m_TextureCache[i];
+		if (pCache->m_hVirtualTexture == handle)
 		{
 			pCache->m_Sequence = m_SequenceCounter;
 			m_TexIndex = i;
 			m_FrameReady = true;
 			return;
 		}
+		else if (!pCache->m_hVirtualTexture) 
+		{
+			freeIndex = i;
+		}
 	}
+	if (freeIndex == -1) return;
+
+	//empty slot @ i
+	pCache = &m_TextureCache[freeIndex];
+	HRESULT hr = m_pDevice->OpenSharedResource((HANDLE)handle, __uuidof(ID3D11Texture2D), (void **)&pTexture);
+	if (pTexture)
+	{
+		AMF_RESULT res = m_pEncoderContext->CreateSurfaceFromDX11Native(pTexture, &pCache->m_pSurfaceTex, this);
+		if (res == AMF_OK)
+		{
+			if (SUCCEEDED(pTexture->QueryInterface(__uuidof(IDXGIKeyedMutex), (void **)&pCache->m_pTexSync)))
+			{
+				pCache->m_pVirtualTexture = pTexture;
+				pCache->m_hVirtualTexture = handle;
+				pCache->m_Sequence = m_SequenceCounter;
+				m_TexIndex = freeIndex;
+				m_FrameReady = true;
+				return;
+			}
+		}
+		m_FrameReady = false;
+		pCache->m_pSurfaceTex = nullptr;
+		pTexture->Release();
+	}
+
+
 }
 
 void VirtualStreamer::Destroy()
@@ -394,10 +402,10 @@ void VirtualStreamer::Destroy()
 	SAFE_THREADCLOSE(m_hDisplayThread);
 	SAFE_RELEASE(m_pContext);
 	SAFE_RELEASE(m_pDevice);
-	
+
 	if (m_pServer)
 		delete m_pServer;
-	m_pServer = nullptr;	
+	m_pServer = nullptr;
 
 	//DirectMode disabled
 	/*
@@ -421,7 +429,7 @@ void VirtualStreamer::Destroy()
 	SAFE_RELEASE(m_pConstantBuffer);
 	SAFE_RELEASE(m_pCWcullMode);
 	*/
-	
+
 	//MFT disabled
 	//SAFE_RELEASE(m_pMediaBuffer);
 	//SAFE_RELEASE(m_pInputSample);
@@ -445,7 +453,7 @@ void VirtualStreamer::RunRemoteDisplay()
 	//HRESULT hr;
 	WSADATA wsaData;
 	WSAStartup(MAKEWORD(2, 2), &wsaData);
-		
+
 	//UdpClientServer::CUdpClient *pUdpClient = new UdpClientServer::CUdpClient(m_HMDData.DirectStreamURL, 1974);
 	InitEncoder();
 
@@ -456,13 +464,12 @@ void VirtualStreamer::RunRemoteDisplay()
 	infoPacket.D2 = 'D';
 	infoPacket.Width = pHMD->m_HMDData.ScreenWidth;
 	infoPacket.Height = pHMD->m_HMDData.ScreenHeight;
-	infoPacket.FrameRate = (int) pHMD->m_HMDData.Frequency;
+	infoPacket.FrameRate = (int)pHMD->m_HMDData.Frequency;
 	bool setHeaders = false;
-	unsigned char *pFrameBuffer = (unsigned char *) malloc(8192*1024);	
+	unsigned char *pFrameBuffer = (unsigned char *)malloc(8192 * 1024);
 	int counter = 0;
 	while (m_IsRunning)
-	{
-		Sleep(1); //failsafe
+	{		
 		if (m_pServer->IsReady())
 		{
 			switch (m_DisplayState)
@@ -470,27 +477,30 @@ void VirtualStreamer::RunRemoteDisplay()
 			case 0:	//no connection				
 				m_LastPacketReceive = 0;
 				m_DisplayState = m_pServer->IsConnected() ? m_DisplayState + 1 : 0;
+				Sleep(1); //failsafe
 				continue;
 			case 1: //new connected
 				m_pServer->SendBuffer(VirtualPacketTypes::VrFrameInit, (const char*)&infoPacket, sizeof(infoPacket));
 				Sleep(100);
 				m_DisplayState = m_pServer->IsConnected() ? m_DisplayState + 1 : 0;
+				Sleep(1); //failsafe
 				continue;
 			case 2:
 				m_pEncoder->ReInit(pHMD->m_HMDData.ScreenWidth, pHMD->m_HMDData.ScreenHeight);
 				setHeaders = true;
 				m_DisplayState = m_pServer->IsConnected() ? m_DisplayState + 1 : 0;
+				Sleep(1); //failsafe
 				continue;
 			case 3:
 				m_DisplayState = m_pServer->IsConnected() ? m_DisplayState : 0;
 				amf_pts now = amf_high_precision_clock();
-				if (((now - m_LastFrameTime) / 10000) < m_FrameTime)
-				{
-					OutputDebugString(L"FrameSkip\n");
-					continue;
-				}
+				//if (((now - m_LastFrameTime) / 10000) < m_FrameTime)
+				//{
+				//	OutputDebugString(L"FrameSkip\n");
+				//	continue;
+				//}
 
-				if (m_FrameReady && m_pServer->IsReady())
+				if (m_DisplayState && m_FrameReady && m_pServer->IsReady())
 				{
 					AMF_RESULT res;
 					//amf_pts start_time;
@@ -499,7 +509,7 @@ void VirtualStreamer::RunRemoteDisplay()
 					{
 						OutputDebugString(L"Missed frame?\n");
 					}
-					if (SUCCEEDED(pCache->m_pTexSync->AcquireSync(0, 10)))
+					if (SUCCEEDED(pCache->m_pTexSync->AcquireSync(0, 1)))
 					{
 						//if ((amf_high_precision_clock() - lastSPSPPS) / 10000000 >= 10)
 						//{
@@ -519,11 +529,15 @@ void VirtualStreamer::RunRemoteDisplay()
 						}
 						res = m_pEncoder->SubmitInput(pCache->m_pSurfaceTex);
 						//m_EndcodeElapsed += amf_high_precision_clock() - start_time;
-						m_FrameReady = false;						
+						m_FrameReady = false;
 						pCache->m_pTexSync->ReleaseSync(0);
 					}
 					else
+					{
 						OutputDebugString(L"NoLock \n");
+						Sleep(1); //failsafe
+						continue;
+					}
 
 					amf::AMFDataPtr data;
 					//start_time = amf_high_precision_clock();
@@ -535,7 +549,7 @@ void VirtualStreamer::RunRemoteDisplay()
 						unsigned char *pData = (unsigned char *)buffer->GetNative();
 						int len = (int)buffer->GetSize();
 						if (len > 0)
-						{							
+						{
 							memcpy(pFrameBuffer, pData, len);
 							m_pServer->SendBuffer(VirtualPacketTypes::VrFrame, (const char *)pFrameBuffer, len);
 							//OutputDebugString(L"Start send\n");
@@ -556,8 +570,9 @@ void VirtualStreamer::RunRemoteDisplay()
 					//}
 				}
 				else
-				{					
-					OutputDebugString(m_FrameReady? L"Server Not ready!\n" : L"Frame Not ready!\n");
+				{
+					OutputDebugString(m_FrameReady ? L"Server Not ready!\n" : L"Frame Not ready!\n");
+					Sleep(1); //failsafe
 				}
 			}
 		}
@@ -597,7 +612,7 @@ void VirtualStreamer::ProcessEvent(IMFMediaEvent *pEvent, CTCPServer *pServer)
 			//IMFMediaBuffer *pBuffer = nullptr;
 			//hr = m_pInputSample->GetBufferByIndex(0, &pBuffer);
 			if (SUCCEEDED(m_pTexSync->AcquireSync(0, 10)))
-			{	
+			{
 				m_pContext->CopyResource(m_pTexBuffer, m_pRTTex);
 				D3D11_MAPPED_SUBRESOURCE mappedResource;
 				hr = m_pContext->Map(m_pTexBuffer, 0, D3D11_MAP::D3D11_MAP_READ, 0, &mappedResource);
@@ -608,7 +623,7 @@ void VirtualStreamer::ProcessEvent(IMFMediaEvent *pEvent, CTCPServer *pServer)
 				hr = pMediaBuffer->Lock(&pData, &dwMax, &dwLen);
 				memcpy(pData, mappedResource.pData, mappedResource.RowPitch * pHMD->m_HMDData.ScreenHeight);
 				hr = pMediaBuffer->Unlock();
-				m_pContext->Unmap(m_pTexBuffer, 0);				
+				m_pContext->Unmap(m_pTexBuffer, 0);
 				hr = m_pTransform->ProcessInput(0, m_pInputSample, 0);
 				//copy tex buffer to sample buffer :(
 				//pBuffer->QueryInterface
@@ -618,7 +633,7 @@ void VirtualStreamer::ProcessEvent(IMFMediaEvent *pEvent, CTCPServer *pServer)
 				//if (pSample)
 				//{
 				//	IMFMediaBuffer *pBuffer;
-				//	hr = m_pInputSample->GetBufferByIndex(0, &pBuffer);					
+				//	hr = m_pInputSample->GetBufferByIndex(0, &pBuffer);
 				//	BYTE *pSrc, *pDst;
 				//	DWORD srcLen, dstLen, srcMax, dstMax;
 
@@ -628,7 +643,7 @@ void VirtualStreamer::ProcessEvent(IMFMediaEvent *pEvent, CTCPServer *pServer)
 				//	hr = pBuffer->SetCurrentLength(srcLen);
 				//	hr = pBuffer->Unlock();
 				//	hr = pSample->Unlock();
-				//	
+				//
 				//	hr = m_pTransform->ProcessInput(0, m_pInputSample, 0);
 				//	hr = pSample->Release();
 				//	hr = pBuffer->Release();
@@ -647,7 +662,7 @@ void VirtualStreamer::ProcessEvent(IMFMediaEvent *pEvent, CTCPServer *pServer)
 			if (SUCCEEDED(hr))
 			{
 				m_pOutputSample = outBuf.pSample; //release at exit
-				if (outBuf.pEvents) 
+				if (outBuf.pEvents)
 					outBuf.pEvents->Release();
 			}
 			IMFMediaBuffer *pBuffer;
@@ -657,10 +672,10 @@ void VirtualStreamer::ProcessEvent(IMFMediaEvent *pEvent, CTCPServer *pServer)
 				DWORD currLen, maxLen;
 				unsigned char *pData = nullptr;;
 				if (SUCCEEDED(pBuffer->Lock(&pData, &maxLen, &currLen)))
-				{	
+				{
 					if (pData && currLen)
 					{
-						pServer->SendBuffer((const char *)&currLen, sizeof(int));						
+						pServer->SendBuffer((const char *)&currLen, sizeof(int));
 						pServer->SendBuffer((const char *)pData, currLen);
 						if (m_FileDump) fwrite(pData, 1, currLen, m_FileDump);
 					}
@@ -668,7 +683,7 @@ void VirtualStreamer::ProcessEvent(IMFMediaEvent *pEvent, CTCPServer *pServer)
 				}
 				pBuffer->Release();
 			}
-			
+
 
 			break;
 		}
@@ -684,7 +699,12 @@ void VirtualStreamer::EnableCamera(bool enable)
 		m_LastCameraStatus = enable;
 		//do some shit
 		if (m_pServer)
+		{
+			InitDecoder();
 			m_pServer->SetCameraStatus(&m_LastCameraStatus);
+		}
+		else
+			DestroyDecoder();
 	}
 }
 
@@ -696,13 +716,36 @@ void VirtualStreamer::TcpPacketReceive(void *dst, VirtualPacketTypes type, const
 		pDM->m_DisplayState = 0;
 		return;
 	}
-	if (type == 3)
-	{		
+
+	switch (type)
+	{
+	case VirtualPacketTypes::Rotation:
+	{
 
 		USBPacket *pPacket = (USBPacket *)pData;
 		SetPacketCrc(pPacket);
 		pDM->ProcessRemotePacket(pPacket);
 		pDM->m_LastPacketReceive = GetTickCount();
+		break;
+	}
+	case VirtualPacketTypes::CameraFrameInit:
+	{
+		//reset decoder
+		auto pInfoPacket = (InfoPacket *)pData;
+
+		break;
+	}
+	case VirtualPacketTypes::CameraFrame:
+	{
+		auto pCameraOptions = &pDM->pHMD->m_Camera.Options;
+		//decode frame to pCameraOptions->pCaptureBuffer
+
+
+
+		if (pCameraOptions && pCameraOptions->pfCallback)
+			pCameraOptions->pfCallback(nullptr, pCameraOptions->pUserData);
+		break;
+	}
 	}
 }
 
@@ -719,7 +762,7 @@ bool VirtualStreamer::InitEncoder()
 	res = g_AMFFactory.Init();
 	if (res != AMF_OK)
 		return false;
-	
+
 	amf_increase_timer_precision();
 
 	//#ifdef _DEBUG
@@ -738,26 +781,26 @@ bool VirtualStreamer::InitEncoder()
 	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_USAGE, AMF_VIDEO_ENCODER_USAGE_ULTRA_LOW_LATENCY);
 	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_B_PIC_PATTERN, 0);
 	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_QUALITY_PRESET, AMF_VIDEO_ENCODER_QUALITY_PRESET_SPEED);
-	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_TARGET_BITRATE, 1024 * 1024 * 20);
-	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_PEAK_BITRATE, 1024 * 1024 * 20);
+	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_TARGET_BITRATE, 1024 * 1024 * 20);
+	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_PEAK_BITRATE, 1024 * 1024 * 20);
 	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_FRAMESIZE, ::AMFConstructSize(pHMD->m_HMDData.ScreenWidth, pHMD->m_HMDData.ScreenHeight));
 	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_FRAMERATE, ::AMFConstructRate((amf_uint32)pHMD->m_HMDData.Frequency, 1));
 	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_PROFILE, AMF_VIDEO_ENCODER_PROFILE_BASELINE);
 	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD, AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_CBR);
 	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_SCANTYPE, AMF_VIDEO_ENCODER_SCANTYPE_INTERLACED);
-	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_MAX_NUM_REFRAMES, 0);
+	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_MAX_NUM_REFRAMES, 0);
 	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_PROFILE_LEVEL, 42);
 	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_B_REFERENCE_ENABLE, false);
 	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_SLICES_PER_FRAME, 4);
 	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_VBV_BUFFER_SIZE, 1024 * 100);
-	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_MIN_QP, 5);
-	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_MAX_QP, 20);
-	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_QP_I, 10);
+	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_MIN_QP, 5);
+	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_MAX_QP, 20);
+	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_QP_I, 10);
 	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_QP_I, 50);
 	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_INITIAL_VBV_BUFFER_FULLNESS, 16);
-	
-	
-	
+
+
+
 
 	res = m_pEncoder->Init(amf::AMF_SURFACE_RGBA, pHMD->m_HMDData.ScreenWidth, pHMD->m_HMDData.ScreenHeight);
 	EXIT_AND_DESTROY;
@@ -785,12 +828,29 @@ void VirtualStreamer::DestroyEncoder()
 	if (m_pEncoderContext)
 		m_pEncoderContext->Terminate();
 	m_pEncoderContext = nullptr;
-//#ifdef _DEBUG
-//	amf::AMFTraceEnableWriter(AMF_TRACE_WRITER_DEBUG_OUTPUT, false);
-//#endif //_DEBUG
+	//#ifdef _DEBUG
+	//	amf::AMFTraceEnableWriter(AMF_TRACE_WRITER_DEBUG_OUTPUT, false);
+	//#endif //_DEBUG
 	amf_restore_timer_precision();
 	g_AMFFactory.Terminate();
 }
+
+
+
+bool VirtualStreamer::InitDecoder()
+{
+	AMF_RESULT res = AMF_OK;
+
+
+
+	return true;
+}
+
+void VirtualStreamer::DestroyDecoder()
+{
+
+}
+
 
 
 /*
@@ -906,7 +966,7 @@ bool VirtualStreamer::InitMFT()
 	hr = pMFTOutputMediaType->SetUINT32(MF_MT_INTERLACE_MODE, MFVideoInterlace_Progressive);
 	hr = pMFTOutputMediaType->SetUINT32(MF_MT_MPEG2_PROFILE, eAVEncH264VProfile_Base);
 	hr = pMFTOutputMediaType->SetUINT32(MF_MT_ALL_SAMPLES_INDEPENDENT, TRUE);
-	hr = pMFTOutputMediaType->SetUINT32(MF_LOW_LATENCY, TRUE);	
+	hr = pMFTOutputMediaType->SetUINT32(MF_LOW_LATENCY, TRUE);
 	hr = m_pTransform->SetOutputType(0, pMFTOutputMediaType, 0);
 	EXIT_IF_FAILED_MFT;
 
@@ -925,9 +985,9 @@ bool VirtualStreamer::InitMFT()
 	//pMFTInputMediaType->Release();
 	EXIT_IF_FAILED_MFT;
 
-	
+
 	//IMFVideoSampleAllocatorEx *pAllocator;
-	//hr = MFCreateVideoSampleAllocatorEx(__uuidof(IMFVideoSampleAllocatorEx), (void **)&pAllocator);	
+	//hr = MFCreateVideoSampleAllocatorEx(__uuidof(IMFVideoSampleAllocatorEx), (void **)&pAllocator);
 	//EXIT_IF_FAILED_MFT;
 	//
 	//hr = MFCreateAttributes(&pAttributes, 2);
@@ -938,7 +998,7 @@ bool VirtualStreamer::InitMFT()
 	//pAttributes->Release();
 	//EXIT_IF_FAILED_MFT;
 	//
-	//hr = pAllocator->AllocateSample(&m_pInputSample);	
+	//hr = pAllocator->AllocateSample(&m_pInputSample);
 	//pAllocator->Release();
 	//EXIT_IF_FAILED_MFT;
 
@@ -957,14 +1017,14 @@ bool VirtualStreamer::InitMFT()
 	//m_pInputSample->Release();
 
 	// Create the DirectX surface buffer
-	
-	
+
+
 	IMFMediaBuffer *pBuffer;
 	//hr = MFCreateDXGISurfaceBuffer(__uuidof(ID3D11Texture2D), m_pRTTex, 0, false, &pBuffer);
 	//IMF2DBuffer *p2DBuffer;
 	//hr = pBuffer->QueryInterface(__uuidof(IMF2DBuffer), (void**)&p2DBuffer);
 	//DWORD Length;
-	//hr = p2DBuffer->GetContiguousLength(&Length);	
+	//hr = p2DBuffer->GetContiguousLength(&Length);
 	//p2DBuffer->Release();
 
 	//// Set the data length of the buffer
@@ -978,7 +1038,7 @@ bool VirtualStreamer::InitMFT()
 	hr = m_pInputSample->AddBuffer(pBuffer);
 	// Set the time stamp and the duration
 	pBuffer->Release();
-	
+
 
 	hr = pMFTInputMediaType->Release();
 	hr = pMFTOutputMediaType->Release();
@@ -998,7 +1058,7 @@ bool VirtualStreamer::InitMFT()
 
 	m_pInputSample->SetSampleDuration((LONGLONG)m_FrameTime);
 	m_pInputSample->SetSampleTime(GetTickCount64());
-		
+
 
 
 	MFT_OUTPUT_STREAM_INFO info;
@@ -1021,8 +1081,8 @@ bool VirtualStreamer::InitMFT()
 	hr = m_pTransform->ProcessMessage(MFT_MESSAGE_SET_D3D_MANAGER, (ULONG_PTR)m_pManager);
 	EXIT_IF_FAILED_MFT;
 
-	
-	
+
+
 
 	hr = m_pTransform->ProcessMessage(MFT_MESSAGE_COMMAND_FLUSH, 0); EXIT_IF_FAILED_MFT;
 	hr = m_pTransform->ProcessMessage(MFT_MESSAGE_NOTIFY_BEGIN_STREAMING, 0); EXIT_IF_FAILED_MFT;

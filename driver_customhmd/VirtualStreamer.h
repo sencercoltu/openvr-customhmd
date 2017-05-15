@@ -113,7 +113,7 @@ public:
 
 	amf::AMFContextPtr m_pEncoderContext;
 	amf::AMFComponentPtr m_pEncoder;
-	
+
 	struct TextureCache
 	{
 		vr::SharedTextureHandle_t m_hVirtualTexture;
@@ -129,6 +129,15 @@ public:
 
 	bool InitEncoder();
 	void DestroyEncoder();
+
+
+	amf::AMFContextPtr m_pDecoderContext;
+	amf::AMFComponentPtr m_pDecoder;
+
+
+	bool InitDecoder();
+	void DestroyDecoder();
+
 
 	//MFT disabled
 	/*

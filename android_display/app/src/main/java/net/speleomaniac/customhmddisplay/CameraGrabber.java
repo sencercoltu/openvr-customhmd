@@ -14,6 +14,7 @@ import android.view.SurfaceView;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 import static android.media.MediaCodec.CONFIGURE_FLAG_ENCODE;
 
@@ -22,7 +23,7 @@ import static android.media.MediaCodec.CONFIGURE_FLAG_ENCODE;
 public class CameraGrabber extends Thread {
 
     interface CameraFrameReceiveListener {
-        void onCameraFrameReceived(byte[] data, int size);
+        void onCameraFrameReceived(byte[] data, int size, boolean initial);
     }
 
     private CameraFrameReceiveListener cameraFrameReceiveListener = null;
@@ -165,6 +166,21 @@ public class CameraGrabber extends Thread {
         mCamera.startPreview();
         if (mCamera != null) {
 
+            byte[] InfoPacket = new byte[4 + 4 + 4 + 4]; //magic width height freq
+            InfoPacket[0] = 'H';
+            InfoPacket[1] = 'M';
+            InfoPacket[2] = 'D';
+            InfoPacket[3] = 'C';
+
+            ByteBuffer bb = ByteBuffer.wrap(InfoPacket);
+            bb.order(ByteOrder.LITTLE_ENDIAN);
+            bb.position(4);
+            bb.putInt(320);
+            bb.putInt(240);
+            bb.putInt(30);
+
+            cameraFrameReceiveListener.onCameraFrameReceived(InfoPacket, 16, true);
+
             while (isCameraRunnig) {
                 while (true) {
                     int encoderStatus = encoder.dequeueOutputBuffer(bufferInfo, 10);
@@ -186,7 +202,7 @@ public class CameraGrabber extends Thread {
                             byte[] bytes = new byte[encodedData.limit()];
                             encodedData.position(0);
                             encodedData.get(bytes);
-                            cameraFrameReceiveListener.onCameraFrameReceived(bytes, bytes.length);
+                            cameraFrameReceiveListener.onCameraFrameReceived(bytes, bytes.length, false);
                             encoder.releaseOutputBuffer(encoderStatus, false);
                             break;
                     }

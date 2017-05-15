@@ -186,15 +186,27 @@ public class DisplayActivity
     long m_LastPoseTime = 0;
     float m_PosePeriod = 1000.0f / 60.0f;
 
+    boolean hasMag = false;
+    boolean hasAcc = false;
+    boolean hasGyro = false;
+
+    SensorFusion sensorFusion = new SensorFusion(0.1f);
+    float s_accel[] = new float[3];
+    float s_mag[] = new float[3];
+    float s_gyro[] = new float[3];
+    long lastGyroTime = 0;
+    float gyroDiff = 0f;
+
+    private static final float NS2S = 1.0f / 1000000000.0f;
+
     @Override
     public void onSensorChanged(SensorEvent event) {
         if (State == 0)
             return;
 
-        long now = System.currentTimeMillis();
-        if (now - m_LastPoseTime < m_PosePeriod)
-            return;
-        m_LastPoseTime = now;
+        //if (now - m_LastPoseTime < m_PosePeriod)
+        //   return;
+        //m_LastPoseTime = now;
         //send max 60 times per second
 
         if (event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
@@ -239,6 +251,75 @@ public class DisplayActivity
                 usbPacket.buildRotationPacket();
                 tcpClient.sendPacket(Rotation, usbPacket.Buffer, 32);
             }
+            return;
+        }
+        else if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+            hasAcc = true;
+            System.arraycopy(event.values, 0, s_accel, 0, 3);
+        }
+        else if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
+            hasMag = true;
+            System.arraycopy(event.values, 0, s_mag, 0, 3);
+        }
+        else if (event.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
+            if (lastGyroTime != 0) {
+                gyroDiff = (event.timestamp - lastGyroTime) * NS2S ;
+                hasGyro = true;
+            }
+            System.arraycopy(event.values, 0, s_gyro, 0, 3);
+            lastGyroTime = event.timestamp;
+        }
+
+        if (hasAcc && hasGyro && hasMag) {
+            sensorFusion.MadgwickQuaternionUpdateAHRS(gyroDiff, s_accel[0], s_accel[1], s_accel[2], s_gyro[0], s_gyro[1], s_gyro[2], s_mag[0], s_mag[1], s_mag[2]);
+
+            Q[3] = sensorFusion.m_RotQuat.w;
+            Q[0] = sensorFusion.m_RotQuat.x;
+            Q[1] = sensorFusion.m_RotQuat.y;
+            Q[2] = sensorFusion.m_RotQuat.z;
+
+
+            SensorManager.getRotationMatrixFromVector(m_RotMatrix, Q);
+
+            float rotation = 0.0f;
+            switch (m_Display.getRotation()) {
+                case 0: {
+                    rotation = 0.0f;
+                    break;
+                }
+                case 1: {
+                    rotation = 90.0f;
+                    break;
+                }
+                case 2: {
+                    rotation = 180.0f;
+                    break;
+                }
+                case 3: {
+                    rotation = 270.0f;
+                    break;
+                }
+            }
+
+            if (rotation != m_LastRotation ) {
+                m_LastRotation = rotation;
+                Matrix.setRotateEulerM(m_SensorToDisplay, 0, 0.0f, 0.0f, -rotation);
+                Matrix.setRotateEulerM(m_EkfToHeadTracker, 0, -90.0f, 0.0f, rotation);
+            }
+
+            Matrix.multiplyMM(m_TmpHeadView, 0, m_SensorToDisplay, 0, m_RotMatrix, 0);
+            Matrix.multiplyMM(m_RotMatrix, 0, m_TmpHeadView, 0, m_EkfToHeadTracker, 0);
+
+            getQuaternion(Q, m_RotMatrix);
+
+            usbPacket.Rotation.w = Q[0];
+            usbPacket.Rotation.x = Q[1];
+            usbPacket.Rotation.y = Q[2];
+            usbPacket.Rotation.z = Q[3];
+
+            usbPacket.buildRotationPacket();
+            tcpClient.sendPacket(Rotation, usbPacket.Buffer, 32);
+            hasGyro = false; //gyroDiff = 0;
         }
     }
 
@@ -272,7 +353,10 @@ public class DisplayActivity
         //setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR), SensorManager.SENSOR_DELAY_FASTEST);
+        //sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR), SensorManager.SENSOR_DELAY_FASTEST);
+        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_FASTEST);
+        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE), SensorManager.SENSOR_DELAY_FASTEST);
+        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorManager.SENSOR_DELAY_FASTEST);
     }
 
     private byte[] InfoPacket = new byte[4 + 4 + 4 + 4]; //magic width height freq
@@ -409,7 +493,10 @@ public class DisplayActivity
     }
 
     @Override
-    public void onCameraFrameReceived(byte[] data, int size) {
-        Log.i("Camera", "Frame");
+    public void onCameraFrameReceived(byte[] data, int size, boolean initial) {
+        //Log.i("Camera", "Frame");
+        if (tcpClient != null && tcpClient.IsConnected) {
+            tcpClient.sendPacket(initial? CameraFrameInit : CameraFrame, data, size);
+        }
     }
 }
