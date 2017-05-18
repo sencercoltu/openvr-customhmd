@@ -651,36 +651,37 @@ DistortionCoordinates_t CTrackedHMD::ComputeDistortion(EVREye eEye, float fU, fl
 		//just a stupid function for loading UV map from bitmap
 		//does funny things, don't forget to rename DistortionMap.bmp file in resources directory
 		m_pDistortionMap->FillUV(eEye, fU, fV, &coords);
+		DriverLog(__FUNCTION__" Eye: %d, fU: %f, fV: %f => fU: %f, fV: %f", eEye, fU, fV, coords.rfRed[0], coords.rfRed[1]);
 	}
 	else
 	{
-		float hX;
-		float hY;
-		float rr;
-		float r2;
-		float theta;
+		//float hX;
+		//float hY;
+		//float rr;
+		//float r2;
+		//float theta;
 
-		rr = (fU - 0.5f)*(fU - 0.5f) + (fV - 0.5f)*(fV - 0.5f);
-		r2 = sqrtf(rr) * (1 + 0.95f*(rr*rr) + 0.97f*(rr));
-		theta = atan2f(fU - 0.5f, fV - 0.5f);
-		hX = sinf(theta)*r2*0.90f;
-		hY = cosf(theta)*r2*0.90f;
+		//rr = (fU - 0.5f)*(fU - 0.5f) + (fV - 0.5f)*(fV - 0.5f);
+		//r2 = sqrtf(rr) * (1 + 0.95f*(rr*rr) + 0.97f*(rr));
+		//theta = atan2f(fU - 0.5f, fV - 0.5f);
+		//hX = sinf(theta)*r2*0.90f;
+		//hY = cosf(theta)*r2*0.90f;
 
-		
-		coords.rfBlue[0] = hX + 0.5f;
-		coords.rfBlue[1] = hY + 0.5f;
-		coords.rfGreen[0] = hX + 0.5f;
-		coords.rfGreen[1] = hY + 0.5f;
-		coords.rfRed[0] = hX + 0.5f;
-		coords.rfRed[1] = hY + 0.5f;
-		
+		//
+		//coords.rfBlue[0] = hX + 0.5f;
+		//coords.rfBlue[1] = hY + 0.5f;
+		//coords.rfGreen[0] = hX + 0.5f;
+		//coords.rfGreen[1] = hY + 0.5f;
+		//coords.rfRed[0] = hX + 0.5f;
+		//coords.rfRed[1] = hY + 0.5f;
+		//
 
-		//coords.rfRed[0] = fU;
-		//coords.rfRed[1] = fV;
-		//coords.rfGreen[0] = fU;
-		//coords.rfGreen[1] = fV;
-		//coords.rfBlue[0] = fU;
-		//coords.rfBlue[1] = fV;
+		coords.rfRed[0] = fU;
+		coords.rfRed[1] = fV;
+		coords.rfGreen[0] = fU;
+		coords.rfGreen[1] = fV;
+		coords.rfBlue[0] = fU;
+		coords.rfBlue[1] = fV;
 	}
 	return coords;
 }
@@ -723,6 +724,7 @@ void CTrackedHMD::ReloadDistortionMap()
 		unsigned char* data = (unsigned char*)malloc(size);
 		// read the rest of the data at once
 		fread(data, sizeof(unsigned char), size, f); 
+		//swap r and b
 		for (i = 0; i < size; i += 3)
 		{
 			unsigned char tmp = data[i];

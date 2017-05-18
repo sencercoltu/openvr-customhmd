@@ -190,7 +190,7 @@ public class DisplayActivity
     boolean hasAcc = false;
     boolean hasGyro = false;
 
-    SensorFusion sensorFusion = new SensorFusion(0.1f);
+    SensorFusion sensorFusion = new SensorFusion(0.2f);
     float s_accel[] = new float[3];
     float s_mag[] = new float[3];
     float s_gyro[] = new float[3];
@@ -262,7 +262,7 @@ public class DisplayActivity
             System.arraycopy(event.values, 0, s_mag, 0, 3);
         }
         else if (event.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
-            if (lastGyroTime != 0) {
+            if (lastGyroTime != 0 && hasMag && hasAcc) {
                 gyroDiff = (event.timestamp - lastGyroTime) * NS2S ;
                 hasGyro = true;
             }
@@ -270,7 +270,7 @@ public class DisplayActivity
             lastGyroTime = event.timestamp;
         }
 
-        if (hasAcc && hasGyro && hasMag) {
+        if (gyroDiff > 0) {
             sensorFusion.MadgwickQuaternionUpdateAHRS(gyroDiff, s_accel[0], s_accel[1], s_accel[2], s_gyro[0], s_gyro[1], s_gyro[2], s_mag[0], s_mag[1], s_mag[2]);
 
             Q[3] = sensorFusion.m_RotQuat.w;
@@ -319,7 +319,8 @@ public class DisplayActivity
 
             usbPacket.buildRotationPacket();
             tcpClient.sendPacket(Rotation, usbPacket.Buffer, 32);
-            hasGyro = false; //gyroDiff = 0;
+
+            gyroDiff = 0;
         }
     }
 
@@ -417,10 +418,13 @@ public class DisplayActivity
                             String codecName = "video/avc";
                             codec = MediaCodec.createDecoderByType(codecName);
                             MediaFormat format = MediaFormat.createVideoFormat(codecName, width, height);
-                            format.setInteger(MediaFormat.KEY_FRAME_RATE, freq);
+                            format.setInteger(MediaFormat.KEY_WIDTH, width);
+                            format.setInteger(MediaFormat.KEY_HEIGHT, height);
                             format.setInteger(MediaFormat.KEY_MAX_WIDTH, width);
                             format.setInteger(MediaFormat.KEY_MAX_HEIGHT, height);
-                            format.setInteger(MediaFormat.KEY_OPERATING_RATE, Short.MAX_VALUE);
+                            format.setInteger(MediaFormat.KEY_FRAME_RATE, freq);
+                            format.setInteger(MediaFormat.KEY_OPERATING_RATE, freq);
+                            format.setInteger(MediaFormat.KEY_PRIORITY, 0);
                             codec.configure(format, surface, null, 0);
                             codec.start();
                             State = 1;

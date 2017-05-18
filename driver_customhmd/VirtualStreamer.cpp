@@ -527,6 +527,10 @@ void VirtualStreamer::RunRemoteDisplay()
 							pCache->m_pSurfaceTex->SetProperty(AMF_VIDEO_ENCODER_INSERT_SPS, true);
 							pCache->m_pSurfaceTex->SetProperty(AMF_VIDEO_ENCODER_INSERT_PPS, true);
 						}
+
+						res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_FORCE_PICTURE_TYPE, AMF_VIDEO_ENCODER_PICTURE_TYPE_NONE);
+						res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_PICTURE_STRUCTURE, AMF_VIDEO_ENCODER_PICTURE_STRUCTURE_FRAME);
+
 						res = m_pEncoder->SubmitInput(pCache->m_pSurfaceTex);
 						//m_EndcodeElapsed += amf_high_precision_clock() - start_time;
 						m_FrameReady = false;
@@ -777,19 +781,20 @@ bool VirtualStreamer::InitEncoder()
 
 	res = g_AMFFactory.GetFactory()->CreateComponent(m_pEncoderContext, AMFVideoEncoderVCE_AVC, &m_pEncoder);
 	EXIT_AND_DESTROY;
-
+	
 	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_USAGE, AMF_VIDEO_ENCODER_USAGE_ULTRA_LOW_LATENCY);
+	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_B_PIC_PATTERN, 0);
 	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_B_PIC_PATTERN, 0);
 	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_QUALITY_PRESET, AMF_VIDEO_ENCODER_QUALITY_PRESET_SPEED);
-	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_TARGET_BITRATE, 1024 * 1024 * 20);
-	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_PEAK_BITRATE, 1024 * 1024 * 20);
+	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_TARGET_BITRATE, 1024 * 1024 * 50);
+	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_PEAK_BITRATE, 1024 * 1024 * 50);
 	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_FRAMESIZE, ::AMFConstructSize(pHMD->m_HMDData.ScreenWidth, pHMD->m_HMDData.ScreenHeight));
 	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_FRAMERATE, ::AMFConstructRate((amf_uint32)pHMD->m_HMDData.Frequency, 1));
 	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_PROFILE, AMF_VIDEO_ENCODER_PROFILE_BASELINE);
 	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD, AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_CBR);
 	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_SCANTYPE, AMF_VIDEO_ENCODER_SCANTYPE_INTERLACED);
-	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_MAX_NUM_REFRAMES, 0);
-	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_PROFILE_LEVEL, 42);
+	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_MAX_NUM_REFRAMES, 0);
+	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_PROFILE_LEVEL, 51);
 	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_B_REFERENCE_ENABLE, false);
 	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_SLICES_PER_FRAME, 4);
 	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_VBV_BUFFER_SIZE, 1024 * 100);

@@ -647,7 +647,7 @@ namespace monitor_customhmd
             var distortionData = new USBDistortionData();
             distortionData.Reload = 1;
             LastDistSeq = distSeq;
-            var command = USBCommandData.Create(CMD_CALIBRATE, distortionData);
+            var command = USBCommandData.Create(CMD_DISTORTION, distortionData);
             var packet = USBPacket.Create((byte)(COMMAND_DATA | HMD_SOURCE), distSeq, command);
             var d = StructToBytes(packet);
             SetPacketCrc(ref d);

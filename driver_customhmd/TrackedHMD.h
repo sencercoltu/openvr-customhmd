@@ -66,13 +66,19 @@ private:
 
 			if (!pData)
 				return;
-			int x = (int)((Width - 1) * fU);
-			int y = (int)((Height - 1) * fU);
+
+			int x = (int)((Width - 1) * ((eEye == EVREye::Eye_Right)? 1.0f - fU : fU));
+			int y = (int)((Height - 1) * (1.0f - fV));
 			
-			int pos = (Width * 3) * y + x;
-			float u = ((float)pData[pos++]) / 256.0f;
-			float v = ((float)pData[pos++]) / 256.0f;
+			//use same map for all channels for now
+
+			int pos = ((Width * y) + x) * 3;
+			float u = ((float)pData[pos++]) / 255.0f;
+			float v = ((float)pData[pos++]) / 255.0f;
 			//float b = ((float)pData[pos]) / 256.0f;
+
+			//if (fU < 0.5) u = 0; else u = 1;
+			//if (fV < 0.5) v = 0; else v = 1;
 
 			pCoords->rfRed[0] = fU * u;
 			pCoords->rfRed[1] = fV * v;

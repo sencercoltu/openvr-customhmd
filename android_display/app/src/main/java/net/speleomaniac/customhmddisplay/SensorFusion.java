@@ -47,16 +47,18 @@ public class SensorFusion {
             mz *= recipNorm;
 
             // Auxiliary variables to avoid repeated arithmetic
-            _2q0mx = 2.0f * q0 * mx;
-            _2q0my = 2.0f * q0 * my;
-            _2q0mz = 2.0f * q0 * mz;
-            _2q1mx = 2.0f * q1 * mx;
             _2q0 = 2.0f * q0;
             _2q1 = 2.0f * q1;
             _2q2 = 2.0f * q2;
             _2q3 = 2.0f * q3;
-            _2q0q2 = 2.0f * q0 * q2;
-            _2q2q3 = 2.0f * q2 * q3;
+
+
+            _2q0mx = _2q0 * mx;
+            _2q0my = _2q0 * my;
+            _2q0mz = _2q0 * mz;
+            _2q1mx = _2q1 * mx;
+            _2q0q2 = _2q0 * q2;
+            _2q2q3 = _2q2 * q3;
             q0q0 = q0 * q0;
             q0q1 = q0 * q1;
             q0q2 = q0 * q2;
