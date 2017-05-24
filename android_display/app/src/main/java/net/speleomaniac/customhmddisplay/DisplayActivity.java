@@ -270,7 +270,7 @@ public class DisplayActivity
             lastGyroTime = event.timestamp;
         }
 
-        if (gyroDiff > 0) {
+        if (gyroDiff >= 0.001) {
             sensorFusion.MadgwickQuaternionUpdateAHRS(gyroDiff, s_accel[0], s_accel[1], s_accel[2], s_gyro[0], s_gyro[1], s_gyro[2], s_mag[0], s_mag[1], s_mag[2]);
 
             Q[3] = sensorFusion.m_RotQuat.w;
@@ -347,13 +347,14 @@ public class DisplayActivity
     protected void onResume() {
         super.onResume();
         if (tcpClient == null) {
-            //tcpClient = new TcpClient(this, "127.0.0.1", 1974);
-            tcpClient = new TcpClient(this, "192.168.0.10", 1974);
+            tcpClient = new TcpClient(this, "127.0.0.1", 1974);
+            //tcpClient = new TcpClient(this, "192.168.0.10", 1974);
             tcpClient.start();
         }
-        //setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
+
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+        //setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
         //sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR), SensorManager.SENSOR_DELAY_FASTEST);
         sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_FASTEST);
         sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE), SensorManager.SENSOR_DELAY_FASTEST);

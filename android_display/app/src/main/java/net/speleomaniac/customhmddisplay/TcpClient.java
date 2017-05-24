@@ -2,6 +2,10 @@ package net.speleomaniac.customhmddisplay;
 
 
 import android.os.AsyncTask;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
+import android.util.Log;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,6 +15,8 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 class TcpClient extends Thread {
@@ -56,38 +62,72 @@ class TcpClient extends Thread {
         inHeaderBuffer.order(ByteOrder.LITTLE_ENDIAN);
     }
 
-    private class PacketSender extends Thread {
+    private int outCount = 0;
 
+    private class PacketSender extends Thread {
+        private final Object isFull = new Object();
+        private final Object isEmpty = new Object();
         private DisplayActivity.VirtualPacketTypes _type = DisplayActivity.VirtualPacketTypes.Invalid;
         private byte[] _data = null;
         private int _len = 0;
-        void prepareSendPacket(DisplayActivity.VirtualPacketTypes type, byte[] data, int len) {
-            this._type = type;
-            this._data = data;
-            this._len = len;
-            this.start();
+        private boolean _hasData = false;
+        private boolean _running = false;
+        void sendPacket(DisplayActivity.VirtualPacketTypes type, byte[] data, int len) {
+            synchronized(isFull) {
+                _data = data;
+                _len = len;
+                _type = type;
+                _hasData = true;
+                isFull.notify();
+            }
+        }
+
+        @Override
+        public synchronized void start() {
+            _running = true;
+            super.start();
         }
 
         @Override
         public void run() {
-            internalSendPacket(_type, _data, _len);
-            this._type = DisplayActivity.VirtualPacketTypes.Invalid;
-            this._data = null;
-            this._len = 0;
+            while (_running) {
+                try {
+                    synchronized (isFull) {
+                        while (!_hasData)
+                            isFull.wait();
+                        internalSendPacket(_type, _data, _len);
+                        outCount++;
+                        if ((outCount % 100) == 0) {
+                            Log.d("RPS", "OuCount = " + outCount);
+                            outCount = 0;
+                        }
+                        _hasData = false;
+                    }
+                }
+                catch (InterruptedException e1) {
+                    e1.printStackTrace();
+                }
+            }
+        }
+
+        @Override
+        public void interrupt() {
+            _running = false;
+            try {
+                join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     }
 
-    private PacketSender _packetSender = new PacketSender();
+    private PacketSender _packetSender = null;
 
     private final Object socketLock = new Object();
 
     void sendPacket(DisplayActivity.VirtualPacketTypes type, byte[] data, int len) {
-        try {
-            _packetSender.join();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        _packetSender.prepareSendPacket(type, data, len);
+        if (_packetSender != null)
+            _packetSender.sendPacket(type, data, len);
     }
 
     private void internalSendPacket(DisplayActivity.VirtualPacketTypes type, byte[] data, int len) {
@@ -137,6 +177,10 @@ class TcpClient extends Thread {
         } catch (Exception e) {
             //e.printStackTrace();
         }
+        if (_packetSender != null) {
+            _packetSender.interrupt();
+            _packetSender = null;
+        }
         closeDriverSocket();
     }
 
@@ -147,6 +191,11 @@ class TcpClient extends Thread {
         if (isTcpRunning)
             return;
         isTcpRunning = true;
+        if (_packetSender == null) {
+            _packetSender = new PacketSender();
+            _packetSender.start();
+        }
+
         super.start();
     }
 
