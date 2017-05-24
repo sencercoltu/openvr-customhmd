@@ -187,7 +187,7 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 				{
 					m_HMDData.ScreenWidth = width;
 					m_HMDData.ScreenHeight = height;
-					m_HMDData.EyeWidth = m_HMDData.ScreenWidth / 2;
+					//m_HMDData.EyeWidth = m_HMDData.ScreenWidth / 2;
 				}
 			}
 		}
@@ -229,7 +229,7 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 				{
 					m_HMDData.ScreenWidth = width;
 					m_HMDData.ScreenHeight = height;
-					m_HMDData.EyeWidth = m_HMDData.ScreenWidth / 2;
+					//m_HMDData.EyeWidth = m_HMDData.ScreenWidth / 2;
 				}
 			}
 		}
@@ -248,7 +248,7 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 		//m_HMDData.DirectMode = m_pSettings->GetBool("driver_customhmd", "directMode", &error);
 		//if (error != VRSettingsError_None) m_HMDData.DirectMode = false;
 
-		if (m_DisplayMode = DisplayMode::SteamExtended)
+		if (m_DisplayMode == DisplayMode::SteamExtended)
 		{
 			IsOnDesktop = true;
 			//get monitor name for position and resolution detection, not needed for directMode
@@ -296,17 +296,26 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 			//may add NVIDIA detection and auto-whitelist later
 			m_HMDData.IsConnected = IsD2DConnected(EdidVendorID);
 		}
-
-		m_HMDData.EyeWidth = m_HMDData.ScreenWidth;
-		//detect SBS / FramePacked and set eyeWidth 
-		if (!m_HMDData.FakePackDetected)
-			m_HMDData.EyeWidth /= 2;
 	}
+
 	DisplayFrequency = m_HMDData.Frequency; //last override
 
 	m_HMDData.SuperSample = m_pSettings->GetFloat("driver_customhmd", "supersample");
-
+		
+	m_HMDData.EyeWidth = m_HMDData.ScreenWidth;
+	//detect SBS / FramePacked and set eyeWidth 
+	if (!m_HMDData.FakePackDetected)
+	{
+		m_HMDData.EyeWidth /= 2;
+		if (m_DisplayMode == DisplayMode::Virtual || m_DisplayMode == DisplayMode::DirectMode)
+			m_HMDData.AspectRatio = (float)m_HMDData.EyeWidth / (float)m_HMDData.ScreenHeight;
+		else
+			m_HMDData.AspectRatio = (float)m_HMDData.ScreenWidth / (float)m_HMDData.ScreenHeight;
+	}
+	else	
+		m_HMDData.AspectRatio = ((float)(m_HMDData.ScreenHeight - 30) / 2.0f) / (float)m_HMDData.ScreenWidth;
 	
+
 	error = VRSettingsError_None;  m_AlwaysConnected = m_pSettings->GetBool("driver_customhmd", "alwaysConnected", &error);
 	if (error == VRSettingsError_None && m_AlwaysConnected) { m_HMDData.IsConnected = true; }
 
@@ -633,20 +642,22 @@ void CTrackedHMD::GetEyeOutputViewport(EVREye eEye, uint32_t * pnX, uint32_t * p
 
 void CTrackedHMD::GetProjectionRaw(EVREye eEye, float * pfLeft, float * pfRight, float * pfTop, float * pfBottom)
 {
-	auto k = m_HMDData.FakePackDetected ? m_HMDData.AspectRatio : (1.0f / m_HMDData.AspectRatio);
+	auto a1 = m_HMDData.FakePackDetected ? 1.0f : m_HMDData.AspectRatio;
+	auto a2 = m_HMDData.FakePackDetected ? m_HMDData.AspectRatio : 1.0f;
+
 	switch (eEye)
 	{
 	case EVREye::Eye_Left:
-		*pfLeft = -1.0f;
-		*pfRight = 1.0f;
-		*pfTop = -1.0f * k;
-		*pfBottom = 1.0f * k;
+		*pfLeft = -1.0f * a1;
+		*pfRight = 1.0f * a1;
+		*pfTop = -1.0f * a2;
+		*pfBottom = 1.0f * a2;
 		break;
 	case EVREye::Eye_Right:
-		*pfLeft = -1.0f;
-		*pfRight = 1.0f;
-		*pfTop = -1.0f * k;
-		*pfBottom = 1.0f * k;
+		*pfLeft = -1.0f * a1;
+		*pfRight = 1.0f * a1;
+		*pfTop = -1.0f * a2;
+		*pfBottom = 1.0f * a2;
 		break;
 	}
 	DriverLog(__FUNCTION__" Eye: %d, l: %f, r: %f, t: %f, b: %f", eEye, *pfLeft, *pfRight, *pfTop, *pfBottom);
@@ -1629,17 +1640,9 @@ BOOL CALLBACK CTrackedHMD::MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LP
 							pMonData->PosY = monInfo.rcMonitor.top;
 							pMonData->ScreenWidth = monInfo.rcMonitor.right - monInfo.rcMonitor.left;
 							pMonData->ScreenHeight = monInfo.rcMonitor.bottom - monInfo.rcMonitor.top;
-							if ((pMonData->ScreenWidth == 1280 && pMonData->ScreenHeight == 1470) ||
-								(pMonData->ScreenWidth == 1920 && pMonData->ScreenHeight == 2190)) // does it also work for 1920? -> test it
-							{
-								pMonData->FakePackDetected = true;
-								pMonData->AspectRatio = ((float)(pMonData->ScreenHeight - 30) / 2.0f) / (float)pMonData->ScreenWidth;
-							}
-							else
-							{
-								pMonData->FakePackDetected = false;
-								pMonData->AspectRatio = (float)pMonData->ScreenWidth / (float)pMonData->ScreenHeight;
-							}
+							pMonData->FakePackDetected = ((pMonData->ScreenWidth == 1280 && pMonData->ScreenHeight == 1470) ||
+								(pMonData->ScreenWidth == 1920 && pMonData->ScreenHeight == 2190)); // does it also work for 1920? -> test it							
+
 							DEVMODE devMode = {};
 							devMode.dmSize = sizeof(DEVMODE);
 							if (EnumDisplaySettings(monInfo.szDevice, ENUM_CURRENT_SETTINGS, &devMode))

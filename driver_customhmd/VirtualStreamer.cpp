@@ -528,8 +528,8 @@ void VirtualStreamer::RunRemoteDisplay()
 							pCache->m_pSurfaceTex->SetProperty(AMF_VIDEO_ENCODER_INSERT_PPS, true);
 						}
 
-						res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_FORCE_PICTURE_TYPE, AMF_VIDEO_ENCODER_PICTURE_TYPE_NONE);
-						res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_PICTURE_STRUCTURE, AMF_VIDEO_ENCODER_PICTURE_STRUCTURE_FRAME);
+						//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_FORCE_PICTURE_TYPE, AMF_VIDEO_ENCODER_PICTURE_TYPE_NONE);
+						//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_PICTURE_STRUCTURE, AMF_VIDEO_ENCODER_PICTURE_STRUCTURE_FRAME);
 
 						res = m_pEncoder->SubmitInput(pCache->m_pSurfaceTex);
 						//m_EndcodeElapsed += amf_high_precision_clock() - start_time;
@@ -575,7 +575,7 @@ void VirtualStreamer::RunRemoteDisplay()
 				}
 				else
 				{
-					OutputDebugString(m_FrameReady ? L"Server Not ready!\n" : L"Frame Not ready!\n");
+					//OutputDebugString(m_FrameReady ? L"Server Not ready!\n" : L"Frame Not ready!\n");
 					Sleep(1); //failsafe
 				}
 			}
@@ -712,6 +712,8 @@ void VirtualStreamer::EnableCamera(bool enable)
 	}
 }
 
+//int pCounter = 0;
+
 void VirtualStreamer::TcpPacketReceive(void *dst, VirtualPacketTypes type, const char *pData, int len)
 {
 	VirtualStreamer *pDM = (VirtualStreamer *)dst;
@@ -730,6 +732,12 @@ void VirtualStreamer::TcpPacketReceive(void *dst, VirtualPacketTypes type, const
 		SetPacketCrc(pPacket);
 		pDM->ProcessRemotePacket(pPacket);
 		pDM->m_LastPacketReceive = GetTickCount();
+		//pCounter++;
+		//if (!(pCounter % 100))
+		//{
+		//	OutputDebugString(L"Got 100 rots...\n");
+		//	pCounter = 0;
+		//}
 		break;
 	}
 	case VirtualPacketTypes::CameraFrameInit:
