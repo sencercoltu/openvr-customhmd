@@ -7,6 +7,7 @@
 
 CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTrackedDevice(displayName, pServer)
 {
+	m_AlwaysConnected = false;
 	m_pDistortionMap = nullptr;
 	m_pVDF = new CDriverVirtualDisplayComponentFix(this);
 	m_pDMF = new CDriverDirectModeComponentFix(this);
@@ -305,6 +306,10 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 
 	m_HMDData.SuperSample = m_pSettings->GetFloat("driver_customhmd", "supersample");
 
+	
+	error = VRSettingsError_None;  m_AlwaysConnected = m_pSettings->GetBool("driver_customhmd", "alwaysConnected", &error);
+	if (error == VRSettingsError_None && m_AlwaysConnected) { m_HMDData.IsConnected = true; }
+
 	ZeroMemory(&m_Camera, sizeof(m_Camera));
 
 	m_Camera.Options.Width = 320;
@@ -365,13 +370,18 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 
 bool CTrackedHMD::IsConnected()
 {
-	CShMem mem;
-	if (((mem.GetState() != Disconnected) ||
-		m_DisplayMode == DisplayMode::Virtual ||
-		m_DisplayMode == DisplayMode::DirectMode ||
-		(m_DisplayMode == DisplayMode::SteamExtended && m_HMDData.Windowed)) &&
-		m_HMDData.IsConnected)  //m_HMDData.IsConnected is always set for virtual modes
+	if (m_AlwaysConnected)
 		return true;
+	else
+	{
+		CShMem mem;
+		if (((mem.GetState() != Disconnected) ||
+			m_DisplayMode == DisplayMode::Virtual ||
+			m_DisplayMode == DisplayMode::DirectMode ||
+			(m_DisplayMode == DisplayMode::SteamExtended && m_HMDData.Windowed)) &&
+			m_HMDData.IsConnected)  //m_HMDData.IsConnected is always set for virtual modes
+			return true;
+	}
 	return false;
 }
 

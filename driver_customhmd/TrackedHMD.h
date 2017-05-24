@@ -34,6 +34,7 @@ private:
 	VirtualStreamer m_VirtualDisplay;
 	DirectModeOutput m_DirectOutput;
 	DisplayMode m_DisplayMode;
+	bool m_AlwaysConnected;
 	
 	CDriverVirtualDisplayComponentFix *m_pVDF;
 	CDriverDirectModeComponentFix *m_pDMF;
