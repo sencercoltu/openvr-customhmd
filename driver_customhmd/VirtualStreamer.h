@@ -82,7 +82,7 @@ public:
 		m_pContext = nullptr;
 		m_pDevice = nullptr;
 		
-		m_EndcodeElapsed = 0;
+		//m_EndcodeElapsed = 0;
 		m_FrameTime = (1.0f / 30.0f) * 1000.0f;
 	}
 
@@ -92,7 +92,7 @@ public:
 	DWORD m_LastPacketReceive;
 	float m_FrameTime;
 
-	amf_pts m_EndcodeElapsed;
+	//amf_pts m_EndcodeElapsed;
 
 	void Init(CTrackedHMD *pHmd);
 	void Destroy();

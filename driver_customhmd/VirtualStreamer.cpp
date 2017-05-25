@@ -448,6 +448,10 @@ unsigned int WINAPI VirtualStreamer::RemoteDisplayThread(void *p)
 	return 0;
 }
 
+int inCount = 0;
+int outCount = 0;
+uint64_t encodeTime = 0;
+
 void VirtualStreamer::RunRemoteDisplay()
 {
 	//HRESULT hr;
@@ -502,6 +506,12 @@ void VirtualStreamer::RunRemoteDisplay()
 
 				if (m_DisplayState && m_FrameReady && m_pServer->IsReady())
 				{
+//#ifdef _DEBUG
+//					wchar_t dbg[1024];
+//					wsprintf(dbg, L"In: %u Out: %u\n", inCount, outCount);
+//					OutputDebugString(dbg);
+//#endif //_DEBUG
+
 					AMF_RESULT res;
 					//amf_pts start_time;
 					TextureCache *pCache = &m_TextureCache[m_TexIndex];
@@ -528,10 +538,13 @@ void VirtualStreamer::RunRemoteDisplay()
 							pCache->m_pSurfaceTex->SetProperty(AMF_VIDEO_ENCODER_INSERT_PPS, true);
 						}
 
-						//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_FORCE_PICTURE_TYPE, AMF_VIDEO_ENCODER_PICTURE_TYPE_NONE);
-						//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_PICTURE_STRUCTURE, AMF_VIDEO_ENCODER_PICTURE_STRUCTURE_FRAME);
+						//res = pCache->m_pSurfaceTex->SetProperty(AMF_VIDEO_ENCODER_FORCE_PICTURE_TYPE, AMF_VIDEO_ENCODER_PICTURE_TYPE_IDR);
+						//res = pCache->m_pSurfaceTex->SetProperty(AMF_VIDEO_ENCODER_PICTURE_STRUCTURE, AMF_VIDEO_ENCODER_PICTURE_STRUCTURE_FRAME);
+
+
 
 						res = m_pEncoder->SubmitInput(pCache->m_pSurfaceTex);
+						inCount++;
 						//m_EndcodeElapsed += amf_high_precision_clock() - start_time;
 						m_FrameReady = false;
 						pCache->m_pTexSync->ReleaseSync(0);
@@ -547,13 +560,14 @@ void VirtualStreamer::RunRemoteDisplay()
 					//start_time = amf_high_precision_clock();
 					res = m_pEncoder->QueryOutput(&data);
 					//m_EndcodeElapsed += amf_high_precision_clock() - start_time;
-					if (res == AMF_OK && data)
+					if (res == AMF_OK)
 					{
 						amf::AMFBufferPtr buffer(data);
 						unsigned char *pData = (unsigned char *)buffer->GetNative();
 						int len = (int)buffer->GetSize();
 						if (len > 0)
 						{
+							outCount++;
 							memcpy(pFrameBuffer, pData, len);
 							m_pServer->SendBuffer(VirtualPacketTypes::VrFrame, (const char *)pFrameBuffer, len);
 							//OutputDebugString(L"Start send\n");
@@ -768,6 +782,10 @@ void VirtualStreamer::ProcessRemotePacket(USBPacket *pPacket)
 
 #define EXIT_AND_DESTROY if (res != AMF_OK) { DestroyEncoder(); return false;}
 
+#ifdef _DEBUG
+//#define DEBUG_AMF
+#endif //_DEBUG
+
 bool VirtualStreamer::InitEncoder()
 {
 	AMF_RESULT res = AMF_OK;
@@ -776,10 +794,6 @@ bool VirtualStreamer::InitEncoder()
 		return false;
 
 	amf_increase_timer_precision();
-
-	//#ifdef _DEBUG
-//	amf::AMFTraceEnableWriter(AMF_TRACE_WRITER_DEBUG_OUTPUT, true);
-//#endif //_DEBUG
 
 	res = g_AMFFactory.GetFactory()->CreateContext(&m_pEncoderContext);
 	EXIT_AND_DESTROY;
@@ -791,11 +805,9 @@ bool VirtualStreamer::InitEncoder()
 	EXIT_AND_DESTROY;
 	
 	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_USAGE, AMF_VIDEO_ENCODER_USAGE_ULTRA_LOW_LATENCY);
-	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_B_PIC_PATTERN, 0);
-	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_B_PIC_PATTERN, 0);
+	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_MAX_NUM_REFRAMES, 0);
+	
 	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_QUALITY_PRESET, AMF_VIDEO_ENCODER_QUALITY_PRESET_SPEED);
-	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_TARGET_BITRATE, 1024 * 1024 * 50);
-	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_PEAK_BITRATE, 1024 * 1024 * 50);
 	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_FRAMESIZE, ::AMFConstructSize(pHMD->m_HMDData.ScreenWidth, pHMD->m_HMDData.ScreenHeight));
 	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_FRAMERATE, ::AMFConstructRate((amf_uint32)pHMD->m_HMDData.Frequency, 1));
 	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_PROFILE, AMF_VIDEO_ENCODER_PROFILE_BASELINE);
@@ -813,10 +825,38 @@ bool VirtualStreamer::InitEncoder()
 	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_INITIAL_VBV_BUFFER_FULLNESS, 16);
 
 
+#ifdef DEBUG_AMF
+	auto m_AMFDebug = g_AMFFactory.GetDebug();
+	m_AMFDebug->EnablePerformanceMonitor(true);
+	//m_AMFDebug->AssertsEnable(true);
+	auto m_AMFTrace = g_AMFFactory.GetTrace();
+	m_AMFTrace->SetGlobalLevel(AMF_TRACE_TEST);
+	m_AMFTrace->TraceEnableAsync(true);
+	m_AMFTrace->SetWriterLevel(AMF_TRACE_WRITER_DEBUG_OUTPUT, AMF_TRACE_TEST);
+	m_AMFTrace->EnableWriter(AMF_TRACE_WRITER_DEBUG_OUTPUT, true);
+#endif //DEBUG_AMF
+
+
 
 
 	res = m_pEncoder->Init(amf::AMF_SURFACE_RGBA, pHMD->m_HMDData.ScreenWidth, pHMD->m_HMDData.ScreenHeight);
 	EXIT_AND_DESTROY;
+
+#define ENCODE_BITRATE (1024*1024*30)
+
+	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_B_PIC_PATTERN, 0);
+	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_B_REFERENCE_ENABLE, false);
+	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_SLICES_PER_FRAME, 1);
+	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_IDR_PERIOD, 0);
+	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_TARGET_BITRATE, ENCODE_BITRATE);
+	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_PEAK_BITRATE, ENCODE_BITRATE);
+	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_QP_I, 50);
+	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_MIN_QP, 20);
+	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_MAX_QP, 45);
+
+
+
+	
 
 	return true;
 }

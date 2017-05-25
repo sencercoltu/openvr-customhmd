@@ -38,7 +38,7 @@ unsigned int WINAPI CTCPServer::ProcessThread(void *p)
 
 
 //#define DEFAULT_BUFLEN 32
-#define MAX_SEND_SIZE 4096
+#define MAX_SEND_SIZE 32768
 
 void CTCPServer::Run()
 {

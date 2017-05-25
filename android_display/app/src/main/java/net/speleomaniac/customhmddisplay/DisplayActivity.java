@@ -190,7 +190,7 @@ public class DisplayActivity
     boolean hasAcc = false;
     boolean hasGyro = false;
 
-    SensorFusion sensorFusion = new SensorFusion(0.2f);
+    SensorFusion sensorFusion = new SensorFusion(0.01f);
     float s_accel[] = new float[3];
     float s_mag[] = new float[3];
     float s_gyro[] = new float[3];
@@ -283,19 +283,19 @@ public class DisplayActivity
 
             float rotation = 0.0f;
             switch (m_Display.getRotation()) {
-                case 0: {
+                case Surface.ROTATION_0: {
                     rotation = 0.0f;
                     break;
                 }
-                case 1: {
+                case Surface.ROTATION_90: {
                     rotation = 90.0f;
                     break;
                 }
-                case 2: {
+                case Surface.ROTATION_180: {
                     rotation = 180.0f;
                     break;
                 }
-                case 3: {
+                case Surface.ROTATION_270: {
                     rotation = 270.0f;
                     break;
                 }

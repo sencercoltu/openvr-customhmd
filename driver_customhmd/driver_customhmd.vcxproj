@@ -178,7 +178,7 @@
       </DelayLoadDLLs>
     </Link>
     <PostBuildEvent>
-      <Command>D:\Programs\Steam\steamapps\common\SteamVR\drivers\customhmd\bin\createLinks.bat</Command>
+      <Command>D:\Programs\Steam\steamapps\common\SteamVR\drivers\customhmd\bin\createReleaseLinks.bat</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
