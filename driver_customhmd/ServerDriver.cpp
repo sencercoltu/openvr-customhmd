@@ -37,8 +37,8 @@ EVRInitError CServerDriver::Init(IVRDriverContext *pDriverContext) //IVRDriverLo
 	m_HMDAdded = true;
 	auto hmd = new CTrackedHMD("HMD", this);
 
-	if (!hmd->IsConnected())
-		return VRInitError_Init_HmdNotFound;
+	//if (!hmd->IsConnected())
+		//return VRInitError_Init_HmdNotFound;
 
 	pSharedMem = new CShMem();
 

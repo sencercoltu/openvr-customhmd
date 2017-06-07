@@ -9,7 +9,7 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include "resource.h"
-#include <openvr_driver.h>
+#include "../../openvr/headers/openvr_driver.h"
 
 #include <vector>
 #include <memory>

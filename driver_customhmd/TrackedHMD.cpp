@@ -32,6 +32,7 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 	{
 		m_DisplayMode = DisplayMode::DirectMode; //directmode component for reference
 	}
+  m_DisplayMode = DisplayMode::DirectMode;
 
 	//too lazy to make icons, copied from vive
 	NamedIconPathDeviceOff = "{customhmd}headset_status_off.png";
@@ -74,9 +75,9 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 	DisplayMCImageRight = "";
 	DisplayGCBlackClamp = 0.0f;
 	EdidVendorID = m_pSettings->GetInt32("driver_customhmd", "edid_vid", &error);
-	if (error != VRSettingsError_None) EdidVendorID = 0xD94D; //hardcoded for sony hmz-t2 if not set
+	if (error != VRSettingsError_None) EdidVendorID = 0xD222; //hardcoded for vive if not set
 	EdidProductID = m_pSettings->GetInt32("driver_customhmd", "edid_pid", &error);
-	if (error != VRSettingsError_None) EdidProductID = 0xD602;
+	if (error != VRSettingsError_None) EdidProductID = 0xAA01;
 	CameraToHeadTransform = HmdMatrix34_t();
 	Quaternion::HmdMatrix_SetIdentity(&CameraToHeadTransform);
 	DisplayGCType = 0;
@@ -114,8 +115,8 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 
 
 	//initial setup for framepacked 128x720 3d signal, detection will be done later
-	m_HMDData.ScreenWidth = 1280;
-	m_HMDData.ScreenHeight = 1470;
+	m_HMDData.ScreenWidth = 2160;
+	m_HMDData.ScreenHeight = 1200;
 	m_HMDData.AspectRatio = ((float)(m_HMDData.ScreenHeight - 30) / 2.0f) / (float)m_HMDData.ScreenWidth;
 	m_HMDData.Frequency = 60;
 	m_HMDData.IsConnected = false;
@@ -195,8 +196,8 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 	else if (m_DisplayMode == DisplayMode::DirectMode)
 	{
 		//dirty and lazy
-		m_HMDData.ScreenWidth = 960;
-		m_HMDData.ScreenHeight = 540;
+		m_HMDData.ScreenWidth = 2160;
+		m_HMDData.ScreenHeight = 1200;
 		m_HMDData.IsConnected = true; //set initial as connected
 		m_HMDData.FakePackDetected = false; //
 		m_HMDData.Frequency = 30;
