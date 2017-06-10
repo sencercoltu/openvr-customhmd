@@ -66,7 +66,8 @@ void CTCPServer::Run()
 	struct tPacketHeader
 	{
 		uint32_t Length;
-		uint32_t Type;
+		uint16_t Type;
+		uint16_t Sequence;
 	};
 
 	tPacketHeader *pHeader = (tPacketHeader *)recvBuf;
@@ -173,7 +174,14 @@ void CTCPServer::Run()
 							if (bufPos == totalLength)
 							{
 								if (pfPacketCallback)
-									pfPacketCallback(m_Dest, (VirtualPacketTypes) pHeader->Type, &recvBuf[sizeof(tPacketHeader)], pHeader->Length);
+								{
+#ifdef _DEBUG
+									wchar_t szDbg[128];
+									wsprintf(szDbg, L"Out: %u, In: %u, Diff: %d\n", m_Sequence, pHeader->Sequence, m_Sequence - pHeader->Sequence);
+									OutputDebugString(szDbg);
+#endif //_DEBUG
+									pfPacketCallback(m_Dest, (VirtualPacketTypes)pHeader->Type, &recvBuf[sizeof(tPacketHeader)], pHeader->Length);
+								}
 								m_LastDataReceive = GetTickCount();
 								bufPos = 0;
 							}
@@ -196,7 +204,9 @@ void CTCPServer::Run()
 						if (m_DataRemain == m_DataSize)
 						{
 							res = send(m_ClientSocket, (const char *)&m_DataSize, sizeof(int), 0);
-							res = send(m_ClientSocket, (const char *)&m_DataType, sizeof(int), 0);
+							res = send(m_ClientSocket, (const char *)&m_DataType, sizeof(uint16_t), 0);
+							res = send(m_ClientSocket, (const char *)&m_Sequence, sizeof(uint16_t), 0);
+							m_Sequence++;
 						}
 						int sz = min(m_DataRemain, MAX_SEND_SIZE);
 						res = send(m_ClientSocket, m_DataToSend, sz, 0);
@@ -221,7 +231,9 @@ void CTCPServer::Run()
 						m_pLastCameraStatus = nullptr;
 						int type = VirtualPacketTypes::CameraAction;
 						res = send(m_ClientSocket, (const char *)&size, sizeof(int), 0);
-						res = send(m_ClientSocket, (const char *)&type, sizeof(int), 0);
+						res = send(m_ClientSocket, (const char *)&type, sizeof(uint16_t), 0);
+						res = send(m_ClientSocket, (const char *)&m_Sequence, sizeof(uint16_t), 0);
+						m_Sequence++;
 						res = send(m_ClientSocket, (const char *)&status, sizeof(int), 0);
 					}
 				}

@@ -233,6 +233,30 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 				}
 			}
 		}
+		m_pSettings->GetString("driver_customhmd", "directRotate", value, sizeof(value));
+		if (value[0])
+		{
+			//use given resolution and refresh rate
+			auto pos = strchr(value, ',');
+			if (pos)
+			{
+				*pos = 0;				
+				float left = (float) atof(value);
+				pos++;
+				char *r = pos;
+				if (r[0])
+				{
+					float right = (float) atof(pos);
+					if (left || left)
+					{
+						m_HMDData.LeftRotate = left;
+						m_HMDData.RightRotate = right;
+					}
+				}
+			}
+		}
+
+
 	}
 	else
 	{

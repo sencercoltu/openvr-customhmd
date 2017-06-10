@@ -533,18 +533,21 @@ void VirtualStreamer::RunRemoteDisplay()
 						if (setHeaders)
 						{
 							setHeaders = false;
-							pCache->m_pSurfaceTex->SetProperty(AMF_VIDEO_ENCODER_INSERT_AUD, true);
-							pCache->m_pSurfaceTex->SetProperty(AMF_VIDEO_ENCODER_INSERT_SPS, true);
-							pCache->m_pSurfaceTex->SetProperty(AMF_VIDEO_ENCODER_INSERT_PPS, true);
+							res = pCache->m_pSurfaceTex->SetProperty(AMF_VIDEO_ENCODER_INSERT_AUD, true);
+							//res = pCache->m_pSurfaceTex->SetProperty(AMF_VIDEO_ENCODER_INSERT_SPS, true);
+							//res = pCache->m_pSurfaceTex->SetProperty(AMF_VIDEO_ENCODER_INSERT_PPS, true);							
 						}
 
-						//res = pCache->m_pSurfaceTex->SetProperty(AMF_VIDEO_ENCODER_FORCE_PICTURE_TYPE, AMF_VIDEO_ENCODER_PICTURE_TYPE_IDR);
-						//res = pCache->m_pSurfaceTex->SetProperty(AMF_VIDEO_ENCODER_PICTURE_STRUCTURE, AMF_VIDEO_ENCODER_PICTURE_STRUCTURE_FRAME);
+						res = pCache->m_pSurfaceTex->SetProperty(AMF_VIDEO_ENCODER_FORCE_PICTURE_TYPE, AMF_VIDEO_ENCODER_PICTURE_TYPE_IDR);
+						//res = pCache->m_pSurfaceTex->SetProperty(AMF_VIDEO_ENCODER_END_OF_STREAM, true);
+						
 
-
-
-						res = m_pEncoder->SubmitInput(pCache->m_pSurfaceTex);
-						inCount++;
+						res = AMF_REPEAT;
+						while (res == AMF_REPEAT)
+						{
+							res = m_pEncoder->SubmitInput(pCache->m_pSurfaceTex);
+							inCount++;
+						}
 						//m_EndcodeElapsed += amf_high_precision_clock() - start_time;
 						m_FrameReady = false;
 						pCache->m_pTexSync->ReleaseSync(0);
@@ -559,7 +562,8 @@ void VirtualStreamer::RunRemoteDisplay()
 					amf::AMFDataPtr data;
 					//start_time = amf_high_precision_clock();
 					res = m_pEncoder->QueryOutput(&data);
-					//m_EndcodeElapsed += amf_high_precision_clock() - start_time;
+					//m_EndcodeElapsed += amf_high_precision_clock() - start_time;					
+					
 					if (res == AMF_OK)
 					{
 						amf::AMFBufferPtr buffer(data);
@@ -570,13 +574,20 @@ void VirtualStreamer::RunRemoteDisplay()
 							outCount++;
 							memcpy(pFrameBuffer, pData, len);
 							m_pServer->SendBuffer(VirtualPacketTypes::VrFrame, (const char *)pFrameBuffer, len);
+							/*FILE *fp = nullptr;
+							fopen_s(&fp, "D:\\OUT\\xx.h264", "a");
+							if (fp)
+							{
+								fwrite(pFrameBuffer, 1, len, fp);
+								fclose(fp);
+							}*/
 							//OutputDebugString(L"Start send\n");
 						}
-					}
-					else
-					{
-						counter++;
-					}
+					}					
+					//else
+					//{
+					//	counter++;
+					//}
 
 					//MFT disabled
 					//add raw frame to encoder and send encoded 
@@ -805,9 +816,8 @@ bool VirtualStreamer::InitEncoder()
 	EXIT_AND_DESTROY;
 	
 	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_USAGE, AMF_VIDEO_ENCODER_USAGE_ULTRA_LOW_LATENCY);
-	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_MAX_NUM_REFRAMES, 0);
+	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_MAX_NUM_REFRAMES, 0);
 	
-	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_QUALITY_PRESET, AMF_VIDEO_ENCODER_QUALITY_PRESET_SPEED);
 	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_FRAMESIZE, ::AMFConstructSize(pHMD->m_HMDData.ScreenWidth, pHMD->m_HMDData.ScreenHeight));
 	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_FRAMERATE, ::AMFConstructRate((amf_uint32)pHMD->m_HMDData.Frequency, 1));
 	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_PROFILE, AMF_VIDEO_ENCODER_PROFILE_BASELINE);
@@ -842,17 +852,23 @@ bool VirtualStreamer::InitEncoder()
 	res = m_pEncoder->Init(amf::AMF_SURFACE_RGBA, pHMD->m_HMDData.ScreenWidth, pHMD->m_HMDData.ScreenHeight);
 	EXIT_AND_DESTROY;
 
-#define ENCODE_BITRATE (1024*1024*30)
+	auto bitRate = (int)((pHMD->m_HMDData.ScreenWidth * pHMD->m_HMDData.ScreenHeight * pHMD->m_HMDData.ScreenWidth * pHMD->m_HMDData.Frequency) );
 
+//#define ENCODE_BITRATE (1024*1024*30)
+	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_QUALITY_PRESET, AMF_VIDEO_ENCODER_QUALITY_PRESET_SPEED);
 	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_B_PIC_PATTERN, 0);
 	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_B_REFERENCE_ENABLE, false);
 	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_SLICES_PER_FRAME, 1);
 	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_IDR_PERIOD, 0);
-	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_TARGET_BITRATE, ENCODE_BITRATE);
-	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_PEAK_BITRATE, ENCODE_BITRATE);
-	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_QP_I, 50);
-	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_MIN_QP, 20);
-	//res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_MAX_QP, 45);
+	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_TARGET_BITRATE, bitRate);
+	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_PEAK_BITRATE, bitRate);
+	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_PROFILE, AMF_VIDEO_ENCODER_PROFILE_BASELINE);
+	////res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_PROFILE_LEVEL, 50);
+	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_RATE_CONTROL_SKIP_FRAME_ENABLE, true);
+
+	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_QP_I, 10);
+	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_MIN_QP, 10);
+	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_MAX_QP, 22);
 
 
 

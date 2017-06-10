@@ -223,6 +223,8 @@ struct HMDData : TrackerData
 	float Frequency;
 	float AspectRatio;	
 	float SuperSample;		
+	float LeftRotate;
+	float RightRotate;
 	USBDataCache LastState;			
 	char DirectStreamURL[256];
 };

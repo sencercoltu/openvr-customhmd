@@ -63,6 +63,7 @@ class TcpClient extends Thread {
     }
 
     private int outCount = 0;
+    private short packetSequence = 0;
 
     private class PacketSender extends Thread {
         private final Object isFull = new Object();
@@ -136,7 +137,8 @@ class TcpClient extends Thread {
             synchronized (socketLock) { //wait send finish before sending another packet
                 outHeaderBuffer.rewind();
                 outHeaderBuffer.putInt(len);
-                outHeaderBuffer.putInt(type.getValue());
+                outHeaderBuffer.putShort(type.getValue());
+                outHeaderBuffer.putShort(packetSequence);
                 output.write(outHeader, 0, 8);
                 output.write(data, 0, len);
             }
@@ -213,14 +215,16 @@ class TcpClient extends Thread {
 
                 while (isTcpRunning && !_reconnect && IsConnected && driverSocket != null) {
                     int size = 0;
-                    int type = 0;
+                    short type = 0;
+                    //short sequence = 0;
                     int avail = 0;
                         avail = input.available();
                     if (avail >= 8) {
                         int read = input.read(inHeader);
                         inHeaderBuffer.rewind();
                         size = inHeaderBuffer.getInt();
-                        type = inHeaderBuffer.getInt();
+                        type = inHeaderBuffer.getShort();
+                        packetSequence = inHeaderBuffer.getShort();
                     }
 
                     if (size == 0) {

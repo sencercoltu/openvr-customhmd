@@ -23,6 +23,8 @@ void DirectModeOutput::Init(CTrackedHMD *pHmd)
 {
 	pHMD = pHmd;
 
+	m_LeftRotate = pHmd->m_HMDData.LeftRotate;
+	m_RightRotate = pHmd->m_HMDData.RightRotate;
 
 	HRESULT hr = CoInitializeEx(nullptr, COINITBASE_MULTITHREADED);
 	m_hTextureMapLock = CreateMutex(nullptr, FALSE, L"TextureMapLock");
@@ -69,6 +71,7 @@ void DirectModeOutput::Init(CTrackedHMD *pHmd)
 	cbuffer CbEyePos \
 	{ \
 	float4x4 SHIFT; \
+	float ROTATE; \
 	}; \
 	Texture2D ObjTexture; \
 	SamplerState ObjSamplerState; \
@@ -81,7 +84,8 @@ void DirectModeOutput::Init(CTrackedHMD *pHmd)
 	{ \
 	VS_OUTPUT output; \
 	output.Pos = mul(inPos, SHIFT); \
-	output.TexCoord = inTexCoord; \
+	output.TexCoord.x = ((inTexCoord.x - 0.5) * cos(ROTATE)) - ((inTexCoord.y - 0.5) * sin(ROTATE)) + 0.5; \
+	output.TexCoord.y = ((inTexCoord.x - 0.5) * sin(ROTATE)) + ((inTexCoord.y -0.5) * cos(ROTATE)) + 0.5; \
 	return output; \
 	} \
 	float4 PS(VS_OUTPUT input) : SV_TARGET \
@@ -337,10 +341,15 @@ void DirectModeOutput::RenderOutput()
 	ID3D11ShaderResourceView *pEmptyTexture[1] = { nullptr };
 	m_pContext->OMSetRenderTargets(1, &m_pRTView, nullptr);
 
+	//auto test rotate
+	//m_LeftRotate -= 0.1f;
+	//m_RightRotate += 0.1f;
+
 	//draw left texture to combined texture
 	if (m_TlLeft.pData)
 	{
 		Ep.SHIFT = XMMatrixTranspose(XMMatrixTranslation(0.0f, 0.0f, 0.0f));
+		Ep.ROTATE = XMConvertToRadians(m_LeftRotate);
 		m_pContext->PSSetShaderResources(0, 1, &m_TlLeft.pData->pShaderResourceView);
 		m_pContext->UpdateSubresource(m_pConstantBuffer, 0, nullptr, &Ep, 0, 0);
 		m_pContext->DrawIndexed(6, 0, 0);
@@ -352,6 +361,7 @@ void DirectModeOutput::RenderOutput()
 	if (m_TlRight.pData)
 	{
 		Ep.SHIFT = XMMatrixTranspose(XMMatrixTranslation(1.0f, 0.0f, 0.0f));
+		Ep.ROTATE = XMConvertToRadians(m_RightRotate);
 		m_pContext->PSSetShaderResources(0, 1, &m_TlRight.pData->pShaderResourceView);
 		m_pContext->UpdateSubresource(m_pConstantBuffer, 0, nullptr, &Ep, 0, 0);
 		m_pContext->DrawIndexed(6, 0, 0);

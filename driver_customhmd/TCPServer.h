@@ -29,6 +29,7 @@ private:
 	pfnTcpPacketReceiveCallback pfPacketCallback;
 	char *m_DataToSend;
 	int m_DataSize;
+	uint16_t m_Sequence;
 	VirtualPacketTypes m_DataType;
 	int m_DataRemain;
 	bool m_IsConnected;

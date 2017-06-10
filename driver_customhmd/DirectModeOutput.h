@@ -63,6 +63,7 @@ struct CbEyePos
 {
 	CbEyePos() {}
 	XMMATRIX SHIFT;
+	float ROTATE;
 };
 
 
@@ -73,9 +74,12 @@ public:
 	{		
 		m_IsRunning = false;
 		m_hWnd = nullptr;
-
+		m_ZAxis = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
 		m_pContext = nullptr;
 		m_pDevice = nullptr;
+
+		m_LeftRotate = 0;
+		m_RightRotate = 0; 
 
 		ZeroMemory(&m_TlLeft, sizeof(m_TlLeft));
 		ZeroMemory(&m_TlRight, sizeof(m_TlRight));
@@ -100,6 +104,8 @@ public:
 	void Init(CTrackedHMD *pHmd);
 	void Destroy();
 
+	XMVECTOR m_ZAxis;
+
 	ID3D11Device *m_pDevice;
 	SharedTextureHandle_t m_SyncTexture;
 	ID3D11Texture2D *m_pSyncTexture;
@@ -116,6 +122,9 @@ private:
 	ID3D11DeviceContext *m_pContext;
 
 	CTrackedHMD *pHMD;
+
+	float m_LeftRotate;
+	float m_RightRotate;
 
 
 	//ID3D11Texture2D *m_pRTTex;

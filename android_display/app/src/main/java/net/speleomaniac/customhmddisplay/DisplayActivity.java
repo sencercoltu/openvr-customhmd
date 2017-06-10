@@ -4,14 +4,20 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.media.Image;
+import android.media.ImageWriter;
 import android.media.MediaCodec;
 import android.media.MediaFormat;
 import android.opengl.Matrix;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 import android.view.Display;
@@ -22,12 +28,20 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 
+import org.bytedeco.javacpp.*;
+import static org.bytedeco.javacpp.avcodec.*;
+import static org.bytedeco.javacpp.avformat.*;
+import static org.bytedeco.javacpp.avutil.*;
+import static org.bytedeco.javacpp.swscale.*;
+
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.IntBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
 import static net.speleomaniac.customhmddisplay.DisplayActivity.VirtualPacketTypes.*;
+import static org.bytedeco.javacpp.avformat.av_register_all;
 
 
 public class DisplayActivity
@@ -38,19 +52,19 @@ public class DisplayActivity
                    SensorEventListener {
 
     enum VirtualPacketTypes {
-        Invalid (0),
-        VrFrameInit (1),
-        VrFrame (2),
-        Rotation (3),
-        CameraFrameInit (4),
-        CameraFrame (5),
-        CameraAction (6)
+        Invalid ((short)0),
+        VrFrameInit ((short)1),
+        VrFrame ((short)2),
+        Rotation ((short)3),
+        CameraFrameInit ((short)4),
+        CameraFrame ((short)5),
+        CameraAction ((short)6)
         ;
 
 
-        private int value;
+        private short value;
         private static Map map = new HashMap<>();
-        VirtualPacketTypes(int value) {
+        VirtualPacketTypes(short value) {
             this.value = value;
         }
 
@@ -60,18 +74,16 @@ public class DisplayActivity
             }
         }
 
-        public static VirtualPacketTypes valueOf(int type) {
+        public static VirtualPacketTypes valueOf(short type) {
             return (VirtualPacketTypes) map.get(type);
         }
 
-        public int getValue() {
+        public short getValue() {
             return value;
         }
     };
 
     private TcpClient tcpClient = null;
-    private MediaCodec codec = null;
-    private Surface surface = null;
 
     private SensorManager sensorManager;
     private UsbPacket usbPacket = new UsbPacket();
@@ -85,6 +97,16 @@ public class DisplayActivity
     float m_TmpHeadView[] = new float[16];
     float m_LastRotation = Float.NaN;
     private Display m_Display;
+
+    AVCodec pCodec = null;
+    AVCodecContext pCodecContext = null;
+    AVFrame pFrame = null;
+    AVFrame pFrameRGB = null;
+    AVPacket pPacket = new avcodec.AVPacket();
+    AVDictionary dict = new AVDictionary();
+    private BytePointer pFrameDataPointer = null;
+    SurfaceHolder pHolder = null;
+    SwsContext pSwsContext = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -105,7 +127,8 @@ public class DisplayActivity
                 | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
                 | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
 
-        sv.getHolder().addCallback(this);
+        pHolder = sv.getHolder();
+        //sv.getHolder().addCallback(this);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         setContentView(sv);
 
@@ -118,18 +141,21 @@ public class DisplayActivity
 
         usbPacket.Header.Type = (byte)(UsbPacket.HMD_SOURCE | UsbPacket.ROTATION_DATA);
         sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+
+        av_register_all();
+        av_init_packet(pPacket);
     }
 
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
         Log.d("1","b");
-        surface = holder.getSurface();
+        //surface = holder.getSurface();
     }
 
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
         Log.d("2","b");
-        surface = holder.getSurface();
+        //surface = holder.getSurface();
     }
 
     @Override
@@ -349,6 +375,7 @@ public class DisplayActivity
         if (tcpClient == null) {
             tcpClient = new TcpClient(this, "127.0.0.1", 1974);
             //tcpClient = new TcpClient(this, "192.168.0.10", 1974);
+            //tcpClient = new TcpClient(this, "192.168.42.178", 1974);
             tcpClient.start();
         }
 
@@ -363,19 +390,24 @@ public class DisplayActivity
 
     private byte[] InfoPacket = new byte[4 + 4 + 4 + 4]; //magic width height freq
     private int State = 0;
-    private Thread OutputRunner;
 
     private int InFrameCount = 0;
     private int OutFrameCount = 0;
     private long FrameTime = 0;
-    private boolean isOutputRunning = false;
 
+    // MediaCodec
+    //private Thread OutputRunner;
+    //private boolean isOutputRunning = false;
+    //private MediaCodec codec = null;
+    //private Surface surface = null;
+    ImageWriter pImageWriter = null;
+    int[] frameBytes;
 
-
+    int frameStride = 0;
     @Override
     public void onPacketReceived(VirtualPacketTypes type, byte[] frameData, int len) {
         try {
-            if (surface == null || tcpClient == null || !tcpClient.IsConnected || frameData == null)
+            if (pHolder == null || tcpClient == null || !tcpClient.IsConnected || frameData == null)
             {
                 State = 0;
                 return;
@@ -391,22 +423,43 @@ public class DisplayActivity
                             frameData[2] == 'D' &&
                             frameData[3] == 'D') {
                         FrameTime = System.currentTimeMillis();
-                        if (OutputRunner != null) {
-                            isOutputRunning = false;
-                            OutputRunner.join();
-                            OutputRunner = null;
+
+// MediaCodec
+//                        if (OutputRunner != null) {
+//                            isOutputRunning = false;
+//                            OutputRunner.join();
+//                            OutputRunner = null;
+//                        }
+
+                        if (pImageWriter == null)
+                            pImageWriter = ImageWriter.newInstance(pHolder.getSurface(), 1);
+
+                        if (pCodecContext != null) {
+                            avcodec_close(pCodecContext);
+                            av_free(pCodecContext);
+                            av_frame_free(pFrame);
+                            av_frame_free(pFrameRGB);
+                            pCodecContext = null;
+                            pFrame = null;
+                            pFrameRGB = null;
+                            av_free(pFrameDataPointer);
+                            pFrameDataPointer = null;
                         }
-                        if (codec != null ) {
-                            try {
-                                codec.flush();
-                                codec.stop();
-                            }
-                            catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                            codec.release();
-                            codec = null;
-                        }
+
+
+// MediaCodec
+//
+//                        if (codec != null ) {
+//                            try {
+//                                codec.flush();
+//                                codec.stop();
+//                            }
+//                            catch (Exception e) {
+//                                e.printStackTrace();
+//                            }
+//                            codec.release();
+//                            codec = null;
+//                        }
 
                         ByteBuffer bb = ByteBuffer.wrap(frameData);
                         bb.order(ByteOrder.LITTLE_ENDIAN);
@@ -416,43 +469,65 @@ public class DisplayActivity
                         int freq = bb.getInt();
 
                         if (width > 0 && height > 0) {
-                            String codecName = "video/avc";
-                            codec = MediaCodec.createDecoderByType(codecName);
-                            MediaFormat format = MediaFormat.createVideoFormat(codecName, width, height);
-                            format.setInteger(MediaFormat.KEY_WIDTH, width);
-                            format.setInteger(MediaFormat.KEY_HEIGHT, height);
-                            format.setInteger(MediaFormat.KEY_MAX_WIDTH, width);
-                            format.setInteger(MediaFormat.KEY_MAX_HEIGHT, height);
-                            format.setInteger(MediaFormat.KEY_FRAME_RATE, freq);
-                            format.setInteger(MediaFormat.KEY_OPERATING_RATE, freq);
-                            format.setInteger(MediaFormat.KEY_PRIORITY, 0);
-                            codec.configure(format, surface, null, 0);
-                            codec.start();
+//                            String codecName = "video/avc";
+//                            codec = MediaCodec.createDecoderByType(codecName);
+//                            MediaFormat format = MediaFormat.createVideoFormat(codecName, width, height);
+//                            format.setInteger(MediaFormat.KEY_WIDTH, width);
+//                            format.setInteger(MediaFormat.KEY_HEIGHT, height);
+//                            format.setInteger(MediaFormat.KEY_MAX_WIDTH, width);
+//                            format.setInteger(MediaFormat.KEY_MAX_HEIGHT, height);
+//                            format.setInteger(MediaFormat.KEY_FRAME_RATE, freq);
+//                            format.setInteger(MediaFormat.KEY_OPERATING_RATE, freq);
+//                            format.setInteger(MediaFormat.KEY_PRIORITY, 0);
+//                            codec.configure(format, surface, null, 0);
+//                            codec.start();
+
+                            pCodec = avcodec_find_decoder(avcodec.AV_CODEC_ID_H264);
+                            pCodecContext = avcodec_alloc_context3(pCodec);
+                            pCodecContext.height(height);
+                            pCodecContext.width(width);
+                            AVRational fps = new AVRational();
+                            fps.den(freq);
+                            fps.num(1);
+                            pCodecContext.framerate(fps);
+                            pCodecContext.pix_fmt(AV_PIX_FMT_YUV420P);
+                            pFrame = av_frame_alloc();
+                            pFrameRGB = av_frame_alloc();
+                            avcodec_open2(pCodecContext, pCodec, dict);
+
+                            int framePacketSize = av_image_get_buffer_size(AV_PIX_FMT_YUV420P, width, height, 32);
+                            frameBytes = new int[av_image_get_buffer_size(AV_PIX_FMT_RGB32, width, height, 32)];
+                            pFrameDataPointer = new BytePointer(av_malloc(framePacketSize));
+                            //avpicture_fill(new AVPicture(pFrameRGB), pFrameDataPointer, AV_PIX_FMT_RGB32, pCodecContext.width(), pCodecContext.height());
+
+
+                            pSwsContext = sws_getContext(pCodecContext.width(), pCodecContext.height(), pCodecContext.pix_fmt(), pCodecContext.width(), pCodecContext.height(), AV_PIX_FMT_RGB32, SWS_BILINEAR, null, null, (DoublePointer)null);
+
                             State = 1;
-                            OutputRunner = new Thread () {
-                                @Override
-                                public void run() {
-                                    OutFrameCount = 0;
-                                    MediaCodec.BufferInfo buffInfo = new MediaCodec.BufferInfo();
-                                    while (isOutputRunning) {
-                                        int outIndex = codec.dequeueOutputBuffer(buffInfo, 10000);
-                                        switch (outIndex) {
-                                            case MediaCodec.INFO_OUTPUT_FORMAT_CHANGED:
-                                                break;
-                                            case MediaCodec.INFO_TRY_AGAIN_LATER:
-                                                break;
-                                            case MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED:
-                                                break;
-                                            default:
-                                                OutFrameCount++;
-                                                codec.releaseOutputBuffer(outIndex, true);
-                                                break;
-                                        }
-                                    }
-                                }
-                            };
-                            isOutputRunning = true;
-                            OutputRunner.start();
+//                            OutputRunner = new Thread () {
+//                                @Override
+//                                public void run() {
+//                                    OutFrameCount = 0;
+//                                    MediaCodec.BufferInfo buffInfo = new MediaCodec.BufferInfo();
+//                                    while (isOutputRunning) {
+//                                        int outIndex = codec.dequeueOutputBuffer(buffInfo, 1000);
+//                                        switch (outIndex) {
+//                                            case MediaCodec.INFO_OUTPUT_FORMAT_CHANGED:
+//                                                break;
+//                                            case MediaCodec.INFO_TRY_AGAIN_LATER:
+//                                                break;
+//                                            case MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED:
+//                                                break;
+//                                            default:
+//                                                OutFrameCount++;
+//                                                codec.releaseOutputBuffer(outIndex, true);
+//                                                break;
+//                                        }
+//                                    }
+//                                }
+//                            };
+//                            isOutputRunning = true;
+//                            OutputRunner.start();
                             InFrameCount = 0;
                         }
                     }
@@ -466,15 +541,50 @@ public class DisplayActivity
                         case VrFrame:
                             {
                                 InFrameCount++;
-                                int inIndex = codec.dequeueInputBuffer(10);
-                                if (inIndex >= 0) {
-                                    ByteBuffer inputBuffer = codec.getInputBuffer(inIndex);
-                                    if (inputBuffer != null) {
-                                        inputBuffer.clear();
-                                        inputBuffer.put(frameData, 0, len);
-                                        codec.queueInputBuffer(inIndex, 0, len, 1, 0);
+                                pFrameDataPointer.put(frameData, 0, len);
+                                pPacket.size(len).position(0).data(pFrameDataPointer);
+
+                                //Log.d("SSS", "PktSize: " + pPacket.size());
+
+                                if (0 == avcodec_send_packet(pCodecContext, pPacket)) {
+                                    if (0 == avcodec_receive_frame(pCodecContext, pFrame)) {
+
+                                        sws_scale(pSwsContext, pFrame.data(), pFrame.linesize(), 0, pCodecContext.height(), pFrameRGB.data(), pFrameRGB.linesize());
+                                        //Log.d("SSS", "FrameLineSize: " + pFrame.linesize(0) + "," + pFrame.linesize(1) + "," + pFrame.linesize(2));
+                                        //Log.d("SSS", "FrameFormat: " + pFrame.format());
+                                        //Log.d("SSS", "FrameDur: " + pFrame.pkt_duration());
+                                        //Log.d("SSS", "FrameHeight: " + pFrame.height());
+                                        byte[] bb = new byte[pFrameRGB.pkt_size()];
+                                        pFrameRGB.data(0).asByteBuffer().get(bb, 0, pFrameRGB.pkt_size());
+                                        //decodeYUV(frameBytes, bb , pCodecContext.width(), pCodecContext.height());
+
+
+                                        Canvas c = pHolder.lockCanvas(null);
+                                        if (c != null) {
+                                            try {
+                                                Bitmap bmp = Bitmap.createBitmap(frameBytes, 0, pCodecContext.width(), pCodecContext.height(), pFrameRGB.linesize(0), Bitmap.Config.ARGB_8888);
+                                                //Bitmap bmp = BitmapFactory.decodeByteArray(bb.array(), 0, pFrame.pkt_size());
+                                                if (bmp != null)
+                                                    c.setBitmap(bmp);
+                                            }
+                                            finally {
+                                                pHolder.unlockCanvasAndPost(c);
+                                            }
+                                        }
+                                        //Log.d("AVCODEC", "Decoded: " + pFrame.toString());
                                     }
                                 }
+
+
+//                                int inIndex = codec.dequeueInputBuffer(1000);
+//                                if (inIndex >= 0) {
+//                                    ByteBuffer inputBuffer = codec.getInputBuffer(inIndex);
+//                                    if (inputBuffer != null) {
+//                                        inputBuffer.clear();
+//                                        inputBuffer.put(frameData, 0, len);
+//                                        codec.queueInputBuffer(inIndex, 0, len, 1, 0);
+//                                    }
+//                                }
                              break;
                             }
                         case CameraAction:
@@ -495,6 +605,64 @@ public class DisplayActivity
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public void decodeYUV(int[] out, byte[] fg, int width, int height)
+            throws NullPointerException, IllegalArgumentException {
+        int sz = width * height;
+        if (out == null)
+            throw new NullPointerException("buffer out is null");
+        if (out.length < sz)
+            throw new IllegalArgumentException("buffer out size " + out.length
+                    + " < minimum " + sz);
+        if (fg == null)
+            throw new NullPointerException("buffer 'fg' is null");
+        if (fg.length < sz)
+            throw new IllegalArgumentException("buffer fg size " + fg.length
+                    + " < minimum " + sz * 3 / 2);
+        int i, j;
+        int Y, Cr = 0, Cb = 0;
+        for (j = 0; j < height; j++) {
+            int pixPtr = j * width;
+            final int jDiv2 = j >> 1;
+            for (i = 0; i < width; i++) {
+                Y = fg[pixPtr];
+                if (Y < 0)
+                    Y += 255;
+                if ((i & 0x1) != 1) {
+                    final int cOff = sz + jDiv2 * width + (i >> 1) * 2;
+                    Cb = fg[cOff];
+                    if (Cb < 0)
+                        Cb += 127;
+                    else
+                        Cb -= 128;
+                    Cr = fg[cOff + 1];
+                    if (Cr < 0)
+                        Cr += 127;
+                    else
+                        Cr -= 128;
+                }
+                int R = Y + Cr + (Cr >> 2) + (Cr >> 3) + (Cr >> 5);
+                if (R < 0)
+                    R = 0;
+                else if (R > 255)
+                    R = 255;
+                int G = Y - (Cb >> 2) + (Cb >> 4) + (Cb >> 5) - (Cr >> 1)
+                        + (Cr >> 3) + (Cr >> 4) + (Cr >> 5);
+                if (G < 0)
+                    G = 0;
+                else if (G > 255)
+                    G = 255;
+                int B = Y + Cb + (Cb >> 1) + (Cb >> 2) + (Cb >> 6);
+                if (B < 0)
+                    B = 0;
+                else if (B > 255)
+                    B = 255;
+
+                out[pixPtr++] = 0xff000000 + (B << 16) + (G << 8) + R;
+            }
+        }
+
     }
 
     @Override
