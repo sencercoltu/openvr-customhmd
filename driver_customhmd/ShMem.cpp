@@ -13,14 +13,14 @@ CShMem::CShMem()
 		_commAccessor = (char *)MapViewOfFile(_commSharedMem, FILE_MAP_ALL_ACCESS, 0, 0, _commBufferSize);
 	}
 
-	_screenAccessLock = CreateMutex(nullptr, false, L"Global\\CustomHMDScreenLock");
-	_screenAccessor = nullptr;
-	_screenSharedMem = CreateFileMapping(INVALID_HANDLE_VALUE, nullptr, PAGE_READWRITE, 0, _screenBufferSize, L"CustomHMDLeft");
-	if (_screenSharedMem)
-	{
-		SetSecurityInfo(_screenSharedMem, SE_KERNEL_OBJECT, DACL_SECURITY_INFORMATION, 0, 0, (PACL)nullptr, nullptr);
-		_screenAccessor = (char *)MapViewOfFile(_screenSharedMem, FILE_MAP_ALL_ACCESS, 0, 0, _screenBufferSize);
-	}
+	//_screenAccessLock = CreateMutex(nullptr, false, L"Global\\CustomHMDScreenLock");
+	//_screenAccessor = nullptr;
+	//_screenSharedMem = CreateFileMapping(INVALID_HANDLE_VALUE, nullptr, PAGE_READWRITE, 0, _screenBufferSize, L"CustomHMDLeft");
+	//if (_screenSharedMem)
+	//{
+	//	SetSecurityInfo(_screenSharedMem, SE_KERNEL_OBJECT, DACL_SECURITY_INFORMATION, 0, 0, (PACL)nullptr, nullptr);
+	//	_screenAccessor = (char *)MapViewOfFile(_screenSharedMem, FILE_MAP_ALL_ACCESS, 0, 0, _screenBufferSize);
+	//}
 }
 
 
@@ -36,15 +36,15 @@ CShMem::~CShMem()
 		CloseHandle(_commAccessLock);
 	_commAccessLock = nullptr;
 
-	if (_screenAccessor) 
-		UnmapViewOfFile(_screenAccessor);
-	_screenAccessor = nullptr; 
-	if (_screenSharedMem) 
-		CloseHandle(_screenSharedMem);
-	_screenSharedMem = nullptr; 
-	if (_screenAccessLock)
-		CloseHandle(_screenAccessLock);
-	_screenAccessLock = nullptr; 
+	//if (_screenAccessor) 
+	//	UnmapViewOfFile(_screenAccessor);
+	//_screenAccessor = nullptr; 
+	//if (_screenSharedMem) 
+	//	CloseHandle(_screenSharedMem);
+	//_screenSharedMem = nullptr; 
+	//if (_screenAccessLock)
+	//	CloseHandle(_screenAccessLock);
+	//_screenAccessLock = nullptr; 
 
 }
 
@@ -57,6 +57,17 @@ CommState CShMem::GetState()
 		ReleaseMutex(_commAccessLock);
 	}	
 	return _status.State;		
+}
+
+void CShMem::UpdateDriverTime()
+{
+	if (WaitForSingleObject(_commAccessLock, 100) == WAIT_OBJECT_0)
+	{
+		_status = *((CommStatus*)&_commAccessor[_statusOffset]);
+		_status.DriverTime = GetTickCount();
+		*((CommStatus*)&_commAccessor[_statusOffset]) = _status;
+		ReleaseMutex(_commAccessLock);
+	}
 }
 
 void CShMem::WriteOutgoingPacket(char *packet)
@@ -111,14 +122,14 @@ char *CShMem::ReadIncomingPackets(int *count)
 	return result;
 }
 
-void CShMem::WriteScreen(char *screenData, int size)
-{
-	auto si = (ScreenInfo*)_screenAccessor;	
-	auto dd = _screenAccessor + sizeof(ScreenInfo);
-	if (WaitForSingleObject(_screenAccessLock, 100) == WAIT_OBJECT_0)
-	{
-		si->Size = size;		
-		memcpy(dd, screenData, size);
-		ReleaseMutex(_screenAccessLock);
-	}
-}
+//void CShMem::WriteScreen(char *screenData, int size)
+//{
+//	auto si = (ScreenInfo*)_screenAccessor;	
+//	auto dd = _screenAccessor + sizeof(ScreenInfo);
+//	if (WaitForSingleObject(_screenAccessLock, 100) == WAIT_OBJECT_0)
+//	{
+//		si->Size = size;		
+//		memcpy(dd, screenData, size);
+//		ReleaseMutex(_screenAccessLock);
+//	}
+//}

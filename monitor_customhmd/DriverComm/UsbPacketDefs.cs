@@ -311,9 +311,9 @@ namespace monitor_customhmd
             for (int i = 0; i < USBPacket.Size; i++)
                 crc ^= data[i];
             data[3] = crc;
-            var d = new byte[USBPacket.Size + 1];
-            Array.Copy(data, 0, d, 1, USBPacket.Size);
-            data = d;
+            //var d = new byte[USBPacket.Size + 1];
+            //Array.Copy(data, 0, d, 1, USBPacket.Size);
+            //data = d;
         }
 
         public static byte GetPacketCrc(byte[] data, int idx)
@@ -327,7 +327,7 @@ namespace monitor_customhmd
             return crc;
         }
 
-        public static bool CheckPacketCrc(byte[] data, int idx)
+        public static bool CheckPacketCrc(byte[] data, int idx = 0)
         {
             return data[3] == GetPacketCrc(data, idx);
         }
@@ -342,10 +342,10 @@ namespace monitor_customhmd
             return x / 32768.0f;
         }
 
-        public static T StructFromBytes<T>(byte[] bytes, int index = 0)
+        public static T StructFromBytes<T>(byte[] bytes, int offset = 0)
         {
             var handle = GCHandle.Alloc(bytes, GCHandleType.Pinned);
-            var ret = (T)Marshal.PtrToStructure(handle.AddrOfPinnedObject() + index, typeof(T));
+            var ret = (T)Marshal.PtrToStructure(handle.AddrOfPinnedObject() + offset, typeof(T));
             handle.Free();
             return ret;
         }

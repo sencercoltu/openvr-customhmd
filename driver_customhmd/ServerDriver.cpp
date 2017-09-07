@@ -93,9 +93,9 @@ unsigned int WINAPI CServerDriver::ProcessThread(void *p)
 	return 0;
 }
 
-bool CServerDriver::IsMonitorConnected() 
+bool CServerDriver::IsTrackerConnected()
 {
-	return pSharedMem->_status.State == Active;
+	return pSharedMem->_status.State == CommState::TrackerActive;
 }
 
 void CServerDriver::SendDriverCommand(USBPacket *command)
@@ -103,10 +103,10 @@ void CServerDriver::SendDriverCommand(USBPacket *command)
 	m_CommandQueue.push_back(command);
 }
 
-void CServerDriver::SendScreen(char *screenData, int size)
-{
-	pSharedMem->WriteScreen(screenData, size);
-}
+//void CServerDriver::SendScreen(char *screenData, int size)
+//{
+//	pSharedMem->WriteScreen(screenData, size);
+//}
 
 void CServerDriver::ScanSyncReceived(uint64_t syncTime)
 {
@@ -139,15 +139,17 @@ void CServerDriver::Run()
 	//USBCalibrationData calibrationData[3] = { 0 };
 
 	
-	auto state = CommState::Disconnected;
+	auto state = CommState::Uninitialized;
 	auto prevState = state;
 
 	while (m_IsRunning)
 	{
 		prevState = state;
 		state = pSharedMem->GetState();
-		if (state == CommState::Disconnected)
+		if ((state & CommState::TrackerActive) != CommState::TrackerActive)
 		{
+			//just update drivertime in state object so monitor knows the driver is active
+			pSharedMem->UpdateDriverTime();
 			Sleep(100);
 			continue;
 		}

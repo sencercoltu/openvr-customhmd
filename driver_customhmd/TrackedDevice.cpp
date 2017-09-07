@@ -24,6 +24,7 @@ CTrackedDevice::CTrackedDevice(std::string displayName, CServerDriver *pServer)
 	m_ulPropertyContainer = 0;
 	
 	IconPathName = "icons";
+
 	TrackingSystemName = "Custom HMD";
 	ModelNumber = "0";
 	SerialNumber = "0";

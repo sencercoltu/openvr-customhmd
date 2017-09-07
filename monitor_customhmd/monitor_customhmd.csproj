@@ -43,6 +43,10 @@
     <ApplicationIcon>Resources\HeadSetGray.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="LibUsbDotNet, Version=2.2.8.104, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>packages\LibUsbDotNet.2.2.8\lib\LibUsbDotNet.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -56,21 +60,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\..\Libraries\USB HID\HIDBrowse.cs">
-      <Link>HID\HIDBrowse.cs</Link>
-    </Compile>
-    <Compile Include="..\..\..\Libraries\USB HID\HIDDev.cs">
-      <Link>HID\HIDDev.cs</Link>
-    </Compile>
-    <Compile Include="..\..\..\Libraries\USB HID\HIDInfo.cs">
-      <Link>HID\HIDInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\..\..\Libraries\USB HID\Native.cs">
-      <Link>HID\Native.cs</Link>
-    </Compile>
     <Compile Include="..\..\OpenVR\headers\openvr_api.cs">
       <Link>openvr_api.cs</Link>
     </Compile>
+    <Compile Include="DriverComm\OpenTrackPacket.cs" />
+    <Compile Include="DriverComm\PSVRHandler.cs" />
     <Compile Include="DriverComm\ShMem.cs" />
     <Compile Include="MonitorForm.cs">
       <SubType>Form</SubType>
@@ -109,6 +103,7 @@
     <None Include="app.config" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="packages.config" />
     <None Include="Resources\HeadSetGray.ico" />
   </ItemGroup>
   <ItemGroup>

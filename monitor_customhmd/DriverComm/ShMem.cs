@@ -10,12 +10,12 @@ using System.Threading;
 
 namespace monitor_customhmd.DriverComm
 {
+    [Flags]
     public enum CommState
     {
-        Disconnected = 0,
-        Connected = 1,
-        ActiveNoDriver = 2,
-        Active = 3
+        Uninitialized = 0,
+        TrackerActive = 1,
+        DriverActive = 2
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
@@ -69,11 +69,19 @@ namespace monitor_customhmd.DriverComm
             //_screenAccessLock = new Mutex(false, "Global\\CustomHMDScreenLock", out newMutex, mutexSecurity);
             //_screenSharedMem = MemoryMappedFile.CreateOrOpen("CustomHMDLeft", _screenBufferSize, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, memSecurity, System.IO.HandleInheritability.Inheritable);
             //_screenAccessor = _screenSharedMem.CreateViewAccessor();
+
+            //read last status from shmem
+            if (_commAccessLock.WaitOne(1000))
+            {
+                _commAccessor.Read(_statusOffset, out _status);
+                _commAccessLock.ReleaseMutex();
+            }
+
         }
 
         public void Dispose()
         {
-            SetState(CommState.Disconnected);
+            //UpdateState(CommState.TrackerConnected);
 
             _commAccessor.Dispose();
             _commAccessor = null;
@@ -90,20 +98,24 @@ namespace monitor_customhmd.DriverComm
             //_screenAccessLock = null;
         }
 
-
-
-
-        public void SetState(CommState state)
+        public CommState State
         {
-            if (_commAccessLock.WaitOne(100))
+            get
             {
-                _commAccessor.Read(_statusOffset, out _status);
-                _status.State = state;
-                _driverTimestamp = _status.DriverTime;
-                if (_driverTimestamp != _prevDriverTimestamp) DriverTime = DateTime.Now;
-                _prevDriverTimestamp = _driverTimestamp;
-                _commAccessor.Write(_statusOffset, ref _status);
-                _commAccessLock.ReleaseMutex();
+                return _status.State;
+            }
+            set
+            {
+                if (_commAccessLock.WaitOne(100))
+                {
+                    _commAccessor.Read(_statusOffset, out _status);
+                    _status.State = value;
+                    _driverTimestamp = _status.DriverTime;
+                    if (_driverTimestamp != _prevDriverTimestamp) DriverTime = DateTime.Now;
+                    _prevDriverTimestamp = _driverTimestamp;
+                    _commAccessor.Write(_statusOffset, ref _status);
+                    _commAccessLock.ReleaseMutex();
+                }
             }
         }
 
@@ -129,12 +141,11 @@ namespace monitor_customhmd.DriverComm
             }
         }
 
-        public void WriteIncomingPacket(byte[] packet)
+        public void WriteIncomingPacket(byte[] packet, int dataOffset = 0)
         {
             if (_commAccessLock.WaitOne(100))
             {
                 _commAccessor.Read(_statusOffset, out _status);
-                _status.State = CommState.Active;
                 _driverTimestamp = _status.DriverTime;
                 if (_driverTimestamp != _prevDriverTimestamp) DriverTime = DateTime.Now;
                 _prevDriverTimestamp = _driverTimestamp;
@@ -142,7 +153,7 @@ namespace monitor_customhmd.DriverComm
                 {
                     var offset = _incomingOffset + (_status.IncomingPackets * _packetSize);
                     for (int i = 0; i < _packetSize; i++)
-                        _commAccessor.Write(offset + i, ref packet[i + 1]);
+                        _commAccessor.Write(offset + i, ref packet[i + dataOffset]);
                     _status.IncomingPackets++;
                     _commAccessor.Write(_statusOffset, ref _status);
                 }
@@ -157,7 +168,7 @@ namespace monitor_customhmd.DriverComm
             }
         }
 
-        public List<byte[]> ReadOutgoingPackets()
+        public List<byte[]> ReadOutgoingPackets(int dataOffset = 0)
         {
             List<byte[]> result = null;
             if (_commAccessLock.WaitOne(100))
@@ -171,10 +182,10 @@ namespace monitor_customhmd.DriverComm
                     result = new List<byte[]>();
                     for (var p = 0; p < _status.OutgoingPackets; p++)
                     {
-                        byte[] data = new byte[33];
+                        byte[] data = new byte[32 + dataOffset];
                         var currOffset = _outgoingOffset + (p * _packetSize);
                         for (var i = 0; i < _packetSize; i++)
-                            _commAccessor.Read(currOffset + i, out data[i + 1]);
+                            _commAccessor.Read(currOffset + i, out data[i + dataOffset]);
                         result.Add(data);
                     }
                     _status.OutgoingPackets = 0;

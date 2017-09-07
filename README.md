@@ -13,14 +13,16 @@ I started my VR experience with a custom built HMD by using parts of a disassemb
 * Autodetect monitor position and size in Extended mode for placing the HeadSet Window. 
 * Minimal electronics in trackers/controllers. (eg. no button debouncing filters, all done in code. 72Mhz can handle it.)
 * Controllers communicate wireless with the HeadSet, which is connected via USB cable to the computer.
+* PSVR support
 * ...
 
 
 ### Dependencies:
 * ~~ffmpeg from NuGet, for compiling the driver~~ AMD AMF libraries.
 * dotNet 4.6.2, for the HMD monitor program.
+* LibUsbDotNet
+* http://zadig.akeo.ie/ Zadig to install usb driver for handling PSVR
 * VC2015 Runtime, for using the driver
-* ...
 
 
 ### ToDo:

@@ -239,30 +239,37 @@ void DirectModeOutput::Destroy()
 
 void DirectModeOutput::CreateOutputWindow()
 {
+
+
 	WNDCLASSEX wc;
 	ZeroMemory(&wc, sizeof(WNDCLASSEX));
-	wc.cbSize = sizeof(WNDCLASSEX);
-	wc.style = CS_OWNDC;  CS_HREDRAW | CS_VREDRAW;
-	wc.lpfnWndProc = WindowProc;
-	wc.hInstance = g_hModule;
-	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-	wc.hbrBackground = nullptr;
-	wc.lpszClassName = L"DirectOutputWindow";
-	RegisterClassEx(&wc);
 
-	// create the window and use the result as the handle
-	m_hWnd = CreateWindowEx(WS_EX_TOOLWINDOW | WS_EX_DLGMODALFRAME,
-		L"DirectOutputWindow",    // name of the window class
-		L"Direct Mode Render Output",   // title of the window
-		WS_VISIBLE | WS_POPUP | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX,    // window style
-		0,    // x-position of the window
-		0,    // y-position of the window
-		pHMD->m_HMDData.ScreenWidth,    // width of the window
-		pHMD->m_HMDData.ScreenHeight,    // height of the window
-		nullptr,    // we have no parent window, NULL
-		nullptr,    // we aren't using menus, NULL
-		nullptr,    // application handle
-		nullptr);    // used with multiple windows, NULL
+	wc.cbSize = sizeof(WNDCLASSEX);
+	wc.style = CS_HREDRAW | CS_VREDRAW;
+	wc.lpfnWndProc = WindowProc;
+	wc.hInstance = GetModuleHandle(nullptr);
+	wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
+	wc.hIcon = LoadIcon(nullptr, IDI_APPLICATION);
+	wc.hIconSm = LoadIcon(nullptr, IDI_APPLICATION);
+	wc.hbrBackground = (HBRUSH)COLOR_BACKGROUND; // nullptr;
+	wc.lpszClassName = L"DirectOutputWindow";
+	if (RegisterClassEx(&wc))
+	{
+
+		// create the window and use the result as the handle
+		m_hWnd = CreateWindowEx(0, //WS_EX_TOOLWINDOW | WS_EX_DLGMODALFRAME,
+			L"DirectOutputWindow",    // name of the window class
+			L"Direct Mode Render Output",   // title of the window
+			WS_OVERLAPPEDWINDOW | WS_VISIBLE, //WS_VISIBLE | WS_POPUP | WS_THICKFRAME | ,    // window style
+			pHMD->m_HMDData.PosX,    // x-position of the window
+			pHMD->m_HMDData.PosY,    // y-position of the window
+			pHMD->m_HMDData.ScreenWidth,    // width of the window
+			pHMD->m_HMDData.ScreenHeight,    // height of the window
+			GetConsoleWindow(),    // we have no parent window, NULL
+			nullptr,    // we aren't using menus, NULL
+			GetModuleHandle(nullptr),    // application handle
+			nullptr);    // used with multiple windows, NULL
+	}	
 
 	if (!m_hWnd)
 		return;
@@ -306,8 +313,8 @@ void DirectModeOutput::CreateOutputWindow()
 	EXIT_IF_FAILED;
 
 	//MessageBox(nullptr, L"OK", L"OK", 0);
-	//ShowWindow(m_hWnd, SW_SHOW);
-
+	if (m_hWnd)
+		ShowWindow(m_hWnd, SW_SHOWDEFAULT);
 }
 
 void DirectModeOutput::RenderOutput()
@@ -325,7 +332,7 @@ void DirectModeOutput::RenderOutput()
 	}
 
 	MSG msg = {};
-	while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
+	while (PeekMessage(&msg, m_hWnd, 0, 0, PM_REMOVE))
 	{
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);

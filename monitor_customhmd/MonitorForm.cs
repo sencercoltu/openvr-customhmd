@@ -1,5 +1,4 @@
-﻿using Mighty.HID;
-using monitor_customhmd.DriverComm;
+﻿using monitor_customhmd.DriverComm;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -13,6 +12,10 @@ using static monitor_customhmd.UsbPacketDefs;
 using System.Net.Sockets;
 using System.IO;
 using System.Drawing.Imaging;
+using System.Net;
+using LibUsbDotNet.WinUsb;
+using LibUsbDotNet;
+using LibUsbDotNet.Main;
 
 namespace monitor_customhmd
 {
@@ -24,24 +27,36 @@ namespace monitor_customhmd
 
     public partial class MonitorForm : Form
     {
-        private int FPS;     
-        private int _frameCount;
-        private SolidBrush _frameBrush = new SolidBrush(Color.Yellow);
-        private Font _frameFont = new Font(FontFamily.GenericSansSerif, 12);
-        private Pen _framePen = new Pen(Color.Yellow);
+        //private int FPS;
+        //private int _frameCount;
+        //private SolidBrush _frameBrush = new SolidBrush(Color.Yellow);
+        //private Font _frameFont = new Font(FontFamily.GenericSansSerif, 12);
+        //private Pen _framePen = new Pen(Color.Yellow);
 
         private NotifyIcon _trayIcon;
         //private CVRSystem _vrSystem;        
-        private Thread _commThread;
-        //private Thread _dispThread;
-        private bool _running;
 
         //private string DisplayAddress = "127.0.0.1";
         //private string DisplayAddress = "192.168.0.27";
 
-        private CommState State = CommState.Disconnected;
+        //private CommState _state = CommState.Uninitialized;
 
-        private Dictionary<CommState, Icon> StateIcons;
+        private void SetState(CommState state, bool set)
+        {
+            var prevState = _sharedMem.State;
+            var newState = _sharedMem.State;
+            if (set) newState |= state; else newState &= ~state;
+            if (prevState != newState)
+                _sharedMem.State = newState;
+        }
+
+        private Dictionary<CommState, Icon> StateIcons { get; set; } = new Dictionary<CommState, Icon>()
+            {
+                { CommState.Uninitialized, Properties.Resources.HeadSetWire},
+                { CommState.DriverActive, Properties.Resources.HeadSetWhite},
+                { CommState.TrackerActive, Properties.Resources.HeadSetActiveNoDriver},
+                { CommState.DriverActive | CommState.TrackerActive, Properties.Resources.HeadSetActive}
+            };
 
         public static List<USBPacket> InPacketMonitor = new List<USBPacket>();
         public static List<USBPacket> OutPacketMonitor = new List<USBPacket>();
@@ -74,16 +89,8 @@ namespace monitor_customhmd
             //JPEGQuality.Param[0] = qualityParameter;
 
             InitializeComponent();
-            
-            Icon = Properties.Resources.HeadSetActive;
 
-            StateIcons = new Dictionary<CommState, Icon>()
-            {
-                { CommState.Disconnected, Properties.Resources.HeadSetWire},
-                { CommState.Connected, Properties.Resources.HeadSetWhite},
-                { CommState.ActiveNoDriver, Properties.Resources.HeadSetActiveNoDriver},
-                { CommState.Active, Properties.Resources.HeadSetActive}
-            };
+            Icon = Properties.Resources.HeadSetActive;
 
             IsDebug = mnuDebug.Checked = true;
             //WindowState = FormWindowState.Minimized;
@@ -92,14 +99,12 @@ namespace monitor_customhmd
             _trayIcon.Text = "Custom HMD Monitor";
             _trayIcon.DoubleClick += _trayIcon_DoubleClick;
             _trayIcon.ContextMenuStrip = trayMenu;
-            SetStateIcon();
             _trayIcon.Visible = true;
-
         }
 
         private void SetStateIcon()
         {
-            var ico = StateIcons[State];
+            var ico = StateIcons[_sharedMem.State];
             if (_trayIcon.Icon != ico)
             {
                 Icon = ico;
@@ -117,23 +122,14 @@ namespace monitor_customhmd
 
         private void MonitorForm_Load(object sender, EventArgs e)
         {
-            //_serverAddr = IPAddress.Parse("192.168.0.27");
-            //_endPoint = new IPEndPoint(_serverAddr, 2222);
-
-
-
             _sharedMem = new ShMem();
             _sharedMem.EnableWatchDog(false);
             IsVisible = true;
-            _commThread = new Thread(USBProcessor);
-            //_dispThread = new Thread(RemoteDisplayProcessor);
-            _running = true;
-            _commThread.Start();
-            //_dispThread.Start();
+            tmrConsumer.Enabled = true;
         }
 
         //private ushort dispPacketCounter = 0;
-        
+
 
         //private void RemoteDisplayProcessor()
         //{
@@ -238,13 +234,17 @@ namespace monitor_customhmd
 
         private void MonitorForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            _running = false;
-            _commThread.Join();
-            _commThread = null;
-            //_dispThread.Join();
-            //_dispThread = null;
+            EnableOpenTrack(false);
+            EnableCustomHMD(false);
+            EnablePSVR(false);
             _trayIcon.Dispose();
             _trayIcon = null;
+
+            tmrConsumer.Enabled = false;
+            _sharedMem.EnableWatchDog(false);
+
+            SetState(CommState.TrackerActive, false);
+
             _sharedMem.Dispose();
             _sharedMem = null;
             //if (ulMainHandle != 0)
@@ -262,91 +262,6 @@ namespace monitor_customhmd
             //    _tcpClient = null;
             //}
         }
-
-        private void USBProcessor()
-        {
-            List<byte[]> outgoingPackets = null;
-            HIDDev _usb = null;
-            var data = new byte[33];
-            DateTime lastOutgoing = DateTime.MinValue;
-            while (_running)
-            {
-                if (_usb == null)
-                {
-                    var hd = HIDBrowse.Browse().FirstOrDefault(h => h.Vid == 0x1974 && h.Pid == 0x001);
-                    if (hd != null)
-                    {
-                        _usb = new HIDDev();
-                        _usb.Open(hd);
-                        State = CommState.Connected;
-                        _sharedMem.SetState(State);
-                    }
-                }
-                try
-                {
-                    if (_usb != null)
-                    {
-                        outgoingPackets = _sharedMem.ReadOutgoingPackets();
-                        if (outgoingPackets != null)
-                            lock (OutgoingPackets)
-                                foreach (var item in outgoingPackets)
-                                    OutgoingPackets.Enqueue(item);
-                        lock (OutgoingPackets)
-                            if (OutgoingPackets.Count > 0 && (DateTime.Now - lastOutgoing).TotalMilliseconds >= 100)
-                            {
-                                lastOutgoing = DateTime.Now;
-                                var d = OutgoingPackets.Dequeue(); //33 byte packets in queue
-                                _usb.Write(d); //send before monitor process                                
-                                if (IsDebug && IsVisible)
-                                {
-                                    var packet = StructFromBytes<USBPacket>(d, 1);
-                                    packet.ParseFields();
-                                    lock (OutPacketMonitor)
-                                        OutPacketMonitor.Add(packet);
-                                }
-                            }
-
-                        _usb.Read(data);
-                        if (CheckPacketCrc(data, 1))
-                        {
-                            _sharedMem.WriteIncomingPacket(data); //send before monitor process
-                            State = _sharedMem.IsDriverActive ? CommState.Active : CommState.ActiveNoDriver;
-                            if (IsDebug && IsVisible)
-                            {
-                                //var x = Marshal.SizeOf(typeof(USBPacket));
-                                var packet = StructFromBytes<USBPacket>(data, 1);
-                                packet.ParseFields();
-                                lock (InPacketMonitor)
-                                    InPacketMonitor.Add(packet);
-                            }
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine(ex.Message);
-                    if (_usb != null)
-                    {
-                        _usb.Close();
-                        _usb.Dispose();
-                    }
-                    _usb = null;
-                    State = CommState.Disconnected;
-                    _sharedMem.SetState(State);
-
-                    Thread.Sleep(100);
-                }
-            }
-            if (_usb != null)
-            {
-                _usb.Close();
-                _usb.Dispose();
-            }
-            _usb = null;
-            State = CommState.Disconnected;
-            _sharedMem.SetState(CommState.Disconnected);
-        }
-
 
         //private const int LinesPerPacket = 2;
 
@@ -498,7 +413,7 @@ namespace monitor_customhmd
         //            return;
         //        }
         //    }
-            
+
         //    _headerCache.Size = size;
         //    var headerBytes = StructToBytes(_headerCache);
         //    if (!SendToRemoteDisplay(headerBytes)) return;
@@ -628,12 +543,6 @@ namespace monitor_customhmd
             //e.Graphics.DrawString("FPS: " + FPS, _frameFont, _frameBrush, 0, 0);
         }
 
-        private void frameTimer_Tick(object sender, EventArgs e)
-        {
-            FPS = _frameCount;
-            _frameCount = 0;
-        }
-        
         private void trackerUV_ValueChanged(object sender, EventArgs e)
         {
 
@@ -658,6 +567,351 @@ namespace monitor_customhmd
         private void btnResetDistortion_Click(object sender, EventArgs e)
         {
             SendDistortion();
+        }
+
+        private Thread OpenTrackThread = null;
+
+        private void rdOpenTrack_CheckedChanged(object sender, EventArgs e)
+        {
+            EnablePSVR(rdPSVR.Checked);
+            EnableCustomHMD(rdCustomHmd.Checked);
+            EnableOpenTrack(rdOpenTrack.Checked);
+            txtOpenTrackPort.Enabled = !rdOpenTrack.Checked;
+        }
+
+        private void EnableOpenTrack(bool en)
+        {
+            if (en && OpenTrackThread == null)
+            {
+                SetState(CommState.TrackerActive, true);
+                var port = 0;
+                if (!int.TryParse(txtOpenTrackPort.Text, out port) || port <= 0)
+                {
+                    MessageBox.Show(this, "Invalid UDP port", "OpenTrack Port Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    rdOpenTrack.Checked = false;
+                    return;
+                }
+
+                OpenTrackThread = new Thread(() =>
+                {
+                    ushort sequence = 0;
+                    var RemoteIpEndPoint = new IPEndPoint(IPAddress.Any, 0);
+                    List<byte[]> outgoingPackets = null;
+                    var lastOutgoing = DateTime.MinValue;
+                    using (var uc = new UdpClient(port))
+                    {
+                        uc.Client.Blocking = false;
+                        var sleep = 0;
+                        while (OpenTrackThread != null)
+                        {
+                            SetState(CommState.DriverActive, _sharedMem.IsDriverActive);
+
+                            sleep = 1;
+                            if (uc.Client.Available >= OpenTrackPacket.Size)
+                            {
+                                var bytes = uc.Receive(ref RemoteIpEndPoint);
+                                var packet = StructFromBytes<OpenTrackPacket>(bytes);
+
+                                USBRotationData rotData;
+                                USBPositionData posData;
+
+                                packet.Init(out rotData, out posData);
+
+                                var usbPacket = USBPacket.Create((byte)(ROTATION_DATA | HMD_SOURCE), sequence++, rotData);
+                                var d = StructToBytes(usbPacket);
+                                SetPacketCrc(ref d);
+                                _sharedMem.WriteIncomingPacket(d);
+
+                                if (IsDebug && IsVisible)
+                                {
+                                    lock (InPacketMonitor)
+                                        InPacketMonitor.Add(usbPacket);
+                                }
+
+
+                                usbPacket = USBPacket.Create((byte)(POSITION_DATA | HMD_SOURCE), sequence++, posData);
+                                d = StructToBytes(usbPacket);
+                                SetPacketCrc(ref d);
+                                _sharedMem.WriteIncomingPacket(d);
+
+                                if (IsDebug && IsVisible)
+                                {
+                                    lock (InPacketMonitor)
+                                        InPacketMonitor.Add(usbPacket);
+                                }
+                                sleep = 0;
+                            }
+
+                            //opentrack  doesnt receive data from us, just empty outgoing queue 
+                            outgoingPackets = _sharedMem.ReadOutgoingPackets();
+
+                            //this block is only for outputting data to monitor
+                            if (outgoingPackets != null)
+                            {
+                                lock (OutgoingPackets)
+                                {
+                                    foreach (var item in outgoingPackets)
+                                        OutgoingPackets.Enqueue(item);
+                                }
+                            }
+
+                            lock (OutgoingPackets)
+                            {
+                                if (OutgoingPackets.Count > 0 && (DateTime.Now - lastOutgoing).TotalMilliseconds >= 100)
+                                {
+                                    lastOutgoing = DateTime.Now;
+                                    var d = OutgoingPackets.Dequeue(); //33 byte packets in queue                                    
+                                    if (IsDebug && IsVisible)
+                                    {
+                                        var packet = StructFromBytes<USBPacket>(d);
+                                        packet.ParseFields();
+                                        lock (OutPacketMonitor)
+                                            OutPacketMonitor.Add(packet);
+                                    }
+                                }
+                            }
+                            Thread.Sleep(sleep);
+                        }
+                    }
+                });
+                OpenTrackThread.Start();
+            }
+            else if (!en && OpenTrackThread != null)
+            {
+                var t = OpenTrackThread;
+                OpenTrackThread = null;
+                t.Join();
+                SetState(CommState.TrackerActive, false);
+            }
+        }
+
+        private Thread CustomHMDThread = null;
+
+        private bool OpenCustomDevice(out WinUsbDevice usb, out UsbEndpointReader reader, out UsbEndpointWriter writer)
+        {
+            usb = null;
+            reader = null;
+            writer = null;
+
+            var device = UsbDevice.AllWinUsbDevices.FirstOrDefault(d => d.Vid == 0x1974 && d.Pid == 0x0001) as WinUsbRegistry;
+            if (device != null)
+            {
+                if (device.Open(out usb))
+                {
+                    writer = usb.OpenEndpointWriter(WriteEndpointID.Ep01);
+                    writer.Reset();
+                    writer.Flush();
+
+                    reader = usb.OpenEndpointReader(ReadEndpointID.Ep01);
+                    reader.Reset();
+                    reader.Flush();
+                    reader.ReadBufferSize = 32;
+                    reader.DataReceived += CustomDataReceived;
+                    reader.DataReceivedEnabled = true;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private void ProcessIncoming(byte[] data, USBPacket? packet = null)
+        {
+            if (data == null) return;
+            if (CheckPacketCrc(data))
+            {
+                _sharedMem.WriteIncomingPacket(data); //send before monitor process                                    
+                if (IsDebug && IsVisible)
+                {
+                    if (!packet.HasValue)
+                    {
+                        packet = StructFromBytes<USBPacket>(data);
+                        packet.Value.ParseFields();
+                    }
+                    lock (InPacketMonitor)
+                        InPacketMonitor.Add(packet.Value);
+                }
+            }
+        }
+
+        private void CustomDataReceived(object sender, EndpointDataEventArgs e)
+        {
+            var data = e.Buffer;
+            ProcessIncoming(data, null);
+        }
+
+        private void CloseCustomDevice(ref WinUsbDevice usb, ref UsbEndpointReader reader, ref UsbEndpointWriter writer)
+        {
+            if (reader != null)
+            {
+                reader.DataReceivedEnabled = false;
+                reader.DataReceived -= CustomDataReceived;
+                reader.Dispose();
+            }
+            reader = null;
+            if (writer != null)
+                writer.Dispose();
+            writer = null;
+            if (usb != null)
+                usb.Close();
+            usb = null;
+        }
+
+        private void EnableCustomHMD(bool en)
+        {
+            if (en && CustomHMDThread == null)
+            {
+                CustomHMDThread = new Thread(() =>
+                {
+                    List<byte[]> outgoingPackets = null;
+                    var lastOutgoing = DateTime.MinValue;
+
+                    WinUsbDevice _usb = null;
+                    UsbEndpointWriter _writer = null;
+                    UsbEndpointReader _reader = null;
+
+                    var data = new byte[32];
+                    while (CustomHMDThread != null)
+                    {
+                        SetState(CommState.DriverActive, _sharedMem.IsDriverActive);
+
+                        if (_usb == null)
+                        {
+                            OpenCustomDevice(out _usb, out _reader, out _writer);
+                            if (_usb != null)
+                            {
+                                SetState(CommState.TrackerActive, true);
+                            }
+                            else
+                            {
+                                SetState(CommState.TrackerActive, false);
+                                Thread.Sleep(10);
+                            }
+                        }
+                        try
+                        {
+                            outgoingPackets = _sharedMem.ReadOutgoingPackets();
+                            if (outgoingPackets != null)
+                            {
+                                lock (OutgoingPackets)
+                                {
+                                    foreach (var item in outgoingPackets)
+                                        OutgoingPackets.Enqueue(item);
+                                }
+                            }
+
+                            //empty output even if no usb connected
+                            lock (OutgoingPackets)
+                            {
+                                if (OutgoingPackets.Count > 0 && (DateTime.Now - lastOutgoing).TotalMilliseconds >= 100)
+                                {
+                                    lastOutgoing = DateTime.Now;
+                                    var d = OutgoingPackets.Dequeue(); //33 byte packets in queue                                    
+                                    if (_writer != null)
+                                    {
+                                        int len;
+                                        var err = _writer.Write(d, 100, out len); //send before monitor process                                
+                                        if (err != ErrorCode.Ok)
+                                            throw new Exception(UsbDevice.LastErrorString);
+                                    }
+                                    if (IsDebug && IsVisible)
+                                    {
+                                        var packet = StructFromBytes<USBPacket>(d);
+                                        packet.ParseFields();
+                                        lock (OutPacketMonitor)
+                                            OutPacketMonitor.Add(packet);
+                                    }
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine(ex.Message);
+                            CloseCustomDevice(ref _usb, ref _reader, ref _writer);
+                            Thread.Sleep(100);
+                        }
+                    }
+
+                    CloseCustomDevice(ref _usb, ref _reader, ref _writer);
+                    SetState(CommState.TrackerActive, false);
+                    UsbDevice.Exit();
+
+                });
+                CustomHMDThread.Start();
+            }
+            else if (!en && CustomHMDThread != null)
+            {
+                var t = CustomHMDThread;
+                CustomHMDThread = null;
+                t.Join();
+                SetState(CommState.TrackerActive, false);
+            }
+        }
+
+        private Thread PSVRThread = null;
+
+        private void EnablePSVR(bool en)
+        {
+            if (en && PSVRThread == null)
+            {
+                PSVRThread = new Thread(() =>
+                {
+                    var psvr = new PSVRHandler();
+                    psvr.OnPacketReceive = ProcessIncoming;
+                    List<byte[]> outgoingPackets = null;
+                    var lastOutgoing = DateTime.MinValue;
+
+                    //also add move (bluetooth?)
+
+                    while (PSVRThread != null)
+                    {
+                        SetState(CommState.DriverActive, _sharedMem.IsDriverActive);
+                        SetState(CommState.TrackerActive, psvr.IsActive);
+
+                        outgoingPackets = _sharedMem.ReadOutgoingPackets();
+                        if (outgoingPackets != null)
+                        {
+                            lock (OutgoingPackets)
+                            {
+                                foreach (var item in outgoingPackets)
+                                    OutgoingPackets.Enqueue(item);
+                            }
+                        }
+
+                        //empty output even if no usb connected
+                        lock (OutgoingPackets)
+                        {
+                            if (OutgoingPackets.Count > 0 && (DateTime.Now - lastOutgoing).TotalMilliseconds >= 100)
+                            {
+                                lastOutgoing = DateTime.Now;
+                                var d = OutgoingPackets.Dequeue(); //33 byte packets in queue
+                                                                   //interpret data (haptic feedback?)
+                                var packet = StructFromBytes<USBPacket>(d);
+                                packet.ParseFields();
+
+                                psvr.ProcessOutgoing(packet);
+                                if (IsDebug && IsVisible)
+                                {
+                                    lock (OutPacketMonitor)
+                                        OutPacketMonitor.Add(packet);
+                                }
+                            }
+                            else
+                                Thread.Sleep(1);
+                        }
+                    }
+
+                    psvr.Dispose();
+
+                });
+                PSVRThread.Start();
+            }
+            else if (!en && PSVRThread != null)
+            {
+                var t = PSVRThread;
+                PSVRThread = null;
+                t.Join();
+                SetState(CommState.TrackerActive, false);
+            }
         }
 
         //public static HmdQuaternion_t CreateFromYawPitchRoll(float yaw, float pitch, float roll)

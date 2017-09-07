@@ -27,10 +27,10 @@ private:
 public:
 	//CDriverLog *m_pLog;
 	IVRServerDriverHost *m_pDriverHost;
-	bool IsMonitorConnected();
+	bool IsTrackerConnected();
 	void AlignHMD(HmdVector3d_t *pAlign);
 	void SendDriverCommand(USBPacket *command);
-	void SendScreen(char *screenData, int size);
+	//void SendScreen(char *screenData, int size);
 	void RemoveTrackedDevice(CTrackedDevice *pDevice);
 	void ProcessUSBPacket(USBPacket *pUSBPacket);
 private:	

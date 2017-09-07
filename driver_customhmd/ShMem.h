@@ -5,10 +5,9 @@
 
 enum CommState
 {
-	Disconnected = 0,
-	Connected = 1,
-	ActiveNoDriver = 2,
-	Active = 3	
+	Uninitialized = 0,
+	TrackerActive = 1,
+	DriverActive = 2
 };
 
 #pragma pack(1)
@@ -36,11 +35,12 @@ public:
 	CShMem();
 	~CShMem();
 	CommStatus _status;
-	void WriteScreen(char *screenData, int size);
+	//void WriteScreen(char *screenData, int size);
 	void WriteOutgoingPacket(char *packet);
 	char* ReadIncomingPackets(int *count);
 	CommState GetState();
 	bool WatchDogEnabled;
+	void UpdateDriverTime();
 private:
 
 	const int _maxPackets = 16;
@@ -54,10 +54,10 @@ private:
 	HANDLE _commSharedMem;
 	char *_commAccessor;
 
-	const int _screenBufferSize = sizeof(ScreenInfo) + (3840 * 2160 * 4); //ScreenInfo + 4K display uncompressed
-	HANDLE _screenAccessLock;
-	HANDLE _screenSharedMem;
-	char *_screenAccessor;
+	//const int _screenBufferSize = sizeof(ScreenInfo) + (3840 * 2160 * 4); //ScreenInfo + 4K display uncompressed
+	//HANDLE _screenAccessLock;
+	//HANDLE _screenSharedMem;
+	//char *_screenAccessor;
 
 };
 

@@ -22,9 +22,7 @@ namespace monitor_customhmd
             Environment.SetEnvironmentVariable("PATH", path);
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new MonitorForm());
-
-            
+            Application.Run(new MonitorForm());            
         }
 
 

@@ -34,21 +34,26 @@
             this.lblSequence = new System.Windows.Forms.ToolStripStatusLabel();
             this.tabSources = new System.Windows.Forms.TabControl();
             this.tabDefault = new System.Windows.Forms.TabPage();
+            this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.rdDisabled = new System.Windows.Forms.RadioButton();
+            this.rdPSVR = new System.Windows.Forms.RadioButton();
+            this.rdCustomHmd = new System.Windows.Forms.RadioButton();
+            this.rdOpenTrack = new System.Windows.Forms.RadioButton();
+            this.txtOpenTrackPort = new System.Windows.Forms.TextBox();
+            this.btnReloadDistortion = new System.Windows.Forms.Button();
             this.btnResetRotation = new System.Windows.Forms.Button();
             this.chkWatchDog = new System.Windows.Forms.CheckBox();
             this.trayMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.mnuDebug = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuExit = new System.Windows.Forms.ToolStripMenuItem();
-            this.frameTimer = new System.Windows.Forms.Timer(this.components);
-            this.btnReloadDistortion = new System.Windows.Forms.Button();
             this.tabSources.SuspendLayout();
             this.tabDefault.SuspendLayout();
+            this.groupBox1.SuspendLayout();
             this.trayMenu.SuspendLayout();
             this.SuspendLayout();
             // 
             // tmrConsumer
             // 
-            this.tmrConsumer.Enabled = true;
             this.tmrConsumer.Interval = 1;
             this.tmrConsumer.Tick += new System.EventHandler(this.tmrConsumer_Tick);
             // 
@@ -78,6 +83,7 @@
             // 
             // tabDefault
             // 
+            this.tabDefault.Controls.Add(this.groupBox1);
             this.tabDefault.Controls.Add(this.btnReloadDistortion);
             this.tabDefault.Controls.Add(this.btnResetRotation);
             this.tabDefault.Controls.Add(this.chkWatchDog);
@@ -88,6 +94,86 @@
             this.tabDefault.TabIndex = 0;
             this.tabDefault.Text = "General";
             this.tabDefault.UseVisualStyleBackColor = true;
+            // 
+            // groupBox1
+            // 
+            this.groupBox1.Controls.Add(this.rdDisabled);
+            this.groupBox1.Controls.Add(this.rdPSVR);
+            this.groupBox1.Controls.Add(this.rdCustomHmd);
+            this.groupBox1.Controls.Add(this.rdOpenTrack);
+            this.groupBox1.Controls.Add(this.txtOpenTrackPort);
+            this.groupBox1.Location = new System.Drawing.Point(8, 75);
+            this.groupBox1.Name = "groupBox1";
+            this.groupBox1.Size = new System.Drawing.Size(413, 158);
+            this.groupBox1.TabIndex = 12;
+            this.groupBox1.TabStop = false;
+            this.groupBox1.Text = "Tracking Input";
+            // 
+            // rdDisabled
+            // 
+            this.rdDisabled.AutoSize = true;
+            this.rdDisabled.Checked = true;
+            this.rdDisabled.Location = new System.Drawing.Point(6, 19);
+            this.rdDisabled.Name = "rdDisabled";
+            this.rdDisabled.Size = new System.Drawing.Size(66, 17);
+            this.rdDisabled.TabIndex = 14;
+            this.rdDisabled.TabStop = true;
+            this.rdDisabled.Text = "Disabled";
+            this.rdDisabled.UseVisualStyleBackColor = true;
+            this.rdDisabled.CheckedChanged += new System.EventHandler(this.rdOpenTrack_CheckedChanged);
+            // 
+            // rdPSVR
+            // 
+            this.rdPSVR.AutoSize = true;
+            this.rdPSVR.Location = new System.Drawing.Point(6, 88);
+            this.rdPSVR.Name = "rdPSVR";
+            this.rdPSVR.Size = new System.Drawing.Size(54, 17);
+            this.rdPSVR.TabIndex = 13;
+            this.rdPSVR.Text = "PSVR";
+            this.rdPSVR.UseVisualStyleBackColor = true;
+            this.rdPSVR.CheckedChanged += new System.EventHandler(this.rdOpenTrack_CheckedChanged);
+            // 
+            // rdCustomHmd
+            // 
+            this.rdCustomHmd.AutoSize = true;
+            this.rdCustomHmd.Location = new System.Drawing.Point(6, 42);
+            this.rdCustomHmd.Name = "rdCustomHmd";
+            this.rdCustomHmd.Size = new System.Drawing.Size(88, 17);
+            this.rdCustomHmd.TabIndex = 12;
+            this.rdCustomHmd.Text = "Custom HMD";
+            this.rdCustomHmd.UseVisualStyleBackColor = true;
+            this.rdCustomHmd.CheckedChanged += new System.EventHandler(this.rdOpenTrack_CheckedChanged);
+            // 
+            // rdOpenTrack
+            // 
+            this.rdOpenTrack.AutoSize = true;
+            this.rdOpenTrack.Location = new System.Drawing.Point(6, 65);
+            this.rdOpenTrack.Name = "rdOpenTrack";
+            this.rdOpenTrack.Size = new System.Drawing.Size(115, 17);
+            this.rdOpenTrack.TabIndex = 0;
+            this.rdOpenTrack.Text = "OpenTrack on port";
+            this.rdOpenTrack.UseVisualStyleBackColor = true;
+            this.rdOpenTrack.CheckedChanged += new System.EventHandler(this.rdOpenTrack_CheckedChanged);
+            // 
+            // txtOpenTrackPort
+            // 
+            this.txtOpenTrackPort.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.txtOpenTrackPort.Location = new System.Drawing.Point(127, 65);
+            this.txtOpenTrackPort.Name = "txtOpenTrackPort";
+            this.txtOpenTrackPort.Size = new System.Drawing.Size(37, 20);
+            this.txtOpenTrackPort.TabIndex = 11;
+            this.txtOpenTrackPort.Text = "4242";
+            this.txtOpenTrackPort.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            // 
+            // btnReloadDistortion
+            // 
+            this.btnReloadDistortion.Location = new System.Drawing.Point(128, 29);
+            this.btnReloadDistortion.Name = "btnReloadDistortion";
+            this.btnReloadDistortion.Size = new System.Drawing.Size(114, 40);
+            this.btnReloadDistortion.TabIndex = 9;
+            this.btnReloadDistortion.Text = "Reload Distortion Map";
+            this.btnReloadDistortion.UseVisualStyleBackColor = true;
+            this.btnReloadDistortion.Click += new System.EventHandler(this.btnResetDistortion_Click);
             // 
             // btnResetRotation
             // 
@@ -132,22 +218,6 @@
             this.mnuExit.Text = "Exit";
             this.mnuExit.Click += new System.EventHandler(this.mnuExit_Click);
             // 
-            // frameTimer
-            // 
-            this.frameTimer.Enabled = true;
-            this.frameTimer.Interval = 1000;
-            this.frameTimer.Tick += new System.EventHandler(this.frameTimer_Tick);
-            // 
-            // btnReloadDistortion
-            // 
-            this.btnReloadDistortion.Location = new System.Drawing.Point(8, 75);
-            this.btnReloadDistortion.Name = "btnReloadDistortion";
-            this.btnReloadDistortion.Size = new System.Drawing.Size(114, 37);
-            this.btnReloadDistortion.TabIndex = 9;
-            this.btnReloadDistortion.Text = "Reload Distortion Map";
-            this.btnReloadDistortion.UseVisualStyleBackColor = true;
-            this.btnReloadDistortion.Click += new System.EventHandler(this.btnResetDistortion_Click);
-            // 
             // MonitorForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -164,6 +234,8 @@
             this.tabSources.ResumeLayout(false);
             this.tabDefault.ResumeLayout(false);
             this.tabDefault.PerformLayout();
+            this.groupBox1.ResumeLayout(false);
+            this.groupBox1.PerformLayout();
             this.trayMenu.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -181,8 +253,13 @@
         private System.Windows.Forms.TabPage tabDefault;
         private System.Windows.Forms.CheckBox chkWatchDog;
         private System.Windows.Forms.Button btnResetRotation;
-        private System.Windows.Forms.Timer frameTimer;
         private System.Windows.Forms.Button btnReloadDistortion;
+        private System.Windows.Forms.TextBox txtOpenTrackPort;
+        private System.Windows.Forms.GroupBox groupBox1;
+        private System.Windows.Forms.RadioButton rdCustomHmd;
+        private System.Windows.Forms.RadioButton rdOpenTrack;
+        private System.Windows.Forms.RadioButton rdPSVR;
+        private System.Windows.Forms.RadioButton rdDisabled;
     }
 }
 

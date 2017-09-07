@@ -50,3 +50,4 @@ stm32/TrackedDevice - Copy
 stm32/TrackedDevice - Copy2
 stm32/TrackedDevice/MDK-ARM/TrackedDevice
 stm32/TrackedDevice/VisualGDB
+/monitor_customhmd/packages/*

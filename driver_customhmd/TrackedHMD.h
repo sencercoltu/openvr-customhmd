@@ -206,7 +206,8 @@ protected:
 	int32_t DisplayMCImageWidth;
 	int32_t DisplayMCImageHeight;
 	int32_t DisplayMCImageNumChannels;
-	void *DisplayMCImageData;	
+	void *DisplayMCImageData;
+	bool DisplayDebugMode;
 };
 
 class CDriverDirectModeComponentFix : public IVRDriverDirectModeComponent

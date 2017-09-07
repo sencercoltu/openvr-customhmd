@@ -8,14 +8,14 @@ CTrackedController::CTrackedController(ETrackedControllerRole role, std::string 
 	DriverLog(__FUNCTION__);
 	m_Role = role;
 
-	NamedIconPathDeviceOff = "{customhmd}controller_status_off.png";
-	NamedIconPathDeviceSearching = "{customhmd}controller_status_searching.gif";
-	NamedIconPathDeviceSearchingAlert = "{customhmd}controller_status_searching_alert.gif";
-	NamedIconPathDeviceReady = "{customhmd}controller_status_ready.png";
-	NamedIconPathDeviceReadyAlert = "{customhmd}controller_status_ready_alert.png";
-	NamedIconPathDeviceNotReady = "{customhmd}controller_status_error.png";
-	NamedIconPathDeviceStandby = "{customhmd}controller_status_ready_alert.png";
-	NamedIconPathDeviceAlertLow = "{customhmd}controller_status_ready_low.png";
+	NamedIconPathDeviceOff = "{customhmd}/icons/controller_status_off.png";
+	NamedIconPathDeviceSearching = "{customhmd}/icons/controller_status_searching.gif";
+	NamedIconPathDeviceSearchingAlert = "{customhmd}/icons/controller_status_searching_alert.gif";
+	NamedIconPathDeviceReady = "{customhmd}/icons/controller_status_ready.png";
+	NamedIconPathDeviceReadyAlert = "{customhmd}/icons/controller_status_ready_alert.png";
+	NamedIconPathDeviceNotReady = "{customhmd}/icons/controller_status_error.png";
+	NamedIconPathDeviceStandby = "{customhmd}/icons/controller_status_ready_alert.png";
+	NamedIconPathDeviceAlertLow = "{customhmd}/icons/controller_status_ready_low.png";
 	
 
 	TrackingSystemName = "Custom Controller";
@@ -83,7 +83,7 @@ CTrackedController::CTrackedController(ETrackedControllerRole role, std::string 
 	m_ControllerData.Pose.shouldApplyHeadModel = false;
 	m_ControllerData.Pose.deviceIsConnected = true;
 	m_ControllerData.Pose.poseIsValid = true;
-	m_ControllerData.Pose.result = ETrackingResult::TrackingResult_Running_OK;
+	m_ControllerData.Pose.result = ETrackingResult::TrackingResult_Uninitialized;
 	m_ControllerData.Pose.qRotation = Quaternion(1, 0, 0, 0);
 	m_ControllerData.Pose.qWorldFromDriverRotation = Quaternion(1, 0, 0, 0);
 	m_ControllerData.Pose.qDriverFromHeadRotation = Quaternion(1, 0, 0, 0);
