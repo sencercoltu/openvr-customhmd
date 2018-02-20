@@ -32,11 +32,11 @@
 //
 
 // this sample encodes NV12 frames using AMF Encoder and writes them to H.264 elmentary stream 
-#include <windows.h>
+
 #include <stdio.h>
 #include <tchar.h>
-#include <D3D9.h>
-#include <D3D11.h>
+#include <d3d9.h>
+#include <d3d11.h>
 #include "public/common/AMFFactory.h"
 #include "public/include/components/VideoEncoderVCE.h"
 #include "public/include/components/VideoEncoderHEVC.h"
@@ -52,29 +52,35 @@ static wchar_t *pCodec = AMFVideoEncoderVCE_AVC;
 
  //#define ENABLE_4K
 
-static amf::AMF_MEMORY_TYPE memoryTypeIn  = amf::AMF_MEMORY_DX9;
+//static amf::AMF_MEMORY_TYPE memoryTypeIn  = amf::AMF_MEMORY_DX9;
+static amf::AMF_MEMORY_TYPE memoryTypeIn  = amf::AMF_MEMORY_DX11;
 static amf::AMF_SURFACE_FORMAT formatIn   = amf::AMF_SURFACE_NV12;
 
 #if defined(ENABLE_4K)
 static amf_int32 widthIn                  = 1920*2;
 static amf_int32 heightIn                 = 1080*2;
 #else
-static amf_int32 widthIn                  = 1920/2;
-static amf_int32 heightIn                 = 1080/2;
+static amf_int32 widthIn                  = 1920;
+static amf_int32 heightIn                 = 1080;
 #endif
-static amf_int32 frameRateIn              = 144;
-static amf_int64 bitRateIn                = 900000L; // in bits, 5MBit
+static amf_int32 frameRateIn              = 30;
+static amf_int64 bitRateIn                = 5000000L; // in bits, 5MBit
 static amf_int32 rectSize                 = 50;
 static amf_int32 frameCount               = 500;
 static bool bMaximumSpeed = true;
 
 #define START_TIME_PROPERTY L"StartTimeProperty" // custom property ID to store submission time in a frame - all custom properties are copied from input to output
 
-static wchar_t *fileNameOut = L"D:\\OUT\\output.h264";
+static wchar_t *fileNameOut = L"./output.h264";
 
 static amf_int32 xPos = 0;
 static amf_int32 yPos = 0;
-static void FillSurface(amf::AMFContext *context, amf::AMFSurface *surface);
+static void FillSurfaceDX9(amf::AMFContext *context, amf::AMFSurface *surface);
+static void FillSurfaceDX11(amf::AMFContext *context, amf::AMFSurface *surface);
+static void PrepareFillDX11(amf::AMFContext *context);
+
+amf::AMFSurfacePtr pColor1;
+amf::AMFSurfacePtr pColor2;
 
 #define MILLISEC_TIME     10000
 
@@ -123,6 +129,8 @@ int _tmain(int argc, _TCHAR* argv[])
     {
         res = context->InitDX11(NULL); // can be DX11 device
         AMF_RETURN_IF_FAILED(res, L"InitDX11(NULL) failed");
+        PrepareFillDX11(context);
+
     }
     // component: encoder
     res = g_AMFFactory.GetFactory()->CreateComponent(context, pCodec, &encoder);
@@ -130,7 +138,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
     if(amf_wstring(pCodec) == amf_wstring(AMFVideoEncoderVCE_AVC))
     { 
-        res = encoder->SetProperty(AMF_VIDEO_ENCODER_USAGE, AMF_VIDEO_ENCODER_USAGE_ULTRA_LOW_LATENCY);
+        res = encoder->SetProperty(AMF_VIDEO_ENCODER_USAGE, AMF_VIDEO_ENCODER_USAGE_TRANSCONDING);
         AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_USAGE, AMF_VIDEO_ENCODER_USAGE_TRANSCONDING) failed");
 
         if(bMaximumSpeed)
@@ -147,12 +155,6 @@ int _tmain(int argc, _TCHAR* argv[])
         AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_FRAMESIZE, %dx%d) failed", widthIn, heightIn);
         res = encoder->SetProperty(AMF_VIDEO_ENCODER_FRAMERATE, ::AMFConstructRate(frameRateIn, 1));
         AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_FRAMERATE, %dx%d) failed", frameRateIn, 1);
-		res = encoder->SetProperty(AMF_VIDEO_ENCODER_PROFILE, AMF_VIDEO_ENCODER_PROFILE_BASELINE);
-		AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_PROFILE, AMF_VIDEO_ENCODER_PROFILE_BASELINE)");
-		
-		res = encoder->SetProperty(AMF_VIDEO_ENCODER_PROFILE_LEVEL, 51);
-		AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_PROFILE_LEVEL, 51)");
-
 
 #if defined(ENABLE_4K)
         res = encoder->SetProperty(AMF_VIDEO_ENCODER_PROFILE, AMF_VIDEO_ENCODER_PROFILE_HIGH);
@@ -205,7 +207,14 @@ int _tmain(int argc, _TCHAR* argv[])
             surfaceIn = NULL;
             res = context->AllocSurface(memoryTypeIn, formatIn, widthIn, heightIn, &surfaceIn);
             AMF_RETURN_IF_FAILED(res, L"AllocSurface() failed");
-            FillSurface(context, surfaceIn);
+            if(memoryTypeIn  == amf::AMF_MEMORY_DX9)
+            { 
+                FillSurfaceDX9(context, surfaceIn);
+            }
+            else
+            {
+                FillSurfaceDX11(context, surfaceIn);
+            }
         }
         // encode
         amf_pts start_time = amf_high_precision_clock();
@@ -236,6 +245,9 @@ int _tmain(int argc, _TCHAR* argv[])
     }
     thread.WaitForStop();
 
+    pColor1 = NULL;
+    pColor2 = NULL;
+
     // cleanup in this order
     surfaceIn = NULL;
     encoder->Terminate();
@@ -246,38 +258,114 @@ int _tmain(int argc, _TCHAR* argv[])
     g_AMFFactory.Terminate();
     return 0;
 }
-static void FillSurface(amf::AMFContext *context, amf::AMFSurface *surface)
+static void FillSurfaceDX9(amf::AMFContext *context, amf::AMFSurface *surface)
 {
     HRESULT hr = S_OK;
     // fill surface with something something useful. We fill with color and color rect
     D3DCOLOR color1 = D3DCOLOR_XYUV (128, 255, 128);
     D3DCOLOR color2 = D3DCOLOR_XYUV (128, 0, 128);
     // get native DX objects
+    IDirect3DDevice9 *deviceDX9 = (IDirect3DDevice9 *)context->GetDX9Device(); // no reference counting - do not Release()
+    IDirect3DSurface9* surfaceDX9 = (IDirect3DSurface9*)surface->GetPlaneAt(0)->GetNative(); // no reference counting - do not Release()
+    hr = deviceDX9->ColorFill(surfaceDX9, NULL, color1);
 
-	if (memoryTypeIn == amf::AMF_MEMORY_DX11)
-	{
-		ID3D11Device *deviceDX11 = (ID3D11Device *)context->GetDX11Device(); // no reference counting - do not Release()
-		//Surface * surfaceDX9 = (IDirect3DSurface9*)surface->GetPlaneAt(0)->GetNative(); // no reference counting - do not Release()
-	}
-	else if (memoryTypeIn == amf::AMF_MEMORY_DX9)
-	{
-		IDirect3DDevice9 *deviceDX9 = (IDirect3DDevice9 *)context->GetDX9Device(); // no reference counting - do not Release()
-		IDirect3DSurface9* surfaceDX9 = (IDirect3DSurface9*)surface->GetPlaneAt(0)->GetNative(); // no reference counting - do not Release()
-		hr = deviceDX9->ColorFill(surfaceDX9, NULL, color1);
+    if(xPos + rectSize > widthIn)
+    {
+        xPos = 0;
+    }
+    if(yPos + rectSize > heightIn)
+    {
+        yPos = 0;
+    }
+    RECT rect = {xPos, yPos, xPos + rectSize, yPos + rectSize};
+    hr = deviceDX9->ColorFill(surfaceDX9, &rect, color2);
 
-		if (xPos + rectSize > widthIn)
-		{
-			xPos = 0;
-		}
-		if (yPos + rectSize > heightIn)
-		{
-			yPos = 0;
-		}
-		RECT rect = { xPos, yPos, xPos + rectSize, yPos + rectSize };
-		hr = deviceDX9->ColorFill(surfaceDX9, &rect, color2);
-	}
     xPos+=2; //DX9 NV12 surfaces do not accept odd positions - do not use ++
     yPos+=2; //DX9 NV12 surfaces do not accept odd positions - do not use ++
+}
+
+
+static void FillNV12SurfaceWithColor(amf::AMFSurface* surface, amf_uint8 Y, amf_uint8 U, amf_uint8 V)
+{
+    amf::AMFPlane *pPlaneY =  surface->GetPlaneAt(0);
+    amf::AMFPlane *pPlaneUV =  surface->GetPlaneAt(1);
+
+    amf_int32 widthY = pPlaneY->GetWidth();
+    amf_int32 heightY = pPlaneY->GetHeight();
+    amf_int32 lineY = pPlaneY->GetHPitch();
+
+    amf_uint8 *pDataY = (amf_uint8 *)pPlaneY->GetNative();
+
+    for(amf_int32 y = 0; y < heightY; y++)
+    {
+        amf_uint8 *pDataLine = pDataY + y * lineY;
+        memset(pDataLine, Y, widthY);
+    }
+
+    amf_int32 widthUV = pPlaneUV->GetWidth();
+    amf_int32 heightUV = pPlaneUV->GetHeight();
+    amf_int32 lineUV = pPlaneUV->GetHPitch();
+
+    amf_uint8 *pDataUV = (amf_uint8 *)pPlaneUV->GetNative();
+
+    for(amf_int32 y = 0; y < heightUV; y++)
+    {
+        amf_uint8 *pDataLine = pDataUV + y * lineUV;
+        for(amf_int32 x = 0; x < widthUV; x++)
+        {
+            *pDataLine++ = U;
+            *pDataLine++ = V;
+        }
+    }
+
+}
+
+static void PrepareFillDX11(amf::AMFContext *context)
+{
+    AMF_RESULT res = AMF_OK; // error checking can be added later
+    res = context->AllocSurface(amf::AMF_MEMORY_HOST, formatIn, widthIn, heightIn, &pColor1);
+    res = context->AllocSurface(amf::AMF_MEMORY_HOST, formatIn, rectSize, rectSize, &pColor2);
+
+    FillNV12SurfaceWithColor(pColor2, 128, 0, 128);
+    FillNV12SurfaceWithColor(pColor1, 128, 255, 128);
+
+    pColor1->Convert(memoryTypeIn);
+    pColor2->Convert(memoryTypeIn);
+}
+
+static void FillSurfaceDX11(amf::AMFContext *context, amf::AMFSurface *surface)
+{
+    HRESULT hr = S_OK;
+    // fill surface with something something useful. We fill with color and color rect
+    // get native DX objects
+    ID3D11Device *deviceDX11 = (ID3D11Device *)context->GetDX11Device(); // no reference counting - do not Release()
+    ID3D11Texture2D* surfaceDX11 = (ID3D11Texture2D*)surface->GetPlaneAt(0)->GetNative(); // no reference counting - do not Release()
+
+    ID3D11DeviceContext *deviceContextDX11 = NULL;
+    deviceDX11->GetImmediateContext(&deviceContextDX11);
+
+    ID3D11Texture2D* surfaceDX11Color1 = (ID3D11Texture2D*)pColor1->GetPlaneAt(0)->GetNative(); // no reference counting - do not Release()
+    deviceContextDX11->CopyResource(surfaceDX11, surfaceDX11Color1);
+
+    if(xPos + rectSize > widthIn)
+    {
+        xPos = 0;
+    }
+    if(yPos + rectSize > heightIn)
+    {
+        yPos = 0;
+    }
+    D3D11_BOX rect = {0, 0, 0, rectSize, rectSize, 1};
+
+    ID3D11Texture2D* surfaceDX11Color2 = (ID3D11Texture2D*)pColor2->GetPlaneAt(0)->GetNative(); // no reference counting - do not Release()
+
+    deviceContextDX11->CopySubresourceRegion(surfaceDX11, 0, xPos, yPos, 0, surfaceDX11Color2, 0, &rect);
+    deviceContextDX11->Flush();
+
+    xPos+=2; //DX9 NV12 surfaces do not accept odd positions - do not use ++
+    yPos+=2; //DX9 NV12 surfaces do not accept odd positions - do not use ++
+
+    deviceContextDX11->Release();
 }
 PollingThread::PollingThread(amf::AMFContext *context, amf::AMFComponent *encoder, const wchar_t *pFileName) : m_pContext(context), m_pEncoder(encoder), m_pFile(NULL)
 {

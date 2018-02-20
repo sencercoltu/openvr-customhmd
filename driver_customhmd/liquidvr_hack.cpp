@@ -87,7 +87,7 @@ bool IsD2DConnected(uint16_t edid)
 							pDisplay = nullptr;
 							result = pDisplayEnum->GetDisplay((void **)&pDisplay);
 						}
-					}
+					}					
 				}
 			}
 		}

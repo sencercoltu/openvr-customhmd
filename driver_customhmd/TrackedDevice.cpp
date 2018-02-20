@@ -61,6 +61,11 @@ CTrackedDevice::CTrackedDevice(std::string displayName, CServerDriver *pServer)
 	RadioVersion = 0;
 	DongleVersion = 0;	
 	ParentDriver = 0;
+	HasDisplayComponent = false;
+	HasControllerComponent = false;
+	HasCameraComponent = false;
+	HasDriverDirectModeComponent = false;
+	HasVirtualDisplayComponent = false;
 }
 
 void CTrackedDevice::SetDefaultProperties()
@@ -107,6 +112,13 @@ void CTrackedDevice::SetDefaultProperties()
 	error = SET_PROP(Uint64, RadioVersion,);
 	error = SET_PROP(Uint64, DongleVersion,);
 	error = SET_PROP(Uint64, ParentDriver,);
+
+	error = SET_PROP(Bool, HasDisplayComponent, );
+	error = SET_PROP(Bool, HasControllerComponent, );
+	error = SET_PROP(Bool, HasCameraComponent, );
+	error = SET_PROP(Bool, HasDriverDirectModeComponent, );
+	error = SET_PROP(Bool, HasVirtualDisplayComponent, );
+
 }
 
 CTrackedDevice::~CTrackedDevice()

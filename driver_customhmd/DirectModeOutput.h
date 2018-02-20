@@ -41,6 +41,7 @@ struct TextureLink
 {
 	TextureData *pData;
 	TextureSet *pSet;
+	VRTextureBounds_t Bounds;
 };
 
 struct DirectEyeData

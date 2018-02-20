@@ -33,6 +33,12 @@
     <ClInclude Include="..\common\DeviceDX11.h">
       <Filter>common</Filter>
     </ClInclude>
+    <ClInclude Include="..\common\DeviceOpenCL.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\DeviceOpenGL.h">
+      <Filter>common</Filter>
+    </ClInclude>
     <ClInclude Include="RenderWindow.h">
       <Filter>RenderEncoder</Filter>
     </ClInclude>
@@ -43,6 +49,12 @@
       <Filter>RenderEncoder</Filter>
     </ClInclude>
     <ClInclude Include="VideoRenderDX11.h">
+      <Filter>RenderEncoder</Filter>
+    </ClInclude>
+    <ClInclude Include="VideoRenderOpenCL.h">
+      <Filter>RenderEncoder</Filter>
+    </ClInclude>
+    <ClInclude Include="VideoRenderOpenGL.h">
       <Filter>RenderEncoder</Filter>
     </ClInclude>
     <ClInclude Include="RenderEncodePipeline.h">
@@ -93,6 +105,9 @@
     <ClInclude Include="..\common\EncoderParamsAVC.h">
       <Filter>common</Filter>
     </ClInclude>
+    <ClInclude Include="..\common\OpenCLLoader.h">
+      <Filter>common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\common\CmdLogger.cpp">
@@ -105,6 +120,12 @@
     <ClCompile Include="..\common\DeviceDX11.cpp">
       <Filter>common</Filter>
     </ClCompile>
+    <ClCompile Include="..\common\DeviceOpenCL.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\DeviceOpenGL.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
     <ClCompile Include="RenderWindow.cpp">
       <Filter>RenderEncoder</Filter>
     </ClCompile>
@@ -115,6 +136,12 @@
       <Filter>RenderEncoder</Filter>
     </ClCompile>
     <ClCompile Include="VideoRenderDX11.cpp">
+      <Filter>RenderEncoder</Filter>
+    </ClCompile>
+    <ClCompile Include="VideoRenderOpenCL.cpp">
+      <Filter>RenderEncoder</Filter>
+    </ClCompile>
+    <ClCompile Include="VideoRenderOpenGL.cpp">
       <Filter>RenderEncoder</Filter>
     </ClCompile>
     <ClCompile Include="RenderEncodePipeline.cpp">
@@ -163,6 +190,9 @@
       <Filter>common</Filter>
     </ClCompile>
     <ClCompile Include="..\common\EncoderParamsAVC.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\OpenCLLoader.cpp">
       <Filter>common</Filter>
     </ClCompile>
   </ItemGroup>

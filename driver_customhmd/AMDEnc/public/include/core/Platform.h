@@ -56,6 +56,16 @@
 
 #define AMF_TODO(_todo) (__FILE__ "(" AMF_MACRO_STRING(__LINE__) "): TODO: "_todo)
 
+
+ #if defined(__GNUC__) || defined(__clang__)
+     #define AMF_ALIGN(n) __attribute__((aligned(n)))
+ #elif defined(_MSC_VER) || defined(__INTEL_COMPILER)
+     #define AMF_ALIGN(n) __declspec(align(n))
+ #else
+    #define AMF_ALIGN(n)
+//     #error Need to define AMF_ALIGN
+ #endif
+
 #include <stdio.h>
 #include <stdint.h>
 
@@ -68,8 +78,13 @@
     #define AMF_STD_CALL            __stdcall
     #define AMF_CDECL_CALL          __cdecl
     #define AMF_FAST_CALL           __fastcall
+#if defined(__GNUC__) || defined(__clang__)
+    #define AMF_INLINE              inline
+    #define AMF_FORCEINLINE         inline
+#else
     #define AMF_INLINE              __inline
     #define AMF_FORCEINLINE         __forceinline
+#endif
     #define AMF_NO_VTABLE           __declspec(novtable)
 
     #define AMFPRId64   "I64d"
@@ -86,8 +101,13 @@
     #define AMF_STD_CALL
     #define AMF_CDECL_CALL
     #define AMF_FAST_CALL
+#if defined(__GNUC__) || defined(__clang__)
+    #define AMF_INLINE              inline
+    #define AMF_FORCEINLINE         inline
+#else
     #define AMF_INLINE              __inline__
     #define AMF_FORCEINLINE         __inline__
+#endif
     #define AMF_NO_VTABLE           
 
     #if !defined(AMFPRId64)
@@ -135,7 +155,7 @@ typedef     void                amf_void;
 #if defined(__cplusplus)
 typedef     bool                amf_bool;
 #else
-typedef     amf_uint16          amf_bool;
+typedef     amf_uint8           amf_bool;
 #define     true                1 
 #define     false               0 
 #endif
@@ -177,7 +197,7 @@ typedef struct AMFRect
 #endif
 } AMFRect;
 
-AMF_INLINE struct AMFRect AMFConstructRect(amf_int32 left, amf_int32 top, amf_int32 right, amf_int32 bottom)
+static AMF_INLINE struct AMFRect AMFConstructRect(amf_int32 left, amf_int32 top, amf_int32 right, amf_int32 bottom)
 {
     struct AMFRect object = {left, top, right, bottom};
     return object;
@@ -196,7 +216,7 @@ typedef struct AMFSize
 #endif
 } AMFSize;
 
-AMF_INLINE struct AMFSize AMFConstructSize(amf_int32 width, amf_int32 height)
+static AMF_INLINE struct AMFSize AMFConstructSize(amf_int32 width, amf_int32 height)
 {
     struct AMFSize object = {width, height};
     return object;
@@ -215,7 +235,7 @@ typedef struct AMFPoint
 #endif
 } AMFPoint;
 
-AMF_INLINE struct AMFPoint AMFConstructPoint(amf_int32 x, amf_int32 y)
+static AMF_INLINE struct AMFPoint AMFConstructPoint(amf_int32 x, amf_int32 y)
 {
     struct AMFPoint object = {x, y};
     return object;
@@ -234,7 +254,7 @@ typedef struct AMFRate
 #endif
 } AMFRate;
 
-AMF_INLINE struct AMFRate AMFConstructRate(amf_uint32 num, amf_uint32 den)
+static AMF_INLINE struct AMFRate AMFConstructRate(amf_uint32 num, amf_uint32 den)
 {
     struct AMFRate object = {num, den};
     return object;
@@ -253,7 +273,7 @@ typedef struct AMFRatio
 #endif
 } AMFRatio;
 
-AMF_INLINE struct AMFRatio AMFConstructRatio(amf_uint32 num, amf_uint32 den)
+static AMF_INLINE struct AMFRatio AMFConstructRatio(amf_uint32 num, amf_uint32 den)
 {
     struct AMFRatio object = {num, den};
     return object;
@@ -296,7 +316,7 @@ typedef struct AMFColor
 #pragma pack(pop)
 
 
-AMF_INLINE struct AMFColor AMFConstructColor(amf_uint8 r, amf_uint8 g, amf_uint8 b, amf_uint8 a)
+static AMF_INLINE struct AMFColor AMFConstructColor(amf_uint8 r, amf_uint8 g, amf_uint8 b, amf_uint8 a)
 {
     struct AMFColor object;
     object.r = r;
@@ -314,11 +334,11 @@ AMF_INLINE struct AMFColor AMFConstructColor(amf_uint8 r, amf_uint8 g, amf_uint8
     {
     #endif
         // allocator
-        AMF_INLINE void* AMF_CDECL_CALL amf_variant_alloc(amf_size count)
+        static AMF_INLINE void* AMF_CDECL_CALL amf_variant_alloc(amf_size count)
         {
             return CoTaskMemAlloc(count);
         }
-        AMF_INLINE void AMF_CDECL_CALL amf_variant_free(void* ptr)
+        static AMF_INLINE void AMF_CDECL_CALL amf_variant_free(void* ptr)
         {
             CoTaskMemFree(ptr);
         }
@@ -333,11 +353,11 @@ AMF_INLINE struct AMFColor AMFConstructColor(amf_uint8 r, amf_uint8 g, amf_uint8
     {
     #endif
         // allocator
-        AMF_INLINE void* AMF_CDECL_CALL amf_variant_alloc(amf_size count)
+        static AMF_INLINE void* AMF_CDECL_CALL amf_variant_alloc(amf_size count)
         {
             return malloc(count);
         }
-        AMF_INLINE void AMF_CDECL_CALL amf_variant_free(void* ptr)
+        static AMF_INLINE void AMF_CDECL_CALL amf_variant_free(void* ptr)
         {
             free(ptr);
         }
@@ -401,12 +421,12 @@ namespace amf
     } AMFGuid;
 
 #if defined(__cplusplus)
-    AMF_INLINE bool AMFCompareGUIDs(const AMFGuid& guid1, const AMFGuid& guid2)
+    static AMF_INLINE bool AMFCompareGUIDs(const AMFGuid& guid1, const AMFGuid& guid2)
     {
         return guid1 == guid2;
     }
 #else
-    AMF_INLINE amf_bool AMFCompareGUIDs(const struct AMFGuid guid1, const struct AMFGuid guid2)
+    static AMF_INLINE amf_bool AMFCompareGUIDs(const struct AMFGuid guid1, const struct AMFGuid guid2)
     {
         return memcmp(&guid1, &guid2, sizeof(guid1)) == 0;
     }

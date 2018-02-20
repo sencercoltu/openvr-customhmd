@@ -36,7 +36,7 @@ CTrackedController::CTrackedController(ETrackedControllerRole role, std::string 
 	DongleVersion = 1461100729;
 	VRCVersion = 1465809477;
 	RadioVersion = 1466630404;
-
+	
 	//controller specific
 	AttachedDeviceId = SerialNumber;
 	SupportedButtons =
@@ -60,7 +60,7 @@ CTrackedController::CTrackedController(ETrackedControllerRole role, std::string 
 	Axis4Type = EVRControllerAxisType::k_eControllerAxis_None;
 	ControllerRoleHint = m_Role;
 
-
+	HasControllerComponent = true;
 
 	ZeroMemory(&m_ControllerData, sizeof(m_ControllerData));
 	switch (role)
@@ -536,8 +536,10 @@ void CTrackedController::PacketReceived(USBPacket *pPacket, HmdVector3d_t *pCent
 			euler.v[1] = euler.v[1] + pCenterEuler->v[1];
 			euler.v[2] = euler.v[2] + pCenterEuler->v[2];
 			m_ControllerData.Pose.qRotation = Quaternion::FromEuler(euler).UnitQuaternion();
-			memcpy(m_ControllerData.Pose.vecPosition, pRelativePos, sizeof(HmdVector3d_t));
 
+
+			//no positional tracking yet, keep left and right controllers in front of HMD			
+			memcpy(m_ControllerData.Pose.vecPosition, pRelativePos, sizeof(HmdVector3d_t));
 			switch (m_Role)
 			{
 			case ETrackedControllerRole::TrackedControllerRole_RightHand:

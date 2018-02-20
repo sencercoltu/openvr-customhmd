@@ -210,8 +210,8 @@ void RenderEncodePipeline::Terminate()
 
     m_deviceDX9.Terminate();
     m_deviceDX11.Terminate();
-//    m_deviceOpenGL.Terminate();
-//    m_deviceOpenCL.Terminate();
+    m_deviceOpenGL.Terminate();
+    m_deviceOpenCL.Terminate();
 }
 
 AMF_RESULT RenderEncodePipeline::Init(ParametersStorage* pParams, int threadID)
@@ -226,8 +226,8 @@ AMF_RESULT RenderEncodePipeline::Init(ParametersStorage* pParams, int threadID)
 
     pParams->GetParam(PARAM_NAME_FULLSCREEN, bFullScreen);
 
-    amf_int width = 1920;
-    amf_int height = 1080;
+    amf_int width = 1280;
+    amf_int height = 720;
     amf_int frames = 100;
     amf_uint32 adapterID = 0;
 
@@ -243,7 +243,7 @@ AMF_RESULT RenderEncodePipeline::Init(ParametersStorage* pParams, int threadID)
     pParams->GetParam(PARAM_NAME_FRAMES, frames);
     pParams->GetParam(PARAM_NAME_ADAPTERID, adapterID);
 
-    std::wstring renderType = L"DX11";
+    std::wstring renderType = L"DX9";
     pParams->GetParamWString(PARAM_NAME_RENDER, renderType);
     std::wstring uppValue = toUpper(renderType);
 
@@ -386,23 +386,23 @@ AMF_RESULT RenderEncodePipeline::Init(ParametersStorage* pParams, int threadID)
         CHECK_AMF_ERROR_RETURN(res, L"m_pContext->InitDX11() failed");
     }
 
-    //if(renderMemoryType == amf::AMF_MEMORY_OPENGL || secondaryMemoryType == amf::AMF_MEMORY_OPENGL)
-    //{
-    //    res = m_deviceOpenGL.Init(hWnd, displayDeviceName.c_str());
-    //    CHECK_AMF_ERROR_RETURN(res, L"m_deviceOpenGL.Init() failed");
+    if(renderMemoryType == amf::AMF_MEMORY_OPENGL || secondaryMemoryType == amf::AMF_MEMORY_OPENGL)
+    {
+        res = m_deviceOpenGL.Init(hWnd, displayDeviceName.c_str());
+        CHECK_AMF_ERROR_RETURN(res, L"m_deviceOpenGL.Init() failed");
 
-    //    res = m_pContext->InitOpenGL(m_deviceOpenGL.GetContextOpenGL(), m_deviceOpenGL.GetWindowOpenGL(), m_deviceOpenGL.GetDCOpenGL());
-    //    CHECK_AMF_ERROR_RETURN(res, L"m_pContext->InitOpenGL() failed");
-    //}
+        res = m_pContext->InitOpenGL(m_deviceOpenGL.GetContextOpenGL(), m_deviceOpenGL.GetWindowOpenGL(), m_deviceOpenGL.GetDCOpenGL());
+        CHECK_AMF_ERROR_RETURN(res, L"m_pContext->InitOpenGL() failed");
+    }
 
-    //if(renderMemoryType == amf::AMF_MEMORY_OPENCL || renderMemoryType == amf::AMF_MEMORY_OPENGL || secondaryMemoryType == amf::AMF_MEMORY_OPENGL)
-    //{
-    //    res = m_deviceOpenCL.Init(m_deviceDX9.GetDevice(), m_deviceDX11.GetDevice(), m_deviceOpenGL.GetContextOpenGL(), m_deviceOpenGL.GetDCOpenGL());
-    //    CHECK_AMF_ERROR_RETURN(res, L"m_deviceOpenCL.Init() failed");
+    if(renderMemoryType == amf::AMF_MEMORY_OPENCL || renderMemoryType == amf::AMF_MEMORY_OPENGL || secondaryMemoryType == amf::AMF_MEMORY_OPENGL)
+    {
+        res = m_deviceOpenCL.Init(m_deviceDX9.GetDevice(), m_deviceDX11.GetDevice(), m_deviceOpenGL.GetContextOpenGL(), m_deviceOpenGL.GetDCOpenGL());
+        CHECK_AMF_ERROR_RETURN(res, L"m_deviceOpenCL.Init() failed");
 
-    //    res = m_pContext->InitOpenCL(m_deviceOpenCL.GetCommandQueue());
-    //    CHECK_AMF_ERROR_RETURN(res, L"m_pContext->InitOpenCL() failed");
-    //}
+        res = m_pContext->InitOpenCL(m_deviceOpenCL.GetCommandQueue());
+        CHECK_AMF_ERROR_RETURN(res, L"m_pContext->InitOpenCL() failed");
+    }
 
     if(renderMemoryType == amf::AMF_MEMORY_HOST)
     {

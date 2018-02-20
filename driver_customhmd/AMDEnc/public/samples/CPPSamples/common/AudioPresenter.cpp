@@ -37,7 +37,10 @@ using namespace amf;
 
 //-------------------------------------------------------------------------------------------------
 AudioPresenter::AudioPresenter()
-    : m_ptsSeek(-1LL)
+    : m_ptsSeek(-1LL),
+    m_bLowLatency(false),
+    m_startTime(-1LL),
+    m_pAVSync(NULL)
 {}
 
 //-------------------------------------------------------------------------------------------------
@@ -57,7 +60,6 @@ AMF_RESULT AudioPresenter::Seek(amf_pts pts)
 bool AudioPresenter::HandleSeek(const AMFAudioBuffer* pBuffer, bool& bDiscard, amf_size& byteOffset)
 {
     bDiscard = false;
-    byteOffset = 0;
 
     amf::AMFLock lock(&m_cs);
 
@@ -65,6 +67,7 @@ bool AudioPresenter::HandleSeek(const AMFAudioBuffer* pBuffer, bool& bDiscard, a
     {
         return false;
     }
+    byteOffset = 0;
 
     const amf_pts
         pts = const_cast<AMFAudioBuffer*>(pBuffer)->GetPts(),

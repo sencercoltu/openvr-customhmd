@@ -17,6 +17,8 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 
 	vr::EVRSettingsError error;
 
+	m_HMDData.DisplayDeviceIdx = m_pSettings->GetInt32("driver_customhmd", "adapterIndex", &error);
+
 	char value[256] = {};
 	m_pSettings->GetString("driver_customhmd", "displayMode", value, sizeof(value));
 	if (!strcmp(value, "steam"))
@@ -106,6 +108,10 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 	DisplayMCImageData = nullptr;
 	DisplayDebugMode = false;
 
+	HasDisplayComponent = true;	
+	GraphicsAdapterLuid = { 0 };
+
+
 	ZeroMemory(&m_HMDData, sizeof(m_HMDData));
 	m_HMDData.pHMDDriver = this;
 	m_HMDData.Windowed = false;
@@ -173,6 +179,7 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 		m_HMDData.FakePackDetected = false; //
 		m_HMDData.Frequency = renderFreq;
 		DriverLog("Using remote display %s...", value);
+		HasVirtualDisplayComponent = true;
 
 		//value[0] = 0;
 		//m_pSettings->GetString("driver_customhmd", "virtualResolution", value, sizeof(value));
@@ -218,6 +225,7 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 		m_HMDData.Frequency = renderFreq;
 		m_HMDData.DirectMode = true;
 
+		HasDriverDirectModeComponent = true;
 
 		//get window position
 		error = VRSettingsError_None;
@@ -328,6 +336,7 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 				DriverLog("Enumerating monitors...");
 				EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, (LPARAM)&m_HMDData);
 				DriverLog("Monitor detection finished.");				
+				GraphicsAdapterLuid = *((uint64_t*)&m_HMDData.DisplayDeviceLUID);
 			}
 
 			//fall back to windowed mode if monitor not found
@@ -394,6 +403,8 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 	if (value[0] || m_DisplayMode == DisplayMode::Virtual) //use also android camera
 	{
 		HasCamera = true;
+		HasCameraComponent = true;
+
 		m_ExposedComponents |= ExposedComponent::Camera;
 		m_Camera.hLock = CreateMutex(nullptr, FALSE, L"CameraLock");
 		m_Camera.Options.Name = value;
@@ -434,9 +445,14 @@ CTrackedHMD::CTrackedHMD(std::string displayName, CServerDriver *pServer) : CTra
 		m_pDriverHost->TrackedDeviceAdded(SerialNumber.c_str(), vr::TrackedDeviceClass_HMD, this);
 
 		if (m_DisplayMode == DisplayMode::Virtual) //start virtual display thread
+		{
 			m_VirtualDisplay.Init(this);
+		}
 		else if (m_DisplayMode == DisplayMode::DirectMode)
+		{
 			m_DirectOutput.Init(this);
+			GraphicsAdapterLuid = *((uint64_t*)&m_HMDData.DisplayDeviceLUID);
+		}
 	}
 }
 
@@ -1715,6 +1731,45 @@ BOOL CALLBACK CTrackedHMD::MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LP
 							pMonData->IsConnected = true;
 
 							pMonData->pHMDDriver->DriverLog("Found monitor %S.", pMonData->DisplayName);
+
+							IDXGIAdapter1 *pAdapter = nullptr;
+							IDXGIAdapter1 *pFoundAdapter = nullptr;
+							IDXGIFactory1 *pFactory = nullptr;
+							DXGI_ADAPTER_DESC1 adapterDesc = { 0 };
+
+							auto hr = CreateDXGIFactory(__uuidof(IDXGIFactory1), (void**)&pFactory);
+							
+
+							int idx = pMonData->DisplayDeviceIdx;
+							pMonData->DisplayDeviceLUID = { 0, 0 };
+
+							if (pFactory)
+							{
+								for (auto i = 0; pFactory->EnumAdapters(i, (IDXGIAdapter**)&pAdapter) != DXGI_ERROR_NOT_FOUND; i++)
+								{
+									if (i == idx)
+									{
+										pFoundAdapter = pAdapter;
+										break;
+									}
+									pAdapter->Release();
+									pAdapter = nullptr;
+								}
+
+								pFactory->Release();
+								pFactory = nullptr;
+							}
+
+							if (pFoundAdapter == nullptr)
+								return FALSE;
+
+							hr = pFoundAdapter->GetDesc1(&adapterDesc);
+							
+							pFoundAdapter->Release();
+							pFoundAdapter = nullptr;
+
+							pMonData->DisplayDeviceLUID = adapterDesc.AdapterLuid;
+
 							return FALSE;
 						}
 					}

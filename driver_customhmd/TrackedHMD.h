@@ -208,6 +208,7 @@ protected:
 	int32_t DisplayMCImageNumChannels;
 	void *DisplayMCImageData;
 	bool DisplayDebugMode;
+	uint64_t GraphicsAdapterLuid;
 };
 
 class CDriverDirectModeComponentFix : public IVRDriverDirectModeComponent

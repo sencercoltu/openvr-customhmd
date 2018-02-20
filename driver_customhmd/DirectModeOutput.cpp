@@ -23,6 +23,8 @@ void DirectModeOutput::Init(CTrackedHMD *pHmd)
 {
 	pHMD = pHmd;
 
+	pHMD->m_HMDData.DisplayDeviceLUID = { 0, 0 };
+
 	m_LeftRotate = pHmd->m_HMDData.LeftRotate;
 	m_RightRotate = pHmd->m_HMDData.RightRotate;
 
@@ -31,11 +33,44 @@ void DirectModeOutput::Init(CTrackedHMD *pHmd)
 
 	D3D_FEATURE_LEVEL levels[] =
 	{
-		D3D_FEATURE_LEVEL_11_1
+		D3D_FEATURE_LEVEL_11_1,
+		D3D_FEATURE_LEVEL_12_0,
+		D3D_FEATURE_LEVEL_12_1
 	};
 
+
+	IDXGIAdapter1 *pAdapter = nullptr;
+	IDXGIAdapter1 *pFoundAdapter = nullptr;
+	IDXGIFactory1 *pFactory = nullptr;
+	DXGI_ADAPTER_DESC1 adapterDesc = { 0 };
+
+	hr = CreateDXGIFactory(__uuidof(IDXGIFactory1), (void**)&pFactory);
+	EXIT_IF_FAILED;
+
+	int idx = pHMD->m_HMDData.DisplayDeviceIdx;
+
+	if (pFactory)
+	{
+		for (auto i = 0; pFactory->EnumAdapters(i, (IDXGIAdapter**)&pAdapter) != DXGI_ERROR_NOT_FOUND; i++)
+		{
+			if (i == idx)
+			{
+				pFoundAdapter = pAdapter;
+				break;
+			}
+			pAdapter->Release();
+			pAdapter = nullptr;
+		}
+
+		pFactory->Release();
+		pFactory = nullptr;
+	}
+
+	if (pFoundAdapter == nullptr)
+		return;
+
 	hr = D3D11CreateDevice(
-		nullptr,
+		pFoundAdapter,
 		D3D_DRIVER_TYPE_HARDWARE,
 		nullptr,
 		0, //D3D11_CREATE_DEVICE_BGRA_SUPPORT | D3D11_CREATE_DEVICE_DEBUG | D3D11_CREATE_DEVICE_VIDEO_SUPPORT,
@@ -46,6 +81,15 @@ void DirectModeOutput::Init(CTrackedHMD *pHmd)
 		&m_FeatureLevel,
 		&m_pContext);
 	EXIT_IF_FAILED;
+
+
+	hr = pFoundAdapter->GetDesc1(&adapterDesc);
+	pFoundAdapter->Release();
+	pFoundAdapter = nullptr;
+
+	EXIT_IF_FAILED;
+	
+	pHMD->m_HMDData.DisplayDeviceLUID = adapterDesc.AdapterLuid;
 
 	D3D11_RASTERIZER_DESC cmdesc;
 	ZeroMemory(&cmdesc, sizeof(D3D11_RASTERIZER_DESC));
@@ -111,15 +155,15 @@ void DirectModeOutput::Init(CTrackedHMD *pHmd)
 
 	Vertex v[] =
 	{
-	Vertex(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f),
-	Vertex(-1.0f,  1.0f, 0.0f, 0.0f, 0.0f),
-	Vertex(0.0f,  1.0f, 0.0f, 1.0f, 0.0f),
-	Vertex(0.0f, -1.0f, 0.0f, 1.0f, 1.0f)
+		Vertex(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f),
+		Vertex(-1.0f,  1.0f, 0.0f, 0.0f, 0.0f),
+		Vertex(0.0f,  1.0f, 0.0f, 1.0f, 0.0f),
+		Vertex(0.0f, -1.0f, 0.0f, 1.0f, 1.0f)
 	};
-
+	 
 	DWORD indices[] = {
-	0, 1, 2,
-	0, 2, 3,
+		0, 1, 2,
+		0, 2, 3,
 	};
 
 	D3D11_BUFFER_DESC indexBufferDesc;
@@ -153,8 +197,8 @@ void DirectModeOutput::Init(CTrackedHMD *pHmd)
 
 	D3D11_INPUT_ELEMENT_DESC layout[] =
 	{
-	{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	};
 	UINT numElements = ARRAYSIZE(layout);
 

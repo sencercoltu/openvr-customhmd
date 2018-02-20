@@ -104,6 +104,13 @@ protected:
 	uint64_t DongleVersion;
 	uint64_t ParentDriver;
 	int32_t DeviceClass;
+
+	bool HasDisplayComponent;
+	bool HasControllerComponent;
+	bool HasCameraComponent;
+	bool HasDriverDirectModeComponent;			
+	bool HasVirtualDisplayComponent;
+
 };
 
 #endif //TrackedDevice_H

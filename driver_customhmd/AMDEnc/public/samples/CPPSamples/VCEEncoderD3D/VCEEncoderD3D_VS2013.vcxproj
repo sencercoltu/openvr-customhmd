@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -23,63 +23,54 @@
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>VCEEncoderD3D</RootNamespace>
     <ProjectName>VCEEncoderD3D</ProjectName>
-    <WindowsTargetPlatformVersion>10.0.15063.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\..\..\public\props\SDK32-10.0.10586.0.props" />
     <Import Project="..\..\..\..\public\props\AMF_VS2013.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\..\..\public\props\SDK64-10.0.10586.0.props" />
     <Import Project="..\..\..\..\public\props\AMF_VS2013.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\..\..\public\props\SDK32-10.0.10586.0.props" />
     <Import Project="..\..\..\..\public\props\AMF_VS2013.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\..\..\public\props\SDK64-10.0.10586.0.props" />
     <Import Project="..\..\..\..\public\props\AMF_VS2013.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(ProgramFiles)\Windows Kits\10\Include\10.0.10586.0\um;$(ProgramFiles)\Windows Kits\10\Include\10.0.10586.0\shared;$(ProgramFiles)\Windows Kits\10\Include\10.0.10586.0\winrt;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
-    <ExecutablePath>$(ProgramFiles)\Windows Kits\10\bin\x86;$(ExecutablePath);C:\Program Files (x86)\Windows Kits\10\bin\10.0.15063.0\x86;</ExecutablePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(ProgramFiles)\Windows Kits\10\Include\10.0.10586.0\um;$(ProgramFiles)\Windows Kits\10\Include\10.0.10586.0\shared;$(ProgramFiles)\Windows Kits\10\Include\10.0.10586.0\winrt;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
-    <ExecutablePath>$(ProgramFiles)\Windows Kits\10\bin\x86;$(ExecutablePath);C:\Program Files (x86)\Windows Kits\10\bin\10.0.15063.0\x86;</ExecutablePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
@@ -92,7 +83,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)../../;$(AMDAPPSDKROOT)\include;$(AMDAPPSDKSAMPLESROOT)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../../;$(OCL_ROOT)\include;</AdditionalIncludeDirectories>
       <TreatWarningAsError>false</TreatWarningAsError>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <ExceptionHandling>Async</ExceptionHandling>
@@ -108,8 +99,7 @@
       </Command>
     </CustomBuild>
     <PostBuildEvent>
-      <Command>
-      </Command>
+      <Command>xcopy /Y "$(ProgramFiles)\Windows Kits\10\bin\$(PlatformShortName)\d3dcompiler_47.dll" $(OutDir)</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -119,7 +109,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)../../;$(AMDAPPSDKROOT)\include;$(AMDAPPSDKSAMPLESROOT)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../../;$(OCL_ROOT)\include;</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
       <ExceptionHandling>Async</ExceptionHandling>
     </ClCompile>
@@ -132,15 +122,14 @@
       <AdditionalDependencies>opengl32.lib;DXGI.lib;d3dcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>
-      </Command>
+      <Command>xcopy /Y "$(ProgramFiles)\Windows Kits\10\bin\$(PlatformShortName)\d3dcompiler_47.dll" $(OutDir)</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <AdditionalIncludeDirectories>$(SolutionDir)../../;$(AMDAPPSDKROOT)\include;$(AMDAPPSDKSAMPLESROOT)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../../;$(OCL_ROOT)\include;</AdditionalIncludeDirectories>
       <WarningLevel>Level3</WarningLevel>
       <TreatWarningAsError>true</TreatWarningAsError>
       <ExceptionHandling>Async</ExceptionHandling>
@@ -157,7 +146,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)../../;$(AMDAPPSDKROOT)\include;$(AMDAPPSDKSAMPLESROOT)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../../;$(OCL_ROOT)\include;</AdditionalIncludeDirectories>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -188,8 +177,11 @@
     <ClInclude Include="..\common\CmdLogger.h" />
     <ClInclude Include="..\common\DeviceDX11.h" />
     <ClInclude Include="..\common\DeviceDX9.h" />
+    <ClInclude Include="..\common\DeviceOpenCL.h" />
+    <ClInclude Include="..\common\DeviceOpenGL.h" />
     <ClInclude Include="..\common\EncoderParamsAVC.h" />
     <ClInclude Include="..\common\EncoderParamsHEVC.h" />
+    <ClInclude Include="..\common\OpenCLLoader.h" />
     <ClInclude Include="..\common\ParametersStorage.h" />
     <ClInclude Include="..\common\Pipeline.h" />
     <ClInclude Include="..\common\PipelineElement.h" />
@@ -201,6 +193,8 @@
     <ClInclude Include="VideoRenderDX11.h" />
     <ClInclude Include="VideoRenderDX9.h" />
     <ClInclude Include="VideoRenderHost.h" />
+    <ClInclude Include="VideoRenderOpenCL.h" />
+    <ClInclude Include="VideoRenderOpenGL.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\common\AMFFactory.cpp" />
@@ -230,8 +224,11 @@
     </ClCompile>
     <ClCompile Include="..\common\DeviceDX11.cpp" />
     <ClCompile Include="..\common\DeviceDX9.cpp" />
+    <ClCompile Include="..\common\DeviceOpenCL.cpp" />
+    <ClCompile Include="..\common\DeviceOpenGL.cpp" />
     <ClCompile Include="..\common\EncoderParamsAVC.cpp" />
     <ClCompile Include="..\common\EncoderParamsHEVC.cpp" />
+    <ClCompile Include="..\common\OpenCLLoader.cpp" />
     <ClCompile Include="..\common\ParametersStorage.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
@@ -252,6 +249,8 @@
     <ClCompile Include="VideoRenderDX11.cpp" />
     <ClCompile Include="VideoRenderDX9.cpp" />
     <ClCompile Include="VideoRenderHost.cpp" />
+    <ClCompile Include="VideoRenderOpenCL.cpp" />
+    <ClCompile Include="VideoRenderOpenGL.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="VCEEncoderD3D.rc" />

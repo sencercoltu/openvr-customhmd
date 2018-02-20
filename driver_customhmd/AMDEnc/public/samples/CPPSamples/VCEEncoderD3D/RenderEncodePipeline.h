@@ -46,8 +46,8 @@
 
 #include "../common/DeviceDX9.h"
 #include "../common/DeviceDX11.h"
-//#include "../common/DeviceOpenGL.h"
-//#include "../common/DeviceOpenCL.h"
+#include "../common/DeviceOpenGL.h"
+#include "../common/DeviceOpenCL.h"
 
 #include "VideoRender.h"
 #include "RenderWindow.h"
@@ -96,8 +96,8 @@ private:
 
     DeviceDX9                   m_deviceDX9;
     DeviceDX11                  m_deviceDX11;
-//    DeviceOpenGL                m_deviceOpenGL;
-//    DeviceOpenCL                m_deviceOpenCL;
+    DeviceOpenGL                m_deviceOpenGL;
+    DeviceOpenCL                m_deviceOpenCL;
 
     RenderWindow                m_window;
 

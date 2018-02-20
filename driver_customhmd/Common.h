@@ -226,7 +226,9 @@ struct HMDData : TrackerData
 	float LeftRotate;
 	float RightRotate;
 	USBDataCache LastState;			
-	char DirectStreamURL[256];
+	char DirectStreamURL[256];	
+	int DisplayDeviceIdx;
+	LUID DisplayDeviceLUID;
 };
 
 struct ControllerData : TrackerData
